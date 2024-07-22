@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Echo">
+      <UniqueIdentifier>{A498847C-90CF-850D-39BC-6B1025D2010F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Echo\Core">
+      <UniqueIdentifier>{7CC32A01-E82D-DF77-316C-901D9D15BDCC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Echo\Events">
+      <UniqueIdentifier>{08A40BFC-7459-84F1-FD4D-7EC869027BF5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{2AC788B4-1694-E3BF-3FAD-D1672BD9184E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform\Windows">
+      <UniqueIdentifier>{64FBD71A-50F4-F66C-7926-DCF1657ED678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Echo.h" />
+    <ClInclude Include="src\Echo\Core\Application.h">
+      <Filter>Echo\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Echo\Core\Base.h">
+      <Filter>Echo\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Echo\Core\EntryPoint.h">
+      <Filter>Echo\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Echo\Core\Log.h">
+      <Filter>Echo\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Echo\Core\Window.h">
+      <Filter>Echo\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
+      <Filter>Platform\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pch.h" />
+    <ClInclude Include="src\Echo\Events\Observer.h" />
+    <ClInclude Include="src\Echo\Events\Event.h" />
+    <ClInclude Include="src\Echo\Events\EventSubject.h" />
+    <ClInclude Include="src\Echo\Events\WindowEvents.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Echo\Core\Application.cpp">
+      <Filter>Echo\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Echo\Core\Log.cpp">
+      <Filter>Echo\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
+      <Filter>Platform\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pch.cpp" />
+    <ClCompile Include="src\Echo\Events\EventSubject.cpp" />
+  </ItemGroup>
+</Project>
