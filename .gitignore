@@ -1,4 +1,15 @@
-
 /.vs
+/.codelite
 /bin-int
 /bin
+
+Makefile
+
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+
+*.workspace
+*.mk
+*.project
