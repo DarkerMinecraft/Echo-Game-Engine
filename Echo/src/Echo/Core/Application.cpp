@@ -10,7 +10,7 @@ namespace Echo
 		m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(), hInst));
 		EventSubject::Get()->Attach(this);
 	}
-#elif
+#else
 	Application::Application()
 	{
 		m_Window = std::unique_ptr<Window>(Window::Create());
