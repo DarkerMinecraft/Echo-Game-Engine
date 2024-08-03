@@ -18,7 +18,7 @@ namespace Echo
 	class Window 
 	{
 	public:
-		static Window* Create(const WindowProps& props = WindowProps());
+		static Window* Create(const WindowProps& props = WindowProps(), HINSTANCE hInst = nullptr);
 		virtual ~Window() {}
 
 		virtual void OnUpdate() = 0;

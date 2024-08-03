@@ -12,7 +12,11 @@ namespace Echo
 	class Application : public Observer
 	{
 	public:
+#ifdef ECHO_PLATFORM_WIN
+		Application(HINSTANCE hInst);
+#elif
 		Application();
+#endif
 		virtual ~Application();
 
 		void Run();
@@ -23,6 +27,10 @@ namespace Echo
 		bool m_Running = true;
 	};
 
+#ifdef ECHO_PLATFORM_WIN
+	Application* CreateApplication(HINSTANCE hINst);
+#elif
 	Application* CreateApplication();
+#endif
 
 }

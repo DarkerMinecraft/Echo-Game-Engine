@@ -34,7 +34,8 @@ project "Echo"
     includedirs
     {
         "%{prj.name}/src",
-        "%{prj.name}/vendor/spdlog/include"
+        "%{prj.name}/vendor/spdlog/include",
+        "%{prj.name}/vendor/DirectX/include"
     }
 
     filter "configurations:Debug"
