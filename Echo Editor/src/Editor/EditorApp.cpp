@@ -11,7 +11,8 @@ namespace Echo
 	class Editor : public Application 
 	{
 	public: 
-		Editor(HINSTANCE hInst) : Application(hInst) {
+		Editor() 
+		{
 			EventSubject::Get()->Attach(this);
 		}
 		virtual ~Editor() {}
@@ -22,9 +23,9 @@ namespace Echo
 		}
 	};
 
-	Application* CreateApplication(HINSTANCE hInst)
+	Application* CreateApplication()
 	{
-		return new Editor(hInst);
+		return new Editor();
 	}
 
 }

@@ -4,13 +4,15 @@
 
 #ifdef ECHO_PLATFORM_WIN
 
-extern Echo::Application* Echo::CreateApplication(HINSTANCE);
+#include <windows.h>
 
-int WinMain(HINSTANCE hInst, LPSTR lpCmdLine, int nShowCmd)
+extern Echo::Application* Echo::CreateApplication();
+
+int main()
 {
 	Echo::Log::Init();
 
-	auto app = Echo::CreateApplication(hInst);
+	auto app = Echo::CreateApplication();
 	app->Run();
 	delete app;
 }

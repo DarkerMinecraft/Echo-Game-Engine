@@ -3,23 +3,14 @@
 #include "Echo/Events/WindowEvents.h"
 #include "Echo/Events/EventSubject.h"
 
-// DirectX 12 specific headers.
-#include <d3d12.h>
-#include <dxgi1_6.h>
-#include <d3dcompiler.h>
-#include <DirectXMath.h>
-
-// D3D12 extension library.
-#include <DirectX/d3dx12.h>
-
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 
-namespace Echo 
+namespace Echo
 {
 
-	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		WindowsWindow::WindowData* pData;
 		if (uMsg == WM_CREATE)
@@ -36,7 +27,10 @@ namespace Echo
 		switch (uMsg)
 		{
 			case WM_CLOSE:
-				EventSubject::Get()->Notify(WindowCloseEvent());
+				DestroyWindow(hwnd);
+				break;
+			case WM_DESTROY:
+				PostQuitMessage(0);
 				return 0;
 			case WM_SIZE:
 			{
@@ -51,16 +45,19 @@ namespace Echo
 			default:
 				return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
+
+		return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 	}
 
-	Window* Window::Create(const WindowProps& props, HINSTANCE hInst) 
+	Window* Window::Create(const WindowProps& props)
 	{
-		return new WindowsWindow(props, hInst);
+		return new WindowsWindow(props);
 	}
 
-	WindowsWindow::WindowsWindow(const WindowProps& props, HINSTANCE hInst)
+	WindowsWindow::WindowsWindow(const WindowProps& props)
+		: m_HInst(GetModuleHandle(NULL)), m_Data(props.Title, props.Width, props.Height, false)
 	{
-		Init(props, hInst);
+		Init();
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -68,14 +65,18 @@ namespace Echo
 		Shutdown();
 	}
 
-	void WindowsWindow::OnUpdate()
+	bool WindowsWindow::OnUpdate()
 	{
-		MSG msg;
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		MSG msg = {};
+		while (PeekMessage(&msg, nullptr, 0u, 0u, PM_REMOVE))
 		{
+			if (msg.message == WM_QUIT)
+				return false;
+
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		return true;
 	}
 
 	unsigned int WindowsWindow::GetWidth() const
@@ -83,68 +84,66 @@ namespace Echo
 		return m_Data.Width;
 	}
 
-	unsigned int WindowsWindow::GetHeight() const 
+	unsigned int WindowsWindow::GetHeight() const
 	{
 		return m_Data.Height;
 	}
 
-	void WindowsWindow::SetVSync(bool enabled) 
+	void WindowsWindow::SetVSync(bool enabled)
 	{
-
+		m_Data.VSync = enabled;
 	}
 
-	bool WindowsWindow::IsVSync() const 
+	bool WindowsWindow::IsVSync() const
 	{
 		return m_Data.VSync;
 	}
 
-	void* WindowsWindow::GetNativeWindow() const 
+	void* WindowsWindow::GetNativeWindow() const
 	{
 		return m_Window;
 	}
 
-	void WindowsWindow::Init(const WindowProps& props, HINSTANCE hInst)	
+	void WindowsWindow::Init()
 	{
-		m_Data.Title = props.Title.c_str();
-		m_Data.Width = props.Width;
-		m_Data.Height = props.Height;
+		EC_CORE_INFO("Creating window ({0} x {1})", m_Data.Width, m_Data.Height);
 
-		EC_CORE_INFO("Creating window {0} ({1}, {2})", m_Data.Title, m_Data.Width, m_Data.Height);
+		const wchar_t* CLASS_NAME = L"Echo Window Class";
 
-		WNDCLASSEXW wc = {};
-		wc.cbSize = sizeof(WNDCLASSEX);
-		wc.style = CS_HREDRAW | CS_VREDRAW;
+		WNDCLASS wc = {};
+		wc.lpszClassName = CLASS_NAME;
+		wc.hInstance = m_HInst;
+		wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wc.lpfnWndProc = WindowProc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = 0;
-		wc.hInstance = hInst;
-		wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-		wc.lpszMenuName = NULL;
-		wc.lpszClassName = L"EchoEngine";
 
-
-		ATOM atom = RegisterClassExW(&wc);
+		ATOM atom = RegisterClass(&wc);
 		EC_CORE_ASSERT(atom > 0, "Failed to register Window Class!");
 
-		int len = strlen(m_Data.Title);
-		int size_needed = MultiByteToWideChar(CP_ACP, 0, m_Data.Title, len, NULL, 0);
-		WCHAR* wTitle = new WCHAR[size_needed + 1];
-		MultiByteToWideChar(CP_ACP, 0, m_Data.Title, len, wTitle, size_needed);
-		wTitle[size_needed] = 0;
+		DWORD style = WS_OVERLAPPEDWINDOW;
 
-		m_Window = CreateWindowExW(
+		RECT rect;
+
+		GetClientRect(GetDesktopWindow(), &rect);
+
+		rect.left = (rect.right / 2) - (m_Data.Width / 2);
+		rect.top = (rect.bottom / 2) - (m_Data.Height / 2);
+
+		AdjustWindowRect(&rect, style, false);
+
+		m_Window = CreateWindowEx(
 			0,
-			L"EchoWindow",
-			wTitle,
-			WS_OVERLAPPEDWINDOW,
-			CW_USEDEFAULT, CW_USEDEFAULT, m_Data.Width, m_Data.Height,
+			CLASS_NAME, 
+			m_Data.Title,
+			style,
+			rect.left, rect.top, m_Data.Width, m_Data.Height,
 			NULL,
-			NULL,
-			hInst,
+			NULL, 
+			m_HInst,
 			&m_Data
 		);
 
-		if(m_Window == NULL)
+		if (m_Window == NULL)
 		{
 			EC_CORE_ERROR("Failed to create window");
 			return;
@@ -155,13 +154,12 @@ namespace Echo
 
 	void WindowsWindow::Shutdown()
 	{
+		const wchar_t* CLASS_NAME = L"Echo Window Class";
+		
+		UnregisterClass(CLASS_NAME, m_HInst);
+
 		PostQuitMessage(0);
 		DestroyWindow(m_Window);
-	}
-
-	ComPtr<IDXGIAdapter4> GetAdapter(bool useWarp) 
-	{
-
 	}
 
 }

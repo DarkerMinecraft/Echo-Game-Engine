@@ -3,21 +3,20 @@
 #include "Echo/Core/Window.h"
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <wrl.h>
-
+#include <Windows.h>
 
 namespace Echo 
 {
-	using namespace Microsoft::WRL;
+
+	LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	class WindowsWindow : public Window 
 	{
 	public:
-		WindowsWindow(const WindowProps& props, HINSTANCE hInst);
+		WindowsWindow(const WindowProps& props);
 		virtual ~WindowsWindow();
 
-		virtual void OnUpdate() override;
+		virtual bool OnUpdate() override;
 
 		virtual unsigned int GetWidth() const override;
 		virtual unsigned int GetHeight() const override;
@@ -29,29 +28,21 @@ namespace Echo
 	public:
 		struct WindowData
 		{
-			const char* Title;
+			const wchar_t* Title;
 			unsigned int Width, Height;
 			bool VSync;
+
+			WindowData(const wchar_t* title, unsigned int width, unsigned int height, bool vsync)
+				: Title(title), Width(width), Height(height), VSync(vsync)
+			{}
 		};
 	private:
-		void Init(const WindowProps& props, HINSTANCE hInst);
+		void Init();
 		void Shutdown();
 	private:
-		HWND m_Window;
 		HINSTANCE m_HInst;
-		RECT m_WindowRect; 
+		HWND m_Window;
 		WindowData m_Data;
-
-		bool m_UseWarp = false;
-		bool m_IsDirectXInitalized = false;
-
-		ComPtr<ID3D12Device2> m_Device;
-		ComPtr<ID3D12CommandQueue> m_CommandQueue;
-		ComPtr<IDXGISwapChain4> m_SwapChain;
-		ComPtr<ID3D12Resource> m_BackBuffers[3];
-		ComPtr<ID3D12GraphicsCommandList> m_CommandList;
-		ComPtr<ID3D12CommandAllocator> m_CommandAllocators[3];
-		ComPtr<ID3D12DescriptorHeap> m_RTVDescriptorHeap;
 	};
 
 }

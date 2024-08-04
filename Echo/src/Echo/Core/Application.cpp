@@ -4,19 +4,12 @@
 namespace Echo
 {
 
-#ifdef ECHO_PLATFORM_WIN
-	Application::Application(HINSTANCE hInst)
-	{
-		m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(), hInst));
-		EventSubject::Get()->Attach(this);
-	}
-#else
 	Application::Application()
 	{
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		EventSubject::Get()->Attach(this);
 	}
-#endif
+
 	Application::~Application()
 	{
 
@@ -26,7 +19,8 @@ namespace Echo
 	{
 		while(m_Running)
 		{
-			m_Window->OnUpdate();
+			if (!m_Window->OnUpdate())
+				m_Running = false;
 		}
 	}
 
