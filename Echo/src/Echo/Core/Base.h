@@ -1,7 +1,6 @@
 #pragma once
 
-#ifndef PLATFORM_DETECTION_H
-#define PLATFORM_DETECTION_H
+#include <memory>
 
 // Windows
 #if defined(_WIN32) || defined(_WIN64)
@@ -64,8 +63,6 @@
 #error "Unknown platform!"
 #endif
 
-#endif // PLATFORM_DETECTION_H
-
 #define BIT(x) (1 << x)
 
 #ifdef ECHO_DEBUG
@@ -79,3 +76,24 @@
 	#define EC_ASSERT(x, ...)
 	#define EC_CORE_ASSERT(x, ...)
 #endif
+
+#define BIND_EVENT_FN(x) std::bind(&x, this, std::placeholders::_1)
+
+namespace Echo
+{
+	template<typename T>
+	using Scope = std::unique_ptr<T>;
+	template<typename T, typename ... Args>
+	constexpr Scope<T> CreateScope(Args&& ... args)
+	{
+		return std::make_unique<T>(std::forward<Args>(args)...);
+	}
+
+	template<typename T>
+	using Ref = std::shared_ptr<T>;
+	template<typename T, typename ... Args>
+	constexpr Ref<T> CreateRef(Args&& ... args)
+	{
+		return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+}

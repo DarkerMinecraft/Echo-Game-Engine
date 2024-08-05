@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Base.h"
-#include "pch.h"
+
+#include "Echo/Events/Event.h"
 
 namespace Echo 
 {
@@ -32,16 +33,20 @@ namespace Echo
 	class Window 
 	{
 	public:
+		using EventCallbackFn = std::function<void(Event&)>;
+
 		static Window* Create(const WindowProps& props = WindowProps());
 		virtual ~Window() = default;
 
-		virtual bool OnUpdate() = 0;
+		virtual void OnUpdate() = 0;
 
 		virtual unsigned int GetWidth() const = 0;
 		virtual unsigned int GetHeight() const = 0;
 
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;
+
+		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
 	};

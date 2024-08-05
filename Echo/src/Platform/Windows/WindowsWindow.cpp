@@ -1,9 +1,7 @@
 #include "pch.h"
 #include "WindowsWindow.h"
 #include "Echo/Events/WindowEvents.h"
-#include "Echo/Events/EventSubject.h"
 
-#include <algorithm>
 #include <cassert>
 #include <chrono>
 
@@ -15,13 +13,13 @@ namespace Echo
 		WindowsWindow::WindowData* pData;
 		if (uMsg == WM_CREATE)
 		{
-			CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
-			pData = (WindowsWindow::WindowData*)pCreate->lpCreateParams;
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pData);
+			CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
+			pData = reinterpret_cast<WindowsWindow::WindowData*>(pCreate->lpCreateParams);
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pData));
 		}
 		else
 		{
-			pData = (WindowsWindow::WindowData*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+			pData = reinterpret_cast<WindowsWindow::WindowData*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 		}
 
 		switch (uMsg)
@@ -32,16 +30,27 @@ namespace Echo
 			case WM_DESTROY:
 				PostQuitMessage(0);
 				return 0;
+			case WM_QUIT:
+				{
+					WindowCloseEvent e;
+					pData->EventCallback(e);
+					return 0;
+				}
 			case WM_SIZE:
-			{
-				unsigned int width = LOWORD(lParam);
-				unsigned int height = HIWORD(lParam);
-				pData->Width = width;
-				pData->Height = height;
+				{
+					unsigned int width = LOWORD(lParam);
+					unsigned int height = HIWORD(lParam);
 
-				EventSubject::Get()->Notify(WindowResizeEvent(width, height));
-				return 0;
-			}
+					if(width == pData->Width && height == pData->Height)
+						return 0;
+
+					pData->Width = width;
+					pData->Height = height;
+
+					WindowResizeEvent e(width, height);
+					pData->EventCallback(e);
+					return 0;
+				}
 			default:
 				return DefWindowProc(hwnd, uMsg, wParam, lParam);
 		}
@@ -55,9 +64,9 @@ namespace Echo
 	}
 
 	WindowsWindow::WindowsWindow(const WindowProps& props)
-		: m_HInst(GetModuleHandle(NULL)), m_Data(props.Title, props.Width, props.Height, false)
+		: m_HInst(GetModuleHandle(NULL))
 	{
-		Init();
+		Init(props);
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -65,18 +74,14 @@ namespace Echo
 		Shutdown();
 	}
 
-	bool WindowsWindow::OnUpdate()
+	void WindowsWindow::OnUpdate()
 	{
 		MSG msg = {};
 		while (PeekMessage(&msg, nullptr, 0u, 0u, PM_REMOVE))
 		{
-			if (msg.message == WM_QUIT)
-				return false;
-
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		return true;
 	}
 
 	unsigned int WindowsWindow::GetWidth() const
@@ -104,8 +109,12 @@ namespace Echo
 		return m_Window;
 	}
 
-	void WindowsWindow::Init()
+	void WindowsWindow::Init(const WindowProps& props)
 	{
+		m_Data.Width = props.Width;
+		m_Data.Height = props.Height;
+		m_Data.Title = props.Title;
+
 		EC_CORE_INFO("Creating window ({0} x {1})", m_Data.Width, m_Data.Height);
 
 		const wchar_t* CLASS_NAME = L"Echo Window Class";
@@ -122,21 +131,24 @@ namespace Echo
 
 		DWORD style = WS_OVERLAPPEDWINDOW;
 
-		RECT rect;
+		RECT rect = { 0, 0, m_Data.Width, m_Data.Height };
+		AdjustWindowRect(&rect, style, FALSE);
 
-		GetClientRect(GetDesktopWindow(), &rect);
+		int newWidth = rect.right - rect.left;
+		int newHeight = rect.bottom - rect.top;
 
-		rect.left = (rect.right / 2) - (m_Data.Width / 2);
-		rect.top = (rect.bottom / 2) - (m_Data.Height / 2);
+		RECT desktopRect;
+		GetClientRect(GetDesktopWindow(), &desktopRect);
 
-		AdjustWindowRect(&rect, style, false);
+		int x = (desktopRect.right / 2) - (newWidth / 2);
+		int y = (desktopRect.bottom / 2) - (newHeight / 2);
 
 		m_Window = CreateWindowEx(
 			0,
 			CLASS_NAME, 
 			m_Data.Title,
 			style,
-			rect.left, rect.top, m_Data.Width, m_Data.Height,
+			x, y, newWidth, newHeight,
 			NULL,
 			NULL, 
 			m_HInst,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Event.h"
+
 #include <sstream>
 
 namespace Echo
@@ -11,8 +12,15 @@ namespace Echo
 	public:
 		WindowCloseEvent() {}
 
-		virtual EventType GetType() const override { return EventType::WindowClose; }
-		virtual std::string ToString() const override { return "WindowCloseEvent"; }
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "WindowCloseEvent";
+			return ss.str();
+		}
+
+		EVENT_CLASS_TYPE(WindowClose)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
 	class WindowResizeEvent : public Event 
@@ -21,16 +29,18 @@ namespace Echo
 		WindowResizeEvent(unsigned int width, unsigned int height)
 			: m_Width(width), m_Height(height) {}
 
-		virtual EventType GetType() const override { return EventType::WindowResize; }
-		virtual std::string ToString() const override 
+		inline unsigned int GetWidth() const { return m_Width; }
+		inline unsigned int GetHeight() const { return m_Height; }
+
+		std::string ToString() const override 
 		{
 			std::stringstream ss;
 			ss << "WindowResizeEvent: " << m_Width << ", " << m_Height;
 			return ss.str();
 		}
 
-		unsigned int GetWidth() const { return m_Width; }
-		unsigned int GetHeight() const { return m_Height; }
+		EVENT_CLASS_TYPE(WindowResize)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	private:
 		unsigned int m_Width, m_Height;
 	};

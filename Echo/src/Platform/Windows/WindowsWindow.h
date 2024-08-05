@@ -16,13 +16,15 @@ namespace Echo
 		WindowsWindow(const WindowProps& props);
 		virtual ~WindowsWindow();
 
-		virtual bool OnUpdate() override;
+		virtual void OnUpdate() override;
 
 		virtual unsigned int GetWidth() const override;
 		virtual unsigned int GetHeight() const override;
 
 		virtual void SetVSync(bool enabled) override;
 		virtual bool IsVSync() const override;
+
+		virtual void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 
 		virtual void* GetNativeWindow() const override;
 	public:
@@ -32,12 +34,10 @@ namespace Echo
 			unsigned int Width, Height;
 			bool VSync;
 
-			WindowData(const wchar_t* title, unsigned int width, unsigned int height, bool vsync)
-				: Title(title), Width(width), Height(height), VSync(vsync)
-			{}
+			EventCallbackFn EventCallback;
 		};
 	private:
-		void Init();
+		void Init(const WindowProps& props);
 		void Shutdown();
 	private:
 		HINSTANCE m_HInst;

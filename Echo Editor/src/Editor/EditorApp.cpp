@@ -1,9 +1,6 @@
 #include <Echo.h>
 
-#include "Echo/Core/Log.h"
-#include "Echo/Events/WindowEvents.h"
-#include "Echo/Events/EventSubject.h"
-#include "Echo/Events/Observer.h"
+#include "EditorLayer.h"
 
 namespace Echo
 {
@@ -11,16 +8,11 @@ namespace Echo
 	class Editor : public Application 
 	{
 	public: 
-		Editor() 
+		Editor()
 		{
-			EventSubject::Get()->Attach(this);
+			PushLayer(new EditorLayer());
 		}
-		virtual ~Editor() {}
-		
-		virtual void OnNotify(const Event& e) override 
-		{
-
-		}
+		~Editor() {}
 	};
 
 	Application* CreateApplication()

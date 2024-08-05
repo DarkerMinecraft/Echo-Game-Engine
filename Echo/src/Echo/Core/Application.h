@@ -1,15 +1,14 @@
 #pragma once
 
+#include "LayerStack.h"
 #include "Window.h"
-#include "Echo/Events/Observer.h"
 #include "Echo/Events/Event.h"
-#include "Echo/Events/EventSubject.h"
 #include "Echo/Events/WindowEvents.h"
 
 namespace Echo
 {
 
-	class Application : public Observer
+	class Application
 	{
 	public:
 		Application();
@@ -17,10 +16,25 @@ namespace Echo
 
 		void Run();
 
-		virtual void OnNotify(const Event& e) override;
+		void OnEvent(Event& e);
+
+		void PushLayer(Layer* layer);
+		void PushOverlay(Layer* overlay);
+
+		static Application& Get() { return *s_Instance; }
+		const Window& GetWindow() const { return *m_Window; }
+	private:
+		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 	private:
 		std::unique_ptr<Window> m_Window;
+
 		bool m_Running = true;
+		bool m_Minimized = false;
+
+		LayerStack m_LayerStack;
+	private:
+		static Application* s_Instance;
 	};
 
 	Application* CreateApplication();
