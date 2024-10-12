@@ -5,66 +5,26 @@
 #include <cassert>
 #include <chrono>
 
+#include "Platform/Vulkan/VulkanGraphicsContext.h"
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 namespace Echo
 {
 
-	LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+	static void GLFWErrorCallback(int error, const char* description)
 	{
-		WindowsWindow::WindowData* pData;
-		if (uMsg == WM_CREATE)
-		{
-			CREATESTRUCT* pCreate = reinterpret_cast<CREATESTRUCT*>(lParam);
-			pData = reinterpret_cast<WindowsWindow::WindowData*>(pCreate->lpCreateParams);
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pData));
-		}
-		else
-		{
-			pData = reinterpret_cast<WindowsWindow::WindowData*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		}
-
-		switch (uMsg)
-		{
-			case WM_CLOSE:
-				DestroyWindow(hwnd);
-				break;
-			case WM_DESTROY:
-				PostQuitMessage(0);
-				return 0;
-			case WM_QUIT:
-				{
-					WindowCloseEvent e;
-					pData->EventCallback(e);
-					return 0;
-				}
-			case WM_SIZE:
-				{
-					unsigned int width = LOWORD(lParam);
-					unsigned int height = HIWORD(lParam);
-
-					if(width == pData->Width && height == pData->Height)
-						return 0;
-
-					pData->Width = width;
-					pData->Height = height;
-
-					WindowResizeEvent e(width, height);
-					pData->EventCallback(e);
-					return 0;
-				}
-			default:
-				return DefWindowProc(hwnd, uMsg, wParam, lParam);
-		}
-
-		return DefWindowProcW(hwnd, uMsg, wParam, lParam);
+		EC_CORE_ERROR("GLFW Error ({0}) : {1}", error, description);
 	}
 
-	Window* Window::Create(const WindowProps& props)
+	Scope<Window> Window::Create(const WindowProps& props)
 	{
-		return new WindowsWindow(props);
+		return CreateScope<WindowsWindow>(props);
 	}
 
 	WindowsWindow::WindowsWindow(const WindowProps& props)
-		: m_HInst(GetModuleHandle(NULL))
 	{
 		Init(props);
 	}
@@ -76,12 +36,8 @@ namespace Echo
 
 	void WindowsWindow::OnUpdate()
 	{
-		MSG msg = {};
-		while (PeekMessage(&msg, nullptr, 0u, 0u, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
+		glfwPollEvents();
+		m_Context->SwapBuffers();
 	}
 
 	unsigned int WindowsWindow::GetWidth() const
@@ -96,6 +52,11 @@ namespace Echo
 
 	void WindowsWindow::SetVSync(bool enabled)
 	{
+		if (enabled)
+			glfwSwapInterval(1);
+		else
+			glfwSwapInterval(0);
+
 		m_Data.VSync = enabled;
 	}
 
@@ -117,61 +78,42 @@ namespace Echo
 
 		EC_CORE_INFO("Creating window ({0} x {1})", m_Data.Width, m_Data.Height);
 
-		const wchar_t* CLASS_NAME = L"Echo Window Class";
+		int success = glfwInit();
+		EC_CORE_ASSERT(success, "Could not initialize GLFW!");
+		glfwSetErrorCallback(GLFWErrorCallback);
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		WNDCLASS wc = {};
-		wc.lpszClassName = CLASS_NAME;
-		wc.hInstance = m_HInst;
-		wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.lpfnWndProc = WindowProc;
+		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title, nullptr, nullptr);
 
-		ATOM atom = RegisterClass(&wc);
-		EC_CORE_ASSERT(atom > 0, "Failed to register Window Class!");
+		m_Context = new VulkanGraphicsContext(m_Window);
+		m_Context->Init();
 
-		DWORD style = WS_OVERLAPPEDWINDOW;
+		glfwSetWindowUserPointer(m_Window, &m_Data);
 
-		RECT rect = { 0, 0, m_Data.Width, m_Data.Height };
-		AdjustWindowRect(&rect, style, FALSE);
-
-		int newWidth = rect.right - rect.left;
-		int newHeight = rect.bottom - rect.top;
-
-		RECT desktopRect;
-		GetClientRect(GetDesktopWindow(), &desktopRect);
-
-		int x = (desktopRect.right / 2) - (newWidth / 2);
-		int y = (desktopRect.bottom / 2) - (newHeight / 2);
-
-		m_Window = CreateWindowEx(
-			0,
-			CLASS_NAME, 
-			m_Data.Title,
-			style,
-			x, y, newWidth, newHeight,
-			NULL,
-			NULL, 
-			m_HInst,
-			&m_Data
-		);
-
-		if (m_Window == NULL)
+		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 		{
-			EC_CORE_ERROR("Failed to create window");
-			return;
-		}
+			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+			data.Width = width;
+			data.Height = height;
 
-		ShowWindow(m_Window, SW_SHOW);
+			WindowResizeEvent e(width, height);
+			data.EventCallback(e);
+		});
+
+		glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
+		{
+			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+
+			WindowCloseEvent e;
+			data.EventCallback(e);
+		});
 	}
 
 	void WindowsWindow::Shutdown()
 	{
-		const wchar_t* CLASS_NAME = L"Echo Window Class";
-		
-		UnregisterClass(CLASS_NAME, m_HInst);
-
-		PostQuitMessage(0);
-		DestroyWindow(m_Window);
+		m_Context->CleanUp();
+		glfwDestroyWindow(m_Window);
+		glfwTerminate();
 	}
 
 }

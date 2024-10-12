@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Base.h"
-
 #include "Echo/Events/Event.h"
+#include "Echo/Graphics/GraphicsContext.h"
 
 namespace Echo 
 {
@@ -10,11 +10,11 @@ namespace Echo
 #ifdef ECHO_PLATFORM_WIN
 	struct WindowProps 
 	{
-		const wchar_t* Title;
+		const char* Title;
 		unsigned int Width;
 		unsigned int Height;
 
-		WindowProps(const wchar_t* title = L"Echo Engine", unsigned int width = 1280, unsigned int height = 720)
+		WindowProps(const char* title = "Echo Engine", unsigned int width = 1280, unsigned int height = 720)
 			: Title(title), Width(width), Height(height) {}
 	};
 #else 
@@ -35,7 +35,7 @@ namespace Echo
 	public:
 		using EventCallbackFn = std::function<void(Event&)>;
 
-		static Window* Create(const WindowProps& props = WindowProps());
+		static Scope<Window> Create(const WindowProps& props = WindowProps());
 		virtual ~Window() = default;
 
 		virtual void OnUpdate() = 0;
@@ -49,5 +49,7 @@ namespace Echo
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
+
+		virtual GraphicsContext* GetContext() const = 0;
 	};
 }

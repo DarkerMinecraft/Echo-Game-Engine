@@ -2,13 +2,12 @@
 
 #include "Echo/Core/Window.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace Echo 
 {
-
-	LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	class WindowsWindow : public Window 
 	{
@@ -27,10 +26,14 @@ namespace Echo
 		virtual void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 
 		virtual void* GetNativeWindow() const override;
+
+		virtual GraphicsContext* GetContext() const override { return m_Context; }
+
+		void CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 	public:
 		struct WindowData
 		{
-			const wchar_t* Title;
+			const char* Title;
 			unsigned int Width, Height;
 			bool VSync;
 
@@ -40,9 +43,10 @@ namespace Echo
 		void Init(const WindowProps& props);
 		void Shutdown();
 	private:
-		HINSTANCE m_HInst;
-		HWND m_Window;
+		GLFWwindow* m_Window;
 		WindowData m_Data;
+
+		GraphicsContext* m_Context;
 	};
 
 }

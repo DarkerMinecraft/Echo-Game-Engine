@@ -20,12 +20,13 @@ namespace Echo
 	};
 }
 
-#define EC_CORE_ERROR(...) ::Echo::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define EC_CORE_WARN(...) ::Echo::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define EC_CORE_INFO(...) ::Echo::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define EC_CORE_TRACE(...) ::Echo::Log::GetCoreLogger()->trace(__VA_ARGS__)
+#define EC_CORE_CRITICAL(...) ::Echo::Log::GetCoreLogger()->critical(__VA_ARGS__); __debugbreak();
+#define EC_CORE_ERROR(...) ::Echo::Log::GetCoreLogger()->error(__VA_ARGS__);
+#define EC_CORE_WARN(...) ::Echo::Log::GetCoreLogger()->warn(__VA_ARGS__);
+#define EC_CORE_INFO(...) ::Echo::Log::GetCoreLogger()->info(__VA_ARGS__);
+#define EC_CORE_TRACE(...) ::Echo::Log::GetCoreLogger()->trace(__VA_ARGS__);
 
-#define EC_ERROR(...) ::Echo::Log::GetClientLogger()->error(__VA_ARGS__)
-#define EC_WARN(...) ::Echo::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define EC_INFO(...) ::Echo::Log::GetClientLogger()->info(__VA_ARGS__)
-#define EC_TRACE(...) ::Echo::Log::GetClientLogger()->trace(__VA_ARGS__)
+#define EC_ERROR(...) ::Echo::Log::GetClientLogger()->error(__VA_ARGS__);
+#define EC_WARN(...) ::Echo::Log::GetClientLogger()->warn(__VA_ARGS__);
+#define EC_INFO(...) ::Echo::Log::GetClientLogger()->info(__VA_ARGS__);
+#define EC_TRACE(...) ::Echo::Log::GetClientLogger()->trace(__VA_ARGS__);
