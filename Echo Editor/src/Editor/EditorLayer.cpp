@@ -9,11 +9,8 @@ namespace Echo
 
 	void EditorLayer::OnAttach()
 	{
-		GraphicsPipelineData& data{};
-		data.FragmentShaderPath = "assets/shaders/TriangleShader.frag";
-		data.VertexShaderPath = "assets/shaders/TriangleShader.vert";
-
-		m_Pipeline = GraphicsPipeline::Create(data);
+		m_PipelineLibrary = CreateRef<PipelineLibrary>();
+		m_Pipeline = m_PipelineLibrary->Load("Triangle", "assets/shaders/TriangleVert.spv", "assets/shaders/TriangleFrag.spv");
 	}
 
 	void EditorLayer::OnDetach()

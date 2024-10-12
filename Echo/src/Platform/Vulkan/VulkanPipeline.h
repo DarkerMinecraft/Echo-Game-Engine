@@ -7,19 +7,20 @@
 
 namespace Echo
 {
-	class VulkanPipeline : GraphicsPipeline
+	class VulkanPipeline : public GraphicsPipeline
 	{
 	public:
-		VulkanPipeline(VulkanGraphicsContext* context, GraphicsPipelineData& data)
-			: m_Data(data), m_Context(context) {}
+		VulkanPipeline(const std::string& name, VulkanGraphicsContext* context, GraphicsPipelineData& data)
+			: m_Data(data), m_Context(context), m_Name(name) {}
 
 		virtual void Start() override;
 		virtual void Finish() override;
-	private:
-		std::vector<unsigned int> ReadShader(VkShaderStageFlagBits stage, const char* filePath); 
-		bool LoadShader(std::vector<unsigned int> source, VkShaderStageFlagBits stage);
 
-		VkShaderModule CreateShaderModule(const std::vector<unsigned int>& code);
+		virtual const std::string& GetName() const override { return m_Name; };
+	private:
+		std::vector<char> ReadShader(const char* filePath); 
+
+		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 	private:
 		GraphicsPipelineData& m_Data;
 		VulkanGraphicsContext* m_Context;
@@ -30,5 +31,7 @@ namespace Echo
 		VkRenderPass m_RenderPass;
 		VkPipelineLayout m_PipelineLayout;
 		VkPipeline m_Pipeline;
+
+		const std::string& m_Name;
 	};
 }

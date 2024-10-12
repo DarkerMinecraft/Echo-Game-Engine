@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Echo/Core/Layer.h"
-#include <Echo/Graphics/GraphicsPipeline.h>
+#include "Echo/Graphics/GraphicsPipeline.h"
 
 namespace Echo
 {
@@ -19,6 +19,7 @@ namespace Echo
 		virtual void OnEvent(Event& e) override;
 	private:
 		Ref<GraphicsPipeline> m_Pipeline;
+		Ref<PipelineLibrary> m_PipelineLibrary;
 	};
 }
 

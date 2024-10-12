@@ -13,7 +13,7 @@ namespace Echo
 		switch(RendererAPI::GetAPI())
 		{
 			case RendererAPI::API::None: return nullptr;
-			case RendererAPI::API::Vulkan: return CreateRef<VulkanPipeline>((VulkanGraphicsContext*)Application::Get().GetWindow().GetContext(), data);
+			case RendererAPI::API::Vulkan: return CreateRef<VulkanPipeline>(name, (VulkanGraphicsContext*)Application::Get().GetWindow().GetContext(), data);
 			case RendererAPI::API::DirectX12: return nullptr;
 		}
 	}
@@ -24,10 +24,10 @@ namespace Echo
 		Add(name, pipeline);
 	}
 
-	void PipelineLibrary::Add(const std::string& name, const Ref<GraphicsPipeline> shader)
+	void PipelineLibrary::Add(const std::string& name, const Ref<GraphicsPipeline> pipeline)
 	{
 		EC_CORE_ASSERT(m_Pipelines.find(name) == m_Pipelines.end(), "Pipeline already exists!")
-		m_Pipelines[name] = shader;
+		m_Pipelines[name] = pipeline;
 	}
 
 	Ref<GraphicsPipeline> PipelineLibrary::Load(const std::string& name, const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
@@ -36,9 +36,9 @@ namespace Echo
 		data.VertexShaderPath = vertexShaderPath.c_str();
 		data.FragmentShaderPath = fragmentShaderPath.c_str();
 
-		auto shader = GraphicsPipeline::Create(name, data);
-		Add(name, shader);
-		return shader;
+		auto pipeline = GraphicsPipeline::Create(name, data);
+		Add(name, pipeline);
+		return pipeline;
 	}
 
 	Ref<GraphicsPipeline> PipelineLibrary::Get(const std::string& name)

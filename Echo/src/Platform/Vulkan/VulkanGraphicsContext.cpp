@@ -5,8 +5,6 @@
 #include "Platform/Windows/WindowsWindow.h"
 #include "Setup/VulkanSurface.h"
 
-#include "Utilities/SpirvHelper.h"
-
 namespace Echo
 {
 	VulkanGraphicsContext::VulkanGraphicsContext(GLFWwindow* window)
@@ -25,12 +23,10 @@ namespace Echo
 		m_Device->CreateLogicalDevice();
 		m_SwapChain->CreateSwapChain();
 		m_SwapChain->CreateImageViews();
-		SpirvHelper::Init();
 	}
 
 	void VulkanGraphicsContext::CleanUp()
 	{
-		SpirvHelper::Finalize();
 		m_SwapChain->CleanUp();
 		m_Device->CleanUp();
 		m_Surface->CleanUp();

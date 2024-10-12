@@ -18,16 +18,22 @@ namespace Echo
 
 		virtual const std::string& GetName() const = 0;
 
-		static Ref<GraphicsPipeline> Create(GraphicsPipelineData& data);
+		static Ref<GraphicsPipeline> Create(const std::string& name, GraphicsPipelineData& data);
 	};
 
 	class PipelineLibrary
 	{
 	public:
-		void Add(const Ref<GraphicsPipeline>& shader);
-		void Add(const std::string& name, const Ref<GraphicsPipeline> shader);
-		Ref<GraphicsPipeline> Load(const std::string& name, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+		PipelineLibrary() = default;
+		~PipelineLibrary() 
+		{
+			m_Pipelines.clear();
+		}
 
+		void Add(const Ref<GraphicsPipeline>& shader);
+		void Add(const std::string& name, const Ref<GraphicsPipeline> pipeline);
+		Ref<GraphicsPipeline> Load(const std::string& name, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+		
 		Ref<GraphicsPipeline> Get(const std::string& name);
 	private:
 		std::unordered_map<std::string, Ref<GraphicsPipeline>> m_Pipelines;

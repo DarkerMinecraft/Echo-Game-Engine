@@ -61,7 +61,6 @@ project "Echo"
     {
         "GLFW",
         "vulkan-1",
-        "glslang.lib"
     }
 
     filter "system:windows" 
@@ -106,22 +105,22 @@ project "Echo Editor"
     language "C++"
     cppdialect "C++17"
     staticruntime "on"
-
+    
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
-
+    
     files
     {
         "%{prj.name}/src/**.h",
         "%{prj.name}/src/**.cpp"
     }
-
+    
     includedirs
     {
         "%{prj.name}/src",
         "Echo/src",
         "Echo/vendor/spdlog/include",
-        "%{IncludeDir.glm}"
+        "%{IncludeDir.glm}",
     }
 
     links
@@ -129,16 +128,19 @@ project "Echo Editor"
         "Echo"
     }
 
+    filter {}
+        removefiles { "Echo/src/Platform/**" }
+    
     filter "configurations:Debug"
         defines "ECHO_DEBUG"
         runtime "Debug"
         symbols "on"
-
+    
     filter "configurations:Release"
         defines "ECHO_RELEASE"
         runtime "Release"
         optimize "on"
-
+    
     filter "configurations:Dist"
         defines "ECHO_DIST"
         runtime "Release"

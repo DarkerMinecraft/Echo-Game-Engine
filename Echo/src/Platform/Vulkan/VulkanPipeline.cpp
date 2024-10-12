@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "VulkanPipeline.h"
-#include "Utilities/SpirvHelper.h"
 
 #include <fstream>
 #include <sstream>
@@ -43,8 +42,8 @@ namespace Echo
 			EC_CORE_CRITICAL("Failed to create render pass!");
 		}
 
-		auto vertexShaderCode = ReadShader(VK_SHADER_STAGE_VERTEX_BIT, m_Data.VertexShaderPath);
-		auto fragmentShaderCode = ReadShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_Data.FragmentShaderPath);
+		auto vertexShaderCode = ReadShader(m_Data.VertexShaderPath);
+		auto fragmentShaderCode = ReadShader(m_Data.FragmentShaderPath);
 
 		m_VertexShaderModule = CreateShaderModule(vertexShaderCode);
 		m_FragmentShaderModule = CreateShaderModule(fragmentShaderCode);
@@ -97,21 +96,6 @@ namespace Echo
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
 		scissor.extent = extent;
-
-		std::vector<VkDynamicState> dynamicStates = {
-	VK_DYNAMIC_STATE_VIEWPORT,
-	VK_DYNAMIC_STATE_SCISSOR
-		};
-
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-		dynamicState.pDynamicStates = dynamicStates.data();
-
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.scissorCount = 1;
 
 		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -209,29 +193,25 @@ namespace Echo
 		vkDestroyShaderModule(device, m_VertexShaderModule, nullptr);
 	}
 
-	std::vector<unsigned int> VulkanPipeline::ReadShader(VkShaderStageFlagBits stage, const char* filePath)
+	std::vector<char> VulkanPipeline::ReadShader(const char* filePath)
 	{
-		std::ifstream file(filePath);
-		if (!file.is_open()) 
+		std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+
+		if (!file.is_open())
 		{
-			EC_CORE_CRITICAL("Could not open file: {0}", filePath)
+			EC_CORE_CRITICAL("Failed to open file! {0}", filePath);
 		}
-		std::stringstream buffer;
-		buffer << file.rdbuf();
+
+		size_t fileSize = (size_t)file.tellg();
+		std::vector<char> buffer(fileSize);
+		file.seekg(0);
+		file.read(buffer.data(), fileSize);
 		file.close();
 
-		std::vector<unsigned int> shaderCodeSpirV;
-		SpirvHelper::GLSLtoSPV(stage, buffer.str().c_str(), shaderCodeSpirV);
-
-		return shaderCodeSpirV;
+		return buffer;
 	}
 
-	bool VulkanPipeline::LoadShader(std::vector<unsigned int> source, VkShaderStageFlagBits stage)
-	{
-
-	}
-
-	VkShaderModule VulkanPipeline::CreateShaderModule(const std::vector<unsigned int>& code)
+	VkShaderModule VulkanPipeline::CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
