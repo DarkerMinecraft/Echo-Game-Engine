@@ -16,6 +16,12 @@
 #include <tuple>
 #include <limits>
 #include <set>
+#include <array>
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <set>
+#include <stdexcept>
 
 #ifdef ECHO_PLATFORM_WIN
 #include <winsdkver.h>

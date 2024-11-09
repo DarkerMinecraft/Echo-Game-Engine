@@ -7,6 +7,8 @@ IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/include"
 IncludeDir["spdlog"] = "%{wks.location}/Echo/vendor/spdlog/include"
 IncludeDir["DirectX"] = "%{wks.location}/Echo/vendor/DirectX/include"
 
+IncludeDir["entt"] = "%{wks.location}/Echo/vendor/entt/include"
+
 LibraryDir = {}
 LibraryDir["VulkanSDK"] = "%{VULKAN_SDK}/Lib"
 

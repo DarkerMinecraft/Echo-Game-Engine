@@ -4,6 +4,7 @@
 #include "Echo/Events/Event.h"
 
 #include <string>
+#include "Timestep.h"
 
 namespace Echo 
 {
@@ -18,8 +19,10 @@ namespace Echo
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
 
-		virtual void OnUpdate() {}
+		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnEvent(Event& e) {}
+
+		virtual void Destroy() {}
 
 		const std::string& GetName() const { return m_DebugName; }
 	private:

@@ -14,6 +14,7 @@ int main()
 
 	auto app = Echo::CreateApplication();
 	app->Run();
+	app->Close();
 	delete app;
 }
 

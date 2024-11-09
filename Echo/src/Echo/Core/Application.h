@@ -22,7 +22,9 @@ namespace Echo
 		void PushOverlay(Layer* overlay);
 
 		static Application& Get() { return *s_Instance; }
-		const Window& GetWindow() const { return *m_Window; }
+		Window& GetWindow() { return *m_Window; }
+
+		void Close();
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -33,6 +35,8 @@ namespace Echo
 		bool m_Minimized = false;
 
 		LayerStack m_LayerStack;
+
+		float m_LastFrameTime;
 	private:
 		static Application* s_Instance;
 	};

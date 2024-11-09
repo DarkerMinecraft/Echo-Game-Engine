@@ -1,8 +1,10 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "Echo/Core/Base.h"
 
-#include "GraphicsContext.h"
+#include "GraphicsShader.h"
+#include "GraphicsModel.h"
 
 namespace Echo
 {
@@ -14,13 +16,17 @@ namespace Echo
 			None = 0, DirectX12 = 1, Vulkan = 2
 		};
 	public:
-		virtual void Init() = 0;
-		virtual void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) = 0;
-
+		virtual void BeginScene() = 0;
 		virtual void SetClearColor(const glm::vec4& color) = 0;
-		virtual void Clear();
+		virtual void EndScene() = 0;
 
-		static API GetAPI() { return s_API; }
+		virtual void Wait() = 0;
+
+		virtual void DrawIndexed(Ref<GraphicsShader> shader, Ref<GraphicsModel> graphicsModel) = 0;
+		
+		virtual void Destroy() = 0;
+
+		inline static API GetAPI() { return s_API; }
 	private:
 		static API s_API;
 	};

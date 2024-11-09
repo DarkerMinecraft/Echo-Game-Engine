@@ -5,8 +5,6 @@
 #include <cassert>
 #include <chrono>
 
-#include "Platform/Vulkan/VulkanGraphicsContext.h"
-
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -37,7 +35,6 @@ namespace Echo
 	void WindowsWindow::OnUpdate()
 	{
 		glfwPollEvents();
-		m_Context->SwapBuffers();
 	}
 
 	unsigned int WindowsWindow::GetWidth() const
@@ -48,6 +45,11 @@ namespace Echo
 	unsigned int WindowsWindow::GetHeight() const
 	{
 		return m_Data.Height;
+	}
+
+	void WindowsWindow::Wait()
+	{
+		glfwWaitEvents();
 	}
 
 	void WindowsWindow::SetVSync(bool enabled)
@@ -85,16 +87,16 @@ namespace Echo
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title, nullptr, nullptr);
 
-		m_Context = new VulkanGraphicsContext(m_Window);
-		m_Context->Init();
+		m_Device = new VulkanDevice(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 
-		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+		glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 		{
 			WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 			data.Width = width;
 			data.Height = height;
+			data.FrameBufferResized = true;
 
 			WindowResizeEvent e(width, height);
 			data.EventCallback(e);
@@ -111,9 +113,9 @@ namespace Echo
 
 	void WindowsWindow::Shutdown()
 	{
-		m_Context->CleanUp();
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
+		delete m_Device;
 	}
 
 }

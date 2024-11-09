@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Echo/Core/Window.h"
+#include "Platform/Vulkan/Interface/VulkanDevice.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
@@ -20,22 +21,27 @@ namespace Echo
 		virtual unsigned int GetWidth() const override;
 		virtual unsigned int GetHeight() const override;
 
+		virtual bool WasWindowResized() override { return m_Data.FrameBufferResized; };
+		virtual void ResetWindowResizedFlag() override { m_Data.FrameBufferResized = false; };
+
+		virtual Extent2D GetExtent() override { return { static_cast<uint32_t>(m_Data.Width), static_cast<uint32_t>(m_Data.Height) }; }
+
+		virtual void Wait() override;
+
 		virtual void SetVSync(bool enabled) override;
 		virtual bool IsVSync() const override;
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 
 		virtual void* GetNativeWindow() const override;
-
-		virtual GraphicsContext* GetContext() const override { return m_Context; }
-
-		void CreateWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
+		virtual void* GetDevice() override { return m_Device; }
 	public:
 		struct WindowData
 		{
 			const char* Title;
 			unsigned int Width, Height;
 			bool VSync;
+			bool FrameBufferResized = false;
 
 			EventCallbackFn EventCallback;
 		};
@@ -44,9 +50,9 @@ namespace Echo
 		void Shutdown();
 	private:
 		GLFWwindow* m_Window;
-		WindowData m_Data;
+		VulkanDevice* m_Device;
 
-		GraphicsContext* m_Context;
+		WindowData m_Data;
 	};
 
 }

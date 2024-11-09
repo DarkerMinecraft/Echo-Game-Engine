@@ -10,3 +10,7 @@
 [submodule "Echo/vendor/GLFW"]
 	path = Echo/vendor/GLFW
 	url = https://github.com/glfw/glfw.git
+[submodule "Echo/vendor/imgui"]
+	path = Echo/vendor/imgui
+	url = https://github.com/DarkerMinecraft/imgui/
+	branch = docking

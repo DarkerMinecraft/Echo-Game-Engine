@@ -17,7 +17,7 @@ project "Echo"
     location "Echo"
     kind "StaticLib"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++20"
     staticruntime "on"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -49,7 +49,8 @@ project "Echo"
         "%{IncludeDir.DirectX}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.GLFW}",
-        "%{IncludeDir.VulkanSDK}"
+        "%{IncludeDir.VulkanSDK}",
+        "%{IncludeDir.entt}"
     }
 
     libdirs 
@@ -74,7 +75,8 @@ project "Echo"
         links
 		{
 			"%{Library.SPIRV_Cross_Debug}",
-			"%{Library.SPIRV_Cross_GLSL_Debug}"
+			"%{Library.SPIRV_Cross_GLSL_Debug}",
+            "%{Library.ShaderC_Debug}"
 		}
 
 	filter "configurations:Release"
@@ -85,7 +87,8 @@ project "Echo"
         links
 		{
 			"%{Library.SPIRV_Cross_Release}",
-			"%{Library.SPIRV_Cross_GLSL_Release}"
+			"%{Library.SPIRV_Cross_GLSL_Release}",
+            "%{Library.ShaderC_Release}"
 		}
 
 	filter "configurations:Dist"
@@ -103,7 +106,7 @@ project "Echo Editor"
     location "Echo Editor"
     kind "ConsoleApp"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++20"
     staticruntime "on"
     
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
@@ -121,6 +124,7 @@ project "Echo Editor"
         "Echo/src",
         "Echo/vendor/spdlog/include",
         "%{IncludeDir.glm}",
+        "%{IncludeDir.entt}"
     }
 
     links
@@ -128,9 +132,6 @@ project "Echo Editor"
         "Echo"
     }
 
-    filter {}
-        removefiles { "Echo/src/Platform/**" }
-    
     filter "configurations:Debug"
         defines "ECHO_DEBUG"
         runtime "Debug"

@@ -1,6 +1,6 @@
-#include <Echo.h>
-
 #include "EditorLayer.h"
+
+#include <Echo.h>
 
 namespace Echo
 {
@@ -12,7 +12,10 @@ namespace Echo
 		{
 			PushLayer(new EditorLayer());
 		}
-		~Editor() {}
+		~Editor() 
+		{
+	
+		}
 	};
 
 	Application* CreateApplication()
