@@ -44,6 +44,9 @@ namespace Echo
 		VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
 		VkQueue GetPresentQueue() { return m_PresentQueue; }
 
+		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
+		VkInstance GetInstance() { return m_Instance; }
+
 		virtual void Shutdown() override;
 
 		SwapChainSupportDetails GetSwapChainSupport() { return QuerySwapChainSupport(m_PhysicalDevice); }

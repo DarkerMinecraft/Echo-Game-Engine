@@ -11,6 +11,8 @@
 #include "VulkanShader.h"
 #include "VulkanModel.h"
 
+#include "backends/imgui_impl_vulkan.h"
+
 #include <array>
 
 namespace Echo 
@@ -37,6 +39,9 @@ namespace Echo
 		void Wait();
 
 		void SetClearValues(std::array<VkClearValue, 2> clearValues) { m_ClearValues = clearValues; }
+		
+		void SetDefaultImGui(ImGui_ImplVulkan_InitInfo& init_info);
+		VkCommandBuffer GetCurrentCommandBuffer() { return m_CommandBuffers[m_ImageIndex]; }
 	private:
 		void CreateCommandBuffers();
 		void BeginRecordCommandBuffer();

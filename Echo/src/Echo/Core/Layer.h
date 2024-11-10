@@ -19,6 +19,7 @@ namespace Echo
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
 
+		virtual void OnImGuiRender() {}
 		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnEvent(Event& e) {}
 

@@ -5,6 +5,8 @@
 #include "Echo/Events/Event.h"
 #include "Echo/Events/WindowEvents.h"
 
+#include "Echo/ImGui/ImGuiLayer.h"
+
 namespace Echo
 {
 
@@ -29,7 +31,8 @@ namespace Echo
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
 	private:
-		std::unique_ptr<Window> m_Window;
+		Scope<Window> m_Window;
+		ImGuiLayer* m_ImGuiLayer;
 
 		bool m_Running = true;
 		bool m_Minimized = false;

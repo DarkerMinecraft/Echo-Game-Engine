@@ -98,6 +98,39 @@ namespace Echo
 		vkDeviceWaitIdle(m_Device->GetDevice());
 	}
 
+	void VulkanRenderPass::SetDefaultImGui(ImGui_ImplVulkan_InitInfo& init_info)
+	{
+		uint32_t queueFamily;
+
+		uint32_t count;
+		vkGetPhysicalDeviceQueueFamilyProperties(m_Device->GetPhysicalDevice(), &count, nullptr);
+		VkQueueFamilyProperties* queues = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties) * count);
+		vkGetPhysicalDeviceQueueFamilyProperties(m_Device->GetPhysicalDevice(), &count, queues);
+		for (uint32_t i = 0; i < count; i++)
+			if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				queueFamily = i;
+				break;
+			}
+
+		VkQueue queue;
+		vkGetDeviceQueue(m_Device->GetDevice(), queueFamily, 0, &queue);
+
+		init_info.Instance = m_Device->GetInstance();
+		init_info.PhysicalDevice = m_Device->GetPhysicalDevice();
+		init_info.Device = m_Device->GetDevice();
+		init_info.QueueFamily = queueFamily;
+		init_info.Queue = queue;
+		init_info.PipelineCache = nullptr;
+		init_info.DescriptorPool = nullptr;
+		init_info.RenderPass = m_SwapChain->GetRenderPass();
+		init_info.Subpass = 0;
+		init_info.MinImageCount = 2;
+		init_info.ImageCount = m_SwapChain->GetImageCount();
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.Allocator = nullptr;
+	}
+
 	void VulkanRenderPass::RecreateSwapChain()
 	{
 		auto extent = Application::Get().GetWindow().GetExtent();
@@ -126,15 +159,13 @@ namespace Echo
 		EC_CORE_ASSERT(m_PipelineLayout != nullptr, "Cannot create pipeline before pipeline layout")
 		for (auto&[shader, pipeline] : m_Pipelines)
 		{
-			delete pipeline;
-
 			PipelineConfigInfo pipelineConfig{};
 			VulkanPipeline::DefaultPipelineConfigInfo(pipelineConfig);
 
 			pipelineConfig.RenderPass = m_SwapChain->GetRenderPass();
 			pipelineConfig.PipelineLayout = m_PipelineLayout;
 
-			m_Pipelines[shader] = new VulkanPipeline(shader, pipelineConfig);
+			pipeline = new VulkanPipeline(shader, pipelineConfig);
 		}
 	}
 

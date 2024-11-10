@@ -43,6 +43,12 @@ namespace Echo
 		delete m_RenderPass;
 	}
 
+	void VulkanRendererAPI::SetDefaultImGui(ImGui_ImplVulkan_InitInfo& init_info)
+	{
+		CreateRenderPass();
+		m_RenderPass->SetDefaultImGui(init_info);
+	}
+
 	void VulkanRendererAPI::CreateRenderPass()
 	{
 		if (m_RenderPass == nullptr) 

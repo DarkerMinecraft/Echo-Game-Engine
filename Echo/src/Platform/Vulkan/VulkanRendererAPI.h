@@ -5,6 +5,8 @@
 #include "VulkanModel.h"
 #include "VulkanRenderPass.h"
 
+#include "backends/imgui_impl_vulkan.h"
+
 namespace Echo 
 {
 
@@ -23,6 +25,9 @@ namespace Echo
 		virtual void DrawIndexed(Ref<GraphicsShader> shader, Ref<GraphicsModel> graphicsModel) override;
 
 		virtual void Destroy() override;
+
+		void SetDefaultImGui(ImGui_ImplVulkan_InitInfo& init_info);
+		VkCommandBuffer GetCurrentCommandBuffer() { return m_RenderPass->GetCurrentCommandBuffer(); }
 	private:
 		void CreateRenderPass();
 	private:

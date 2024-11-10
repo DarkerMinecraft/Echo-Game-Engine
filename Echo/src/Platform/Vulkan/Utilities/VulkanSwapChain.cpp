@@ -167,7 +167,7 @@ namespace Echo
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 		QueueFamilyIndices indices = m_Device->FindPhysicalQueueFamilies();
-		uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+		uint32_t queueFamilyIndices[] = {indices.graphicsFamily, indices.presentFamily};
 
 		if (indices.graphicsFamily != indices.presentFamily)
 		{
