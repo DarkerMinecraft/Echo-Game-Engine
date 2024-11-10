@@ -10,6 +10,7 @@ set(IncludeDir
     VulkanSDK   "${VULKAN_SDK}/include"
     spdlog      "${CMAKE_SOURCE_DIR}/Echo/vendor/spdlog/include"
     DirectX     "${CMAKE_SOURCE_DIR}/Echo/vendor/DirectX/include"
+    DirectXTK   "${CMAKE_SOURCE_DIR}/Echo/vendor/DirectXTK/Inc"
     ImGui       "${CMAKE_SOURCE_DIR}/Echo/vendor/imgui"
     entt        "${CMAKE_SOURCE_DIR}/Echo/vendor/entt/include"
 )

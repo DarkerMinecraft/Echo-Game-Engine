@@ -1,34 +1,30 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(Echo)
+project(EchoSolution)
 
 set(CMAKE_GENERATOR_PLATFORM x64)
-
-set(CMAKE_CXX_FLAGS_DIST "${CMAKE_CXX_FLAGS_RELEASE}")
-set(CMAKE_C_FLAGS_DIST "${CMAKE_C_FLAGS_RELEASE}")
-set(CMAKE_EXE_LINKER_FLAGS_DIST "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
-set(CMAKE_SHARED_LINKER_FLAGS_DIST "${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
-
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Dist" CACHE STRING "" FORCE)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Set common output directories
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-if (WIN32)
-    set(CMAKE_SYSTEM_VERSION "latest")
-endif()
-
+# Include dependencies
 include("${CMAKE_SOURCE_DIR}/Dependencies.cmake")
 
-set(OUTPUT_DIR "${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}-${CMAKE_GENERATOR_PLATFORM}")
-
+# Add vendor libraries
 add_subdirectory("Echo/vendor/GLFW")
 set_property(TARGET glfw PROPERTY FOLDER "Dependencies")
 
 add_subdirectory("Echo/vendor/imgui")
 set_property(TARGET ImGui PROPERTY FOLDER "Dependencies")
 
+add_subdirectory("Echo/vendor/DirectX")
+set_property(TARGET DirectX-Headers PROPERTY FOLDER "Dependencies")
+
+add_subdirectory("Echo/vendor/DirectXTK12")
+set_property(TARGET DirectXTK12 PROPERTY FOLDER "Dependencies")
+
 add_subdirectory("Echo")
 add_subdirectory("EchoEditor")
-
