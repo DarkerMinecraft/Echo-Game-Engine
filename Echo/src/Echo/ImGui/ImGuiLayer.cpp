@@ -3,8 +3,6 @@
 
 #include "Echo/Core/Application.h"
 
-#include "Echo/Graphics/RenderCommand.h"
-
 #include "imgui.h"
 
 namespace Echo 
@@ -13,7 +11,7 @@ namespace Echo
 	ImGuiLayer::ImGuiLayer()
 		: Layer("ImGuiLayer")
 	{
-		m_ImGuiVulkan = new ImGuiVulkan();
+		
 	}
 
 	ImGuiLayer::~ImGuiLayer()
@@ -39,13 +37,10 @@ namespace Echo
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
-
-		m_ImGuiVulkan->Attach();
 	}
 
 	void ImGuiLayer::OnDetach()
 	{
-		m_ImGuiVulkan->Shutdown();
 		ImGui::DestroyContext();
 	}
 
@@ -57,7 +52,6 @@ namespace Echo
 
 	void ImGuiLayer::Begin()
 	{
-		m_ImGuiVulkan->Start();
 		ImGui::NewFrame();
 	}
 
@@ -68,7 +62,6 @@ namespace Echo
 		io.DisplaySize = ImVec2(window.GetWidth(), window.GetHeight());
 
 		ImGui::Render();
-		m_ImGuiVulkan->Render(io);
 	}
 
 }

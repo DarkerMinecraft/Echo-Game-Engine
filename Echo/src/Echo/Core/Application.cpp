@@ -1,9 +1,7 @@
 #include "pch.h"
 #include "Application.h"
 
-#include <GLFW/glfw3.h>
-#include "Echo/Graphics/Interface/IDevice.h"
-#include "Echo/Graphics/RenderCommand.h"
+#include <GLFW/glfw3.h>s
 
 namespace Echo
 {
@@ -41,10 +39,10 @@ namespace Echo
 					layer->OnUpdate(ts);
 			} 
 
-			m_ImGuiLayer->Begin();
-			for (Layer* layer : m_LayerStack)
-				layer->OnImGuiRender();
-			m_ImGuiLayer->End();
+			//m_ImGuiLayer->Begin();
+			//for (Layer* layer : m_LayerStack)
+				//layer->OnImGuiRender();
+			//m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
 		}
@@ -84,10 +82,6 @@ namespace Echo
 		{
 			layer->Destroy();
 		}
-
-		RenderCommand::Destroy();
-
-		dynamic_cast<IDevice*>((IDevice*)m_Window->GetDevice())->Shutdown();
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Echo/Core/Window.h"
-#include "Platform/Vulkan/Interface/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanDevice.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
@@ -24,8 +24,6 @@ namespace Echo
 		virtual bool WasWindowResized() override { return m_Data.FrameBufferResized; };
 		virtual void ResetWindowResizedFlag() override { m_Data.FrameBufferResized = false; };
 
-		virtual Extent2D GetExtent() override { return { static_cast<uint32_t>(m_Data.Width), static_cast<uint32_t>(m_Data.Height) }; }
-
 		virtual void Wait() override;
 
 		virtual void SetVSync(bool enabled) override;
@@ -34,7 +32,7 @@ namespace Echo
 		virtual void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
 
 		virtual void* GetNativeWindow() const override;
-		virtual void* GetDevice() override { return m_Device; }
+		virtual Device* GetDevice() override { return m_Device.get(); }
 	public:
 		struct WindowData
 		{
@@ -50,7 +48,7 @@ namespace Echo
 		void Shutdown();
 	private:
 		GLFWwindow* m_Window;
-		VulkanDevice* m_Device;
+		Scope<Device> m_Device;
 
 		WindowData m_Data;
 	};

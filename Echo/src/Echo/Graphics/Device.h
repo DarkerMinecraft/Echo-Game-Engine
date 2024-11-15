@@ -4,6 +4,7 @@
 
 #include "Resource.h"
 #include "CommandList.h"
+#include "Swapchain.h"
 
 #include <memory>
 #include <span>
@@ -11,11 +12,8 @@
 
 namespace Echo 
 {
-	class CommandList;
-	class Swapchain;
-	struct SwapchainWin32CreateInfo;
 
-	enum class GraphicsAPI
+	enum class API
 	{
 		DirectX, Vulkan
 	};
@@ -32,40 +30,9 @@ namespace Echo
 		Error_Unknown
 	};
 
-	enum class QueueType
-	{
-		Graphics,
-		Compute,
-		Copy,
-		VideoDecode,
-		VideoEncode,
-	};
-
-	struct Fence
-	{
-		virtual Result GetStatus(uint64_t value) = 0;
-		virtual Result WaitForValue(uint64_t value) = 0;
-	};
-
-	struct SubmitFenceInfo 
-	{
-		Fence* Fence;
-		uint64_t Value;
-	};
-
-	struct SubmitInfo 
-	{
-		QueueType QueueType;
-		Swapchain* WaitSwapchain;
-		Swapchain* PresentSwapchain;
-		std::span<SubmitFenceInfo> WaitInfos;
-		std::span<CommandList*> CommandLists;
-		std::span<SubmitFenceInfo> SignalInfos;
-	};
-
 	struct GraphicsDeviceCreateInfo 
 	{
-		GraphicsAPI GraphicsAPI;
+		API GraphicsAPI;
 		bool EnableValidation;
 		bool EnableGPUValidation;
 		bool EnableLocking;
@@ -74,23 +41,18 @@ namespace Echo
 	class Device 
 	{
 	public:
+		Device() = default;
 		virtual ~Device() = default;
 		Device(const Device& other) = delete;
 		Device(Device&& other) = delete;
 		Device& operator=(const Device& other) = delete;
 		Device& operator=(Device&& other) = delete;
 
-		virtual Result WaitIdle() = 0;
-		virtual Result QueueWaitIdle(QueueType queue, uint64_t timeout) = 0;
+		virtual const API GetGraphicsAPI() const = 0;
 
-		virtual const GraphicsAPI GetGraphicsAPI() const = 0;
+		virtual Swapchain* GetSwapchain() = 0;
+		virtual CommandBuffer* GetCommandBuffer() = 0;
 
-		virtual Scope<Swapchain> CreateSwapchain(const SwapchainWin32CreateInfo& createInfo) = 0;
-		//virtual Scope<CommandPool> CreateCommandPool(const CommandPoolCreateInfo& createInfo) = 0;
-
-		virtual std::expected<Fence*, Result> CreateFence(uint64_t initalValue) = 0;
-		virtual void DestroyFence(Fence* fence) = 0;
-
-		static Scope<Device> Create(const GraphicsDeviceCreateInfo& createInfo);
+		static Scope<Device> Create(void* hwnd, const GraphicsDeviceCreateInfo& createInfo);
 	};
 }

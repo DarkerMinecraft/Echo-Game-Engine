@@ -3,14 +3,10 @@
 #include "Base.h"
 #include "Echo/Events/Event.h"
 
+#include "Echo/Graphics/Device.h"
+
 namespace Echo 
 {
-
-	struct Extent2D 
-	{
-		uint32_t width;
-		uint32_t height;
-	};
 
 #ifdef ECHO_PLATFORM_WIN
 	struct WindowProps 
@@ -53,15 +49,12 @@ namespace Echo
 
 		virtual void Wait() = 0;
 
-
-		virtual Extent2D GetExtent() = 0;
-
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
-		virtual void* GetDevice() = 0; 
+		virtual Device* GetDevice() = 0; 
 	};
 }

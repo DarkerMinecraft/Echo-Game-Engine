@@ -11,3 +11,6 @@
 	path = Echo/vendor/imgui
 	url = https://github.com/DarkerMinecraft/imgui/
 	branch = docking
+[submodule "Echo/vendor/DirectX"]
+	path = Echo/vendor/DirectX
+	url = https://github.com/microsoft/DirectX-Headers

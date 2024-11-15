@@ -2,8 +2,6 @@
 
 #include "Echo/Core/Layer.h"
 
-#include "ImGuiVulkan.h"
-
 namespace Echo 
 {
 	class ImGuiLayer : public Layer
@@ -19,6 +17,6 @@ namespace Echo
 		void Begin();
 		void End();
 	private:
-		ImGuiVulkan* m_ImGuiVulkan;
+		
 	};
 }
