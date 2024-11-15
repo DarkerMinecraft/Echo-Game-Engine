@@ -104,8 +104,9 @@ namespace Echo
 		virtual ~Resource() = default;
 
 		virtual void Bind() = 0;
-		virtual void LoadVertex(Vertex vertex) = 0;
 		virtual void Unbind() = 0;
+
+		virtual AssetResource GetAssetResource() = 0;
 
 		static Ref<Resource> Create(const ResourceCreateInfo& createInfo); 
 	};

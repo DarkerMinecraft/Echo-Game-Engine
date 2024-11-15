@@ -25,26 +25,30 @@ Echo is a work-in-progress game engine designed with modularity and efficiency i
 
 To use or contribute to Echo, you need the following:
 
-- **CMake** (latest version recommended)
+- **Premake5** (latest version recommended)
 - **Vulkan SDK** (install during setup if needed)
-- **C++ Compiler** (compatible with C++20 or higher)
+- **C++ Compiler** (compatible with C++latest or higher)
 
 ---
 
 ### Building Echo
 
-Follow these steps to build the Echo engine from scratch.
+Follow these steps to build the Echo engine from scratch:
 
 1. **Initial Setup**  
-   Navigate to the `scripts/` folder and run `Setup.bat`. This will configure initial dependencies and install Vulkan if necessary.
+   Navigate to the `scripts/` folder and run `Setup.bat`. This script will:
 
-2. **Generate Projects**  
-   After setup, run `GenerateProjects.bat` (located in the `scripts/` folder). This will configure project files for your preferred IDE.
+   - Install Vulkan SDK (if not already installed).
+   - Configure all required dependencies.
+   - Run `premake5 vs2022` to generate Visual Studio solution files.
 
-3. **Build the Project**  
-   Open the generated project files in your IDE and build the project. Ensure you have installed all required dependencies, especially Vulkan, for successful compilation.
+2. **Build the Project**  
+   Open the generated project files (`Echo.sln`) in Visual Studio, set the solution configuration to **Release** or **Debug**, and build the project.
 
-> **Note:** This is a basic setup for development. Additional configuration might be necessary as the project evolves.
+3. **Run the Engine**  
+   Once the build is complete, you can execute the engine from your IDE or directly from the output folder.
+
+> **Note:** Additional setup might be necessary as the project evolves.
 
 ---
 
@@ -75,4 +79,4 @@ The Echo game engine is organized as follows:
 
 ### License
 
-Echo is licensed under the MIT License. See `LICENSE` file for more details.
+Echo is licensed under the MIT License. See the `LICENSE` file for more details.

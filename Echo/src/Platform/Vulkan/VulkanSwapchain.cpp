@@ -32,6 +32,35 @@ namespace Echo
 		vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
 	}
 
+	uint32_t VulkanSwapchain::AcquireNextImage()
+	{
+		uint32_t imageIndex = 0;
+
+		VkResult result = vkAcquireNextImageKHR(
+			m_Device->GetDevice(),                  // Logical device
+			m_Swapchain,               // Swapchain handle
+			UINT64_MAX,                // Timeout (use UINT64_MAX for no timeout)
+			m_Device->GetFrame().ImageAvailableSemaphore,           // Semaphore to signal (can be VK_NULL_HANDLE)
+			m_Device->GetFrame().InFlightFence,               // Fence to signal (can be VK_NULL_HANDLE)
+			&imageIndex                // Output: the index of the acquired image
+		);
+
+		if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
+		{
+			return imageIndex;
+		}
+		else if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			RecreateSwapchain();
+		}
+		else
+		{
+			throw std::runtime_error("Failed to acquire swapchain image!");
+		}
+
+		return imageIndex;
+	}
+
 	void VulkanSwapchain::StartRenderPass(uint32_t imageIndex)
 	{
 		VkExtent2D vExtent{};

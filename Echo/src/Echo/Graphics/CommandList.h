@@ -8,9 +8,11 @@ namespace Echo
 	{
 	public:
 		virtual ~CommandBuffer() = default;
+		
+		virtual void AddMesh(Ref<Resource> resource, Vertex vertex) = 0; 
 
-		virtual void Begin(uint32_t imageCount) = 0;
-		virtual void Draw(uint32_t imageCount, Vertex vertex) = 0;
-		virtual void End(uint32_t imageCount) = 0;
+		virtual void Begin() = 0;
+		virtual void Draw() = 0;
+		virtual void End() = 0;
 	};
 }

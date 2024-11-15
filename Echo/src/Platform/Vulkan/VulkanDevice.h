@@ -26,6 +26,13 @@ namespace Echo
 		std::vector<VkPresentModeKHR> PresentModes;
 	};
 
+	struct Frame
+	{
+		VkSemaphore ImageAvailableSemaphore;
+		VkSemaphore RenderFinishedSemaphore;
+		VkFence InFlightFence;
+	};
+
 	class VulkanDevice : public Device 
 	{
 	public:
@@ -36,11 +43,11 @@ namespace Echo
 
 		virtual Swapchain* GetSwapchain() override { return m_Swapchain.get(); }
 		virtual CommandBuffer* GetCommandBuffer() override { return m_CommandBuffer.get(); }
-
-		virtual void AddMesh(Ref<Resource> graphicsPipeline, Vertex vertex);
 	public:
 		VkSurfaceKHR GetSurface() { return m_Surface; }
 		VkDevice GetDevice() { return m_Device; }
+
+		Frame GetFrame() { return m_Frame;  }
 
 		VkFormat ConvertToVulkanFormat(ImageFormat format);
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device = nullptr);
@@ -67,6 +74,8 @@ namespace Echo
 		void CreateSwapchain();
 
 		void CreateCommandPool();
+
+		void CreateFrame();
 	private:
 		const GraphicsDeviceCreateInfo m_DeviceInfo; 
 		void* m_Hwnd;
@@ -94,6 +103,8 @@ namespace Echo
 		VkQueue m_PresentQueue;
 
 		VkCommandPool m_CommandPool;
+
+		Frame m_Frame;
 	};
 
 }

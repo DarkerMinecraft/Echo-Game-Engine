@@ -36,7 +36,9 @@ namespace Echo
 
 		virtual Extent2D GetExtent() = 0; 
 
-		virtual void StartRenderPass(uint32_t imageIndex) = 0;
+		virtual uint32_t AcquireNextImage() = 0;
+
+		virtual void StartRenderPass(uint32_t imageCount) = 0;
 		virtual void SetState() = 0;
 		virtual void EndRenderPass() = 0;
 	};

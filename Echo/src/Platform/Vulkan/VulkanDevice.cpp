@@ -108,10 +108,15 @@ namespace Echo
 		CreateLogicalDevice();
 		CreateSwapchain();
 		CreateCommandPool();
+		CreateFrame();
 	}
 
 	VulkanDevice::~VulkanDevice()
 	{
+		vkDestroySemaphore(m_Device, m_Frame.ImageAvailableSemaphore, nullptr);
+		vkDestroySemaphore(m_Device, m_Frame.RenderFinishedSemaphore, nullptr);
+		vkDestroyFence(m_Device, m_Frame.InFlightFence, nullptr);
+
 		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 		m_Swapchain.reset();
@@ -157,6 +162,27 @@ namespace Echo
 		}
 
 		m_CommandBuffer = CreateScope<VulkanCommandBuffer>(this, m_CommandPool);
+	}
+
+	void VulkanDevice::CreateFrame()
+	{
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		Frame frame{};
+
+		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &frame.ImageAvailableSemaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &frame.RenderFinishedSemaphore) != VK_SUCCESS ||
+			vkCreateFence(m_Device, &fenceInfo, nullptr, &frame.InFlightFence) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create semaphores!");
+		}
+
+		m_Frame = frame;
 	}
 
 	void VulkanDevice::CreateInstance()

@@ -5,6 +5,7 @@
 #include "Echo/Core/Application.h"
 
 #include <fstream>
+#include "VulkanCommandList.h"
 
 namespace Echo 
 {
@@ -38,12 +39,11 @@ namespace Echo
 
 	void VulkanResource::Bind()
 	{
-
-	}
-
-	void VulkanResource::LoadVertex(Vertex vertex)
-	{
-
+		switch (m_CreateInfo.Resource) 
+		{
+			case AssetResource::GraphicsShader:
+				vkCmdBindPipeline(((VulkanCommandBuffer*)m_Device->GetCommandBuffer())->GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+		}
 	}
 
 	void VulkanResource::Unbind()

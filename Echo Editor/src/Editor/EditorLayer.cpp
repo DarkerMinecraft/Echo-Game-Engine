@@ -11,10 +11,13 @@ namespace Echo
 	{
 		m_ActiveScene = CreateRef<Scene>();
 
-		ResourceCreateInfo triangleCreateInfo{};
-		triangleCreateInfo.Resource = AssetResource::GraphicsShader;
-		triangleCreateInfo.VertexShader = "assets/shaders/TriangleShader.vert";
-		triangleCreateInfo.FragmentShader = "assets/shaders/TriangleShader.frag";
+		ResourceCreateInfo triangleCreateInfo
+		{
+			AssetResource::GraphicsShader,
+			"assets/shaders/TriangleShader.vert",
+			"assets/shaders/TriangleShader.frag"
+		};
+		
 
 		m_TriangleResource = Resource::Create(triangleCreateInfo);
 	}

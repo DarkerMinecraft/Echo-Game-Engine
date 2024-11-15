@@ -41,10 +41,13 @@ namespace Echo
 		virtual ~VulkanResource();
 
 		virtual void Bind() override;
-		virtual void LoadVertex(Vertex vertex) override;
 		virtual void Unbind() override;
 
+		virtual AssetResource GetAssetResource() { return m_CreateInfo.Resource;  }
+		 
 		void DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo);
+	public:
+		VkPipeline GetGraphicsPipeline() { return m_GraphicsPipeline; }
 	private:
 		void CreateGraphicsPipeline();
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);

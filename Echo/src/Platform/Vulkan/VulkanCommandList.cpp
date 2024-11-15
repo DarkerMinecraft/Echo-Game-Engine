@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "VulkanCommandList.h"
 
+#include "VulkanResource.h"
+
 namespace Echo 
 {
 
@@ -15,8 +17,29 @@ namespace Echo
 
 	}
 
-	void VulkanCommandBuffer::Begin(uint32_t imageCount)
+	void VulkanCommandBuffer::AddMesh(Ref<Resource> resource, Vertex vertex)
 	{
+		if (resource->GetAssetResource() == AssetResource::GraphicsShader) 
+		{
+			if (m_Meshes.contains(resource)) 
+			{
+				std::vector<Vertex> batch = m_Meshes[resource];
+				batch.emplace_back(vertex);
+			}
+			else 
+			{
+				std::vector<Vertex> batch;
+				batch.emplace_back(vertex);
+
+				m_Meshes[resource] = batch;
+			}
+		}
+	}
+
+	void VulkanCommandBuffer::Begin()
+	{
+		uint32_t imageCount = m_Device->GetSwapchain()->AcquireNextImage();
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0; // Optional
@@ -31,18 +54,25 @@ namespace Echo
 		m_Device->GetSwapchain()->SetState();
 	}
 
-	void VulkanCommandBuffer::Draw(Vertex vertex)
+	void VulkanCommandBuffer::Draw()
 	{
-
+		for (auto& [resource, vertices] : m_Meshes)
+		{
+			resource->Bind();
+			for (Vertex vertex : vertices) 
+			{
+				
+			}
+		}
 	}
 
 	void VulkanCommandBuffer::End()
 	{
 		m_Device->GetSwapchain()->EndRenderPass();
 
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
+		if (vkEndCommandBuffer(m_CommandBuffer) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to record command buffer!");
+			throw std::runtime_error("Failed to record command buffer!");
 		}
 	}
 

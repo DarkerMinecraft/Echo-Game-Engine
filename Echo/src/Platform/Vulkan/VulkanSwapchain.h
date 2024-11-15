@@ -13,8 +13,10 @@ namespace Echo
 
 		virtual Extent2D GetExtent() override { return m_Extent; }
 
-		virtual void StartRenderPass(uint32_t imageIndex) override;
-		virtual void SetState();
+		virtual uint32_t AcquireNextImage() override;
+
+		virtual void StartRenderPass(uint32_t imageCount) override;
+		virtual void SetState() override;
 		virtual void EndRenderPass() override;
 	public:
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
