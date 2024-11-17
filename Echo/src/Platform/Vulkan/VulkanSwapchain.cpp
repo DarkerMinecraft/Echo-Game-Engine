@@ -34,8 +34,13 @@ namespace Echo
 
 	uint32_t VulkanSwapchain::AcquireNextImage()
 	{
-		uint32_t imageIndex = 0;
+		VkFence inFlightFence = m_Device->GetFrame().InFlightFence;
 
+		vkWaitForFences(m_Device->GetDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+
+		vkResetFences(m_Device->GetDevice(), 1, &inFlightFence);
+
+		uint32_t imageIndex = 0;
 		VkResult result = vkAcquireNextImageKHR(
 			m_Device->GetDevice(),                  // Logical device
 			m_Swapchain,               // Swapchain handle
@@ -51,7 +56,7 @@ namespace Echo
 		}
 		else if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			RecreateSwapchain();
+			//RecreateSwapchain();
 		}
 		else
 		{
@@ -223,6 +228,17 @@ namespace Echo
 		renderPassInfo.pAttachments = &colorAttachment;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
+
+		VkSubpassDependency dependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
 
 		if (vkCreateRenderPass(m_Device->GetDevice(), &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS)
 		{

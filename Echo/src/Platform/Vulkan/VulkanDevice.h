@@ -43,10 +43,16 @@ namespace Echo
 
 		virtual Swapchain* GetSwapchain() override { return m_Swapchain.get(); }
 		virtual CommandBuffer* GetCommandBuffer() override { return m_CommandBuffer.get(); }
+
 	public:
 		VkSurfaceKHR GetSurface() { return m_Surface; }
 		VkDevice GetDevice() { return m_Device; }
 
+		VkQueue GetPresentQueue() { return m_PresentQueue; }
+		VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
+
+		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		
 		Frame GetFrame() { return m_Frame;  }
 
 		VkFormat ConvertToVulkanFormat(ImageFormat format);

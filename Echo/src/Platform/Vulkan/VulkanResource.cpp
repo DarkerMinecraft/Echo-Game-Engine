@@ -41,8 +41,7 @@ namespace Echo
 	{
 		switch (m_CreateInfo.Resource) 
 		{
-			case AssetResource::GraphicsShader:
-				vkCmdBindPipeline(((VulkanCommandBuffer*)m_Device->GetCommandBuffer())->GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+			case AssetResource::GraphicsShader: vkCmdBindPipeline(((VulkanCommandBuffer*)m_Device->GetCommandBuffer())->GetBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 		}
 	}
 

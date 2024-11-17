@@ -73,6 +73,7 @@ project "Echo"
 
         links
 		{
+            "%{Library.ShaderC_Release}",
 			"%{Library.SPIRV_Cross_Release}",
 			"%{Library.SPIRV_Cross_GLSL_Release}"
 		}
