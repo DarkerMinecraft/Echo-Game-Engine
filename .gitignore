@@ -14,3 +14,4 @@ Makefile
 *.workspace
 *.mk
 *.project
+Echo Editor/imgui.ini
