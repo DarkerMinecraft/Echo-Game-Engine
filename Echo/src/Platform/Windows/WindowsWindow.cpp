@@ -87,13 +87,7 @@ namespace Echo
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title, nullptr, nullptr);
 
-		GraphicsDeviceCreateInfo createInfo{};
-		createInfo.GraphicsAPI = API::Vulkan;
-		createInfo.EnableValidation = true;
-		createInfo.EnableGPUValidation = true;
-		createInfo.EnableLocking = true;
-
-		m_Device = Device::Create(m_Window, createInfo);
+		m_Device = Device::Create(GraphicsAPI::Vulkan, (void*)m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 

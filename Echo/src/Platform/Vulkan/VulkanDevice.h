@@ -2,115 +2,95 @@
 
 #include "Echo/Graphics/Device.h"
 
-#include "vulkan/vulkan.h"
+#include "Utils/VulkanTypes.h"
 
-#include <optional>
+#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
 
-namespace Echo 
+#include "vk_mem_alloc.h"
+#include "Utils/VulkanDescriptors.h"
+ 
+namespace Echo
 {
-	struct QueueFamilyIndices
-	{
-		std::optional<uint32_t> GraphicsFamily;
-		std::optional<uint32_t> PresentFamily;
 
-		bool IsComplete()
-		{
-			return GraphicsFamily.has_value() && PresentFamily.has_value();
-		}
-	};
-
-	struct SwapChainSupportDetails
-	{
-		VkSurfaceCapabilitiesKHR Capabilities;
-		std::vector<VkSurfaceFormatKHR> Formats;
-		std::vector<VkPresentModeKHR> PresentModes;
-	};
-
-	struct Frame
-	{
-		VkSemaphore ImageAvailableSemaphore;
-		VkSemaphore RenderFinishedSemaphore;
-		VkFence InFlightFence;
-	};
-
-	class VulkanDevice : public Device 
+	class VulkanDevice : public Device
 	{
 	public:
-		VulkanDevice(void* hwnd, const GraphicsDeviceCreateInfo& createInfo);
-		virtual ~VulkanDevice(); 
+		VulkanDevice(void* window);
+		virtual ~VulkanDevice();
 
-		virtual const API GetGraphicsAPI() const override { return API::Vulkan; }
-
+		virtual GraphicsAPI GetGraphicsAPI() override { return GraphicsAPI::Vulkan; }
 		virtual Swapchain* GetSwapchain() override { return m_Swapchain.get(); }
-		virtual CommandBuffer* GetCommandBuffer() override { return m_CommandBuffer.get(); }
+		virtual FrameData& GetCurrentFrame() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 
+		virtual void SetClearColor(const glm::vec4& color) override;
+		virtual void DrawBackground(Ref<Pipeline> pipeline) override;
+
+		virtual void Start() override;
+		virtual void End() override;
 	public:
-		VkSurfaceKHR GetSurface() { return m_Surface; }
+		VkInstance GetInstance() { return m_Instance; }
 		VkDevice GetDevice() { return m_Device; }
+		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
+		VkSurfaceKHR GetSurface() { return m_Surface; }
 
-		VkQueue GetPresentQueue() { return m_PresentQueue; }
 		VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
 
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-		
-		Frame GetFrame() { return m_Frame;  }
+		VkDescriptorSetLayout GetDescriptorSetLayout() { return m_DrawImageDescriptorLayout; }
+		VkDescriptorSet GetDescriptorSet() { return m_DrawImageDescriptors; }
 
-		VkFormat ConvertToVulkanFormat(ImageFormat format);
-		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device = nullptr);
+		VkCommandBuffer GetCurrentCommandBuffer() { return m_CurrentBuffer; }
+
+		VkImage GetCurrentImage() { return m_CurrentImage; }
+		VkExtent2D GetDrawExtent() { return m_DrawExtent; }
+
+		VmaAllocator GetAllocator() { return m_Allocator; }
+
+		AllocatedImage GetAllocatedImage() { return m_AllocatedImage; }
+		AllocatedImage GetImGuiImage() { return m_ImGuiImage; }
+
+		uint32_t GetImageIndex() { return m_ImageIndex; }
+
+		DeletionQueue GetDeletionQueue() { return m_DeletionQueue; }
 	private:
-		void CreateInstance();
-		bool CheckValidationLayerSupport();
-		std::vector<const char*> GetRequiredExtensions();
-
-		void SetupDebugMessenger();
-		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-		VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-		void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-
-		void CreateSurface();
-
-		void PickPhysicalDevice();
-		bool IsDeviceSuitable(VkPhysicalDevice device);
-		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
-
-		void CreateLogicalDevice();
-
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-		void CreateSwapchain();
-
-		void CreateCommandPool();
-
-		void CreateFrame();
+		void InitVulkan();
+		void InitSwapchain();
+		void InitCommands();
+		void InitSyncStructures();
+		void InitDescriptors();
+		void InitImGui();
 	private:
-		const GraphicsDeviceCreateInfo m_DeviceInfo; 
-		void* m_Hwnd;
+		GLFWwindow* m_Window;
 
-		Scope<Swapchain> m_Swapchain;
-		Scope<CommandBuffer> m_CommandBuffer;
-
-		std::map<Ref<Resource>, Vertex> m_Meshes; 
-
-		const std::vector<const char*> m_ValidationLayers = {
-			"VK_LAYER_KHRONOS_validation"
-		};
-
-		const std::vector<const char*> m_DeviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
-		};
+		DescriptorAllocator m_DescriptorAllocator;
+		VkDescriptorSet m_DrawImageDescriptors;
+		VkDescriptorSetLayout m_DrawImageDescriptorLayout;
 
 		VkInstance m_Instance;
 		VkDebugUtilsMessengerEXT m_DebugMessenger;
-		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
+		VkPhysicalDevice m_PhysicalDevice;
 		VkDevice m_Device;
 		VkSurfaceKHR m_Surface;
 
 		VkQueue m_GraphicsQueue;
-		VkQueue m_PresentQueue;
+		uint32_t m_GraphicsQueueFamily;
 
-		VkCommandPool m_CommandPool;
+		VmaAllocator m_Allocator;
 
-		Frame m_Frame;
+		AllocatedImage m_AllocatedImage;
+		AllocatedImage m_ImGuiImage;
+		VkExtent2D m_DrawExtent;
+
+		VkCommandBuffer m_CurrentBuffer;
+		VkImage m_CurrentImage;
+		uint32_t m_ImageIndex;
+
+		VkClearColorValue m_ClearColorValue;
+
+		Scope<Swapchain> m_Swapchain;
+		FrameData m_Frames[FRAME_OVERLAP];
+		int m_FrameNumber = 0;
+
+		DeletionQueue m_DeletionQueue;
 	};
-
 }

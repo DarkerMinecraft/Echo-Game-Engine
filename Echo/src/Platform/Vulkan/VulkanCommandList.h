@@ -3,26 +3,26 @@
 #include "Echo/Graphics/CommandList.h"
 
 #include "VulkanDevice.h"
-#include "VulkanModel.h"
 
-#include <map>
+#include <cstdint>
+
+#include <vulkan/vulkan.h>
 
 namespace Echo 
 {
-	class VulkanVertexBuffer : public VertexBuffer 
+	class VulkanCommandPool : public CommandPool 
 	{
 	public:
-		VulkanVertexBuffer(std::vector<Vertex> vertices);
-		virtual ~VulkanVertexBuffer();
+		VulkanCommandPool(VulkanDevice* device, uint32_t queueFamily, unsigned int frameOverlay);
+		virtual ~VulkanCommandPool();
 
-		virtual void Bind() override;
+		virtual void* GetPool() override { return m_CommandPool; }
 	private:
-		void CreateVertexBuffer(std::vector<Vertex> vertices);
+		void CreateCommandPool(uint32_t queueFamily, unsigned int frameOverlay);
 	private:
 		VulkanDevice* m_Device;
 
-		VkBuffer m_VertexBuffer;
-		VkDeviceMemory m_VertexBufferMemory;
+		VkCommandPool m_CommandPool;
 	};
 
 	class VulkanCommandBuffer : public CommandBuffer 
@@ -31,23 +31,15 @@ namespace Echo
 		VulkanCommandBuffer(VulkanDevice* device, VkCommandPool commandPool);
 		virtual ~VulkanCommandBuffer();
 
-		virtual void AddMesh(Ref<Resource> resource, Ref<Model> model) override;
+		virtual void* GetBuffer() override { return m_CommandBuffer; }
 
 		virtual void Begin() override;
-		virtual void Submit() override;
 		virtual void End() override;
 	public:
-		VkCommandBuffer GetBuffer() { return m_CommandBuffer; }
-	private:
-		void CreateCommandBuffer();
+		void CreateCommandBuffer(VkCommandPool commandPool);
 	private:
 		VulkanDevice* m_Device;
-		VkCommandPool m_CommandPool;
 
 		VkCommandBuffer m_CommandBuffer;
-
-		uint32_t m_ImageCount;
-
-		std::map<Ref<Resource>, std::vector<VulkanModel*>> m_Meshes;
 	};
 }

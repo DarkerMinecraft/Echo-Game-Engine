@@ -37,6 +37,8 @@ project "Echo"
         "%{IncludeDir.VulkanSDK}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.ImGui}",
+        "%{IncludeDir.vkbootstrap}",
+        "%{IncludeDir.VMA}"
     }
 
     libdirs 
@@ -49,6 +51,7 @@ project "Echo"
         "GLFW",
         "ImGui",
         "%{Library.Vulkan}",
+        "vk-bootstrap"
     }
 
     filter "system:windows" 

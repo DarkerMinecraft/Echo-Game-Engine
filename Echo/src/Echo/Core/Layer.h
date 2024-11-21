@@ -23,6 +23,9 @@ namespace Echo
 		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnEvent(Event& e) {}
 
+		virtual void Start() {}
+		virtual void End() {}
+
 		virtual void Destroy() {}
 
 		const std::string& GetName() const { return m_DebugName; }

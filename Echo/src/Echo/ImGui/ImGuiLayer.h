@@ -16,7 +16,7 @@ namespace Echo
 
 		void Begin();
 		void End();
-	private:
-		
+
+		void DrawImGui();
 	};
 }

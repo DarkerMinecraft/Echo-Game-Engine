@@ -2,7 +2,6 @@
 
 #include <Echo/Graphics/Device.h>
 #include <Echo/Core/Application.h>
-#include <Echo/Graphics/Resource.h>
 
 #include <glm/glm.hpp>
 
@@ -18,37 +17,17 @@ namespace Echo
 	{
 		m_ActiveScene = CreateRef<Scene>();
 
-		ResourceCreateInfo triangleCreateInfo
-		{
-			AssetResource::GraphicsShader,
-			"assets/shaders/TriangleShader.vert",
-			"assets/shaders/TriangleShader.frag"
-		};
-
-
-		m_TriangleResource = Resource::Create(triangleCreateInfo);
-
-		const std::vector<Vertex> vertices = {
-			{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-			{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-		};
-
-		m_TriangleModel = Model::CreateModel(vertices);
-
-		m_Device->GetCommandBuffer()->AddMesh(m_TriangleResource, m_TriangleModel);
+		m_GradientPipeline = Pipeline::Create(PipelineType::ComputePipeline, "assets/shaders/Gradient.comp");
 	}
 
 	void EditorLayer::OnDetach()
 	{
-
+		m_GradientPipeline.reset();
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
-	{
-		m_Device->GetCommandBuffer()->Begin();
-		m_Device->GetCommandBuffer()->Submit();
-		m_Device->GetCommandBuffer()->End();
+	{		
+		m_Device->DrawBackground(m_GradientPipeline);
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -56,9 +35,13 @@ namespace Echo
 
 	}
 
-	void EditorLayer::Destroy()
+	void EditorLayer::OnImGuiRender()
 	{
 
+	}
+
+	void EditorLayer::Destroy()
+	{
 	}
 
 }

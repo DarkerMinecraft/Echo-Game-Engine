@@ -2,57 +2,75 @@
 
 #include "Echo/Core/Base.h"
 
-#include "Resource.h"
-#include "CommandList.h"
 #include "Swapchain.h"
+#include "CommandList.h"
+#include "Synchronization.h"
+#include "Pipeline.h"
 
-#include <memory>
-#include <span>
-#include <expected>
+#include <glm/glm.hpp>
+#include <deque>
 
-namespace Echo 
+#include <imgui.h>
+
+namespace Echo
 {
 
-	enum class API
+	struct DeletionQueue
 	{
-		DirectX, Vulkan
+		std::deque<std::function<void()>> Deletors;
+
+		void PushFunction(std::function<void()>&& function)
+		{
+			Deletors.push_back(function);
+		}
+
+		void Flush()
+		{
+			for (auto it = Deletors.rbegin(); it != Deletors.rend(); it++)
+			{
+				(*it)();
+			}
+
+			Deletors.clear();
+		}
 	};
 
-	enum class Result
+	struct FrameData
 	{
-		Sucess,
-		Wait_Timeout,
-		Error_Wait_Failed,
-		Error_Out_Of_Memory,
-		Error_Invalid_Parameters,
-		Error_Device_Lost,
-		Error_No_Resource,
-		Error_Unknown
+		Scope<CommandPool> Pool;
+		Scope<CommandBuffer> Buffer;
+
+		Scope<Semaphore> SwapchainSemaphore, RenderSemaphore;
+		Scope<Fence> RenderFence;
+
+		DeletionQueue DeletionQueue;
 	};
 
-	struct GraphicsDeviceCreateInfo 
+	constexpr unsigned int FRAME_OVERLAP = 2;
+
+	enum class GraphicsAPI 
 	{
-		API GraphicsAPI;
-		bool EnableValidation;
-		bool EnableGPUValidation;
-		bool EnableLocking;
+		Vulkan,
+		DirectX12
 	};
 
 	class Device 
 	{
 	public:
-		Device() = default;
 		virtual ~Device() = default;
-		Device(const Device& other) = delete;
-		Device(Device&& other) = delete;
-		Device& operator=(const Device& other) = delete;
-		Device& operator=(Device&& other) = delete;
 
-		virtual const API GetGraphicsAPI() const = 0;
-
+		virtual GraphicsAPI GetGraphicsAPI() = 0;
 		virtual Swapchain* GetSwapchain() = 0;
-		virtual CommandBuffer* GetCommandBuffer() = 0;
 
-		static Scope<Device> Create(void* hwnd, const GraphicsDeviceCreateInfo& createInfo);
+		virtual FrameData& GetCurrentFrame() = 0;
+		
+		virtual void SetClearColor(const glm::vec4& color) = 0;
+		virtual void DrawBackground(Ref<Pipeline> pipeline) = 0;
+
+		virtual void Start() = 0;
+		virtual void End() = 0;
+
+		static Scope<Device> Create(GraphicsAPI api, void* window);
 	};
+
 }

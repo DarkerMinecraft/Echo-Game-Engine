@@ -8,6 +8,8 @@ IncludeDir["spdlog"] = "%{wks.location}/Echo/vendor/spdlog/include"
 IncludeDir["DirectX"] = "%{wks.location}/Echo/vendor/DirectX/include"
 IncludeDir["entt"] = "%{wks.location}/Echo/vendor/entt/include"
 IncludeDir["ImGui"] = "%{wks.location}/Echo/vendor/imgui"
+IncludeDir["vkbootstrap"] = "%{wks.location}/Echo/vendor/vk-bootstrap/src"
+IncludeDir["VMA"] = "%{wks.location}/Echo/vendor/VulkanMemoryAllocator/include"
 
 LibraryDir = {}
 LibraryDir["VulkanSDK"] = "%{VULKAN_SDK}/Lib"

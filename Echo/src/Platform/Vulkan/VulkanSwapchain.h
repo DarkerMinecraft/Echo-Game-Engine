@@ -1,47 +1,45 @@
 #pragma once
 
 #include "Echo/Graphics/Swapchain.h"
+#include <cstdint>
 #include "VulkanDevice.h"
 
 namespace Echo 
 {
+
 	class VulkanSwapchain : public Swapchain 
 	{
 	public:
-		VulkanSwapchain(VulkanDevice* device, const SwapchainWin32CreateInfo& createInfo);
-		~VulkanSwapchain();
-
-		virtual Extent2D GetExtent() override { return m_Extent; }
+		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height);
+		virtual ~VulkanSwapchain();
 
 		virtual uint32_t AcquireNextImage() override;
 
-		virtual void StartRenderPass(uint32_t imageCount) override;
-		virtual void SetState() override;
-		virtual void EndRenderPass() override;
+		virtual void* GetSwapchainImage(uint32_t imageIndex) override { return m_SwapchainImages[imageIndex]; }
+		virtual void* GetSwapchainImageView(uint32_t imageIndex) override { return m_SwapchainImageViews[imageIndex]; }
+
+		virtual Extent2D GetExtent() override { 
+			Extent2D extent{};
+			extent.Width = m_SwapchainExtent.width;
+			extent.Height = m_SwapchainExtent.height;
+
+			return extent;
+		}
 	public:
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
-		VkRenderPass GetRenderPass() { return m_RenderPass; }
+		VkFormat GetFormat() { return m_SwapchainImageFormat; }
 	private:
-		void CreateSwapchain(const SwapchainWin32CreateInfo& createInfo);
-		void CreateImageViews(); 
-
-		void ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
-		void CreateRenderPass();
-
-		void CreateFramebuffers();
+		void CreateSwapchain(uint32_t width, uint32_t height);
+		void DestroySwapchain(); 
 	private:
-		const SwapchainWin32CreateInfo m_CreateInfo;
 		VulkanDevice* m_Device;
-		Extent2D m_Extent;
 
 		VkSwapchainKHR m_Swapchain;
 		VkFormat m_SwapchainImageFormat;
+
 		std::vector<VkImage> m_SwapchainImages;
 		std::vector<VkImageView> m_SwapchainImageViews;
-		std::vector<VkFramebuffer> m_SwapchainFramebuffers;
-
-		VkRenderPass m_RenderPass;
-
+		VkExtent2D m_SwapchainExtent;
 	};
+
 }
