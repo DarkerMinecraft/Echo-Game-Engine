@@ -6,6 +6,7 @@
 #include "CommandList.h"
 #include "Synchronization.h"
 #include "Pipeline.h"
+#include "Model.h"
 
 #include <glm/glm.hpp>
 #include <deque>
@@ -65,7 +66,13 @@ namespace Echo
 		virtual FrameData& GetCurrentFrame() = 0;
 		
 		virtual void SetClearColor(const glm::vec4& color) = 0;
-		virtual void DrawBackground(Ref<Pipeline> pipeline) = 0;
+		virtual void DrawBackground() = 0;
+
+		virtual size_t GetGPUDrawSize() = 0;
+
+		virtual void AddModel(Ref<Pipeline> pipeline, Ref<Model> model) = 0;
+
+		virtual void DrawGeometry() = 0;
 
 		virtual void Start() = 0;
 		virtual void End() = 0;

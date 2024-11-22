@@ -30,14 +30,14 @@ namespace Echo
 	}
 
 	VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* device, VkCommandPool commandPool)
-		: m_Device(device)
+		: m_Device(device), m_CommandPool(commandPool)
 	{
 		CreateCommandBuffer(commandPool);
 	}
 
 	VulkanCommandBuffer::~VulkanCommandBuffer()
 	{
-
+		vkFreeCommandBuffers(m_Device->GetDevice(), m_CommandPool, 1, &m_CommandBuffer);
 	}
 
 	void VulkanCommandBuffer::Begin()

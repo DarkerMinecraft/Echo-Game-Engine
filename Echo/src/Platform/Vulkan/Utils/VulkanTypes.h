@@ -15,4 +15,22 @@ namespace Echo
 		VkFormat ImageFormat;
 	};
 
+	struct AllocatedBuffer
+	{
+		VkBuffer Buffer;
+		VmaAllocation Allocation;
+		VmaAllocationInfo Info;
+	};
+
+	struct GPUMeshBuffers
+	{
+		AllocatedBuffer IndexBuffer;
+		AllocatedBuffer VertexBuffer;	
+	};
+
+	struct GPUDrawPushConstants
+	{
+		glm::mat4 WorldMatrix;
+	};
+
 }

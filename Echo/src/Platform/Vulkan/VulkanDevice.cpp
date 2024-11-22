@@ -15,6 +15,8 @@
 #include "vk_mem_alloc.h"
 
 #include <backends/imgui_impl_vulkan.h>
+#include <Echo/Graphics/Model.h>
+#include "VulkanPipeline.h"
 
 namespace Echo 
 {
@@ -32,11 +34,15 @@ namespace Echo
 	VulkanDevice::~VulkanDevice()
 	{
 		vkDeviceWaitIdle(m_Device);
+		vkQueueWaitIdle(m_GraphicsQueue);
 
 		for (int i = 0; i < FRAME_OVERLAP; i++) 
 		{
+			m_Frames[i].Buffer.reset();
 			m_Frames[i].Pool.reset();
 			
+			VkFence currentFence = (VkFence)m_Frames[i].RenderFence->GetFence();
+			vkWaitForFences(m_Device, 1, &currentFence, VK_TRUE, UINT64_MAX);
 			m_Frames[i].RenderFence.reset();
 			m_Frames[i].RenderSemaphore.reset();
 			m_Frames[i].SwapchainSemaphore.reset();
@@ -58,10 +64,68 @@ namespace Echo
 		m_ClearColorValue = { {color.r, color.g, color.b, color.a} };
 	}
 
-	void VulkanDevice::DrawBackground(Ref<Pipeline> pipeline)
+	void VulkanDevice::DrawBackground()
 	{
-		pipeline->Bind();
 		vkCmdDispatch(m_CurrentBuffer, std::ceil(m_DrawExtent.width / 16.0), std::ceil(m_DrawExtent.height / 16.0), 1);
+	}
+
+	void VulkanDevice::AddModel(Ref<Pipeline> pipeline, Ref<Model> model)
+	{
+		if (pipeline->GetPipelineType() == PipelineType::ComputePipeline) return;
+		
+		if (m_Meshes.contains(pipeline.get())) 
+		{
+			std::vector<Model*> models = m_Meshes[pipeline.get()];
+			models.push_back(model.get());
+		} else
+		{
+			std::vector<Model*> newBatch; 
+			newBatch.push_back(model.get());
+
+			m_Meshes[pipeline.get()] = newBatch;
+		}
+	}
+
+	void VulkanDevice::DrawGeometry()
+	{
+		VulkanImages::TransitionImage(m_CurrentBuffer, m_AllocatedImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+		VkRenderingAttachmentInfo colorAttachment = VulkanInitializers::AttachmentInfo(m_AllocatedImage.ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+		VkRenderingInfo renderInfo = VulkanInitializers::RenderingInfo(m_DrawExtent, &colorAttachment, nullptr);
+		vkCmdBeginRendering(m_CurrentBuffer, &renderInfo);
+
+		VkViewport viewport = {};
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = m_DrawExtent.width;
+		viewport.height = m_DrawExtent.height;
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+
+		vkCmdSetViewport(m_CurrentBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor = {};
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width = m_DrawExtent.width;
+		scissor.extent.height = m_DrawExtent.height;
+
+		vkCmdSetScissor(m_CurrentBuffer, 0, 1, &scissor);
+
+		for (auto& [pipeline, models] : m_Meshes)
+		{
+			pipeline->Bind();
+			for (auto model : models) 
+			{
+				model->Bind();
+				vkCmdDrawIndexed(m_CurrentBuffer, model->GetIndicesCount(), 1, 0, 0, 0);
+			}
+		}
+
+		vkCmdEndRendering(m_CurrentBuffer);
+
+		VulkanImages::TransitionImage(m_CurrentBuffer, m_AllocatedImage.Image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
 	}
 
 	void VulkanDevice::Start()
@@ -71,9 +135,16 @@ namespace Echo
 
 		GetCurrentFrame().RenderFence->Wait();
 		GetCurrentFrame().DeletionQueue.Flush();
-		GetCurrentFrame().RenderFence->Reset();
 
 		m_ImageIndex = m_Swapchain->AcquireNextImage();
+		if (m_ImageIndex == -1) 
+		{
+			RecreateSwapchain();
+			return;
+		}
+
+		GetCurrentFrame().RenderFence->Reset();
+
 		GetCurrentFrame().Buffer->Begin();
 		m_CurrentBuffer = (VkCommandBuffer) GetCurrentFrame().Buffer->GetBuffer();
 
@@ -121,15 +192,85 @@ namespace Echo
 
 		VkResult presentResult = vkQueuePresentKHR(m_GraphicsQueue, &presentInfo);
 
-		if (presentResult != VK_SUCCESS)
+		if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || Application::Get().GetWindow().WasWindowResized())
 		{
-			throw std::runtime_error("Failed to present swapchain image!");
+			Application::Get().GetWindow().ResetWindowResizedFlag();
+			RecreateSwapchain();
+		}
+		else if (presentResult != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to present swap chain image");
 		}
 
 		m_FrameNumber++;
+		m_Meshes.clear();
 	}
 
+	AllocatedBuffer VulkanDevice::CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+	{
+		VkBufferCreateInfo bufferInfo = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.pNext = nullptr;
+		bufferInfo.size = allocSize;
 
+		bufferInfo.usage = usage;
+
+		VmaAllocationCreateInfo vmaallocInfo = {};
+		vmaallocInfo.usage = memoryUsage;
+		vmaallocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+		AllocatedBuffer newBuffer;
+
+		vmaCreateBuffer(m_Allocator, &bufferInfo, &vmaallocInfo, &newBuffer.Buffer, &newBuffer.Allocation,
+						&newBuffer.Info);
+
+		return newBuffer;
+	}
+
+	void VulkanDevice::DestroyBuffer(const AllocatedBuffer& buffer)
+	{
+		vmaDestroyBuffer(m_Allocator, buffer.Buffer, buffer.Allocation);
+	}
+
+	GPUMeshBuffers VulkanDevice::UploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices)
+	{
+		const size_t vertexBufferSize = vertices.size() * sizeof(Vertex);
+		const size_t indexBufferSize = indices.size() * sizeof(uint32_t);
+
+		GPUMeshBuffers newSurface;
+
+		newSurface.VertexBuffer = CreateBuffer(vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+												VMA_MEMORY_USAGE_GPU_ONLY);
+
+		newSurface.IndexBuffer = CreateBuffer(indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+											   VMA_MEMORY_USAGE_GPU_ONLY);
+
+		AllocatedBuffer staging = CreateBuffer(vertexBufferSize + indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+		void* data = staging.Allocation->GetMappedData();
+
+		memcpy(data, vertices.data(), vertexBufferSize);
+		memcpy((char*)data + vertexBufferSize, indices.data(), indexBufferSize);
+
+		ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			VkBufferCopy vertexCopy{ 0 };
+			vertexCopy.dstOffset = 0;
+			vertexCopy.srcOffset = 0;
+			vertexCopy.size = vertexBufferSize;
+
+			vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.VertexBuffer.Buffer, 1, &vertexCopy);
+
+			VkBufferCopy indexCopy{ 0 };
+			indexCopy.dstOffset = 0;
+			indexCopy.srcOffset = vertexBufferSize;
+			indexCopy.size = indexBufferSize;
+
+			vkCmdCopyBuffer(cmd, staging.Buffer, newSurface.IndexBuffer.Buffer, 1, &indexCopy);
+		});
+
+		DestroyBuffer(staging);
+
+		return newSurface;
+	}
 
 	void VulkanDevice::InitVulkan()
 	{
@@ -161,7 +302,7 @@ namespace Echo
 			.set_minimum_version(1, 3)
 			.set_required_features_13(features)
 			.set_required_features_12(features12)
-			.add_required_extension("VK_KHR_dynamic_rendering")
+			.add_desired_extension("VK_KHR_dynamic_rendering")
 			.set_surface(m_Surface)
 			.select()
 			.value();
@@ -191,6 +332,8 @@ namespace Echo
 
 	void VulkanDevice::InitSwapchain()
 	{
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
 		int width, height;
 		glfwGetFramebufferSize(m_Window, &width, &height);
 
@@ -198,8 +341,8 @@ namespace Echo
 
 		VkExtent3D drawImageExtent =
 		{
-			width,
-			height,
+			mode->width,
+			mode->height,
 			1
 		};
 
@@ -234,6 +377,59 @@ namespace Echo
 		});
 	}
 
+	void VulkanDevice::RecreateSwapchain()
+	{
+		vkDeviceWaitIdle(m_Device);
+		
+		m_DeletionQueue.Flush();
+
+		int width, height;
+		glfwGetFramebufferSize(m_Window, &width, &height);
+
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+		m_Swapchain = CreateScope<VulkanSwapchain>(this, static_cast<uint32_t>(width), static_cast<uint32_t>(height), ((VulkanSwapchain*)m_Swapchain.get()));
+
+		VkExtent3D drawImageExtent =
+		{
+			mode->width,
+			mode->height,
+			1
+		};
+
+		m_AllocatedImage.ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+		m_AllocatedImage.ImageExtent = drawImageExtent;
+
+		VkImageUsageFlags drawImageUsages{};
+		drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
+		drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		VkImageCreateInfo rimg_info = VulkanInitializers::ImageCreateInfo(m_AllocatedImage.ImageFormat, drawImageUsages, drawImageExtent);
+
+		VmaAllocationCreateInfo rimg_allocinfo = {};
+		rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		vmaCreateImage(m_Allocator, &rimg_info, &rimg_allocinfo, &m_AllocatedImage.Image, &m_AllocatedImage.Allocation, nullptr);
+
+		VkImageViewCreateInfo rview_info = VulkanInitializers::ImageViewCreateInfo(m_AllocatedImage.ImageFormat, m_AllocatedImage.Image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+		if (vkCreateImageView(m_Device, &rview_info, nullptr, &m_AllocatedImage.ImageView) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create image view");
+		}
+
+		m_DeletionQueue.PushFunction([=]()
+		{
+			vkDestroyImageView(m_Device, m_AllocatedImage.ImageView, nullptr);
+			vmaDestroyImage(m_Allocator, m_AllocatedImage.Image, m_AllocatedImage.Allocation);
+		});
+
+		InitDescriptors();
+	}
+
 	void VulkanDevice::InitCommands()
 	{
 		for (int i = 0; i < FRAME_OVERLAP; i++) 
@@ -241,6 +437,22 @@ namespace Echo
 			m_Frames[i].Pool = CreateScope<VulkanCommandPool>(this, m_GraphicsQueueFamily, FRAME_OVERLAP);
 			m_Frames[i].Buffer = CreateScope<VulkanCommandBuffer>(this, (VkCommandPool)m_Frames[i].Pool->GetPool());
 		}
+
+		VkCommandPoolCreateInfo commandPoolInfo = {};
+		commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		commandPoolInfo.pNext = nullptr;
+		commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		commandPoolInfo.queueFamilyIndex = m_GraphicsQueueFamily;
+
+		vkCreateCommandPool(m_Device, &commandPoolInfo, nullptr, &m_ImmCommandPool);
+		VkCommandBufferAllocateInfo cmdAllocInfo = VulkanInitializers::CommandBufferAllocateInfo(m_ImmCommandPool, 1);
+
+		vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_ImmCommandBuffer);
+
+		m_DeletionQueue.PushFunction([=]() 
+		{
+			vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
+		});
 	}
 
 	void VulkanDevice::InitSyncStructures()
@@ -252,6 +464,8 @@ namespace Echo
 			m_Frames[i].SwapchainSemaphore = CreateScope<VulkanSemaphore>(this);
 			m_Frames[i].RenderSemaphore = CreateScope<VulkanSemaphore>(this);
 		}
+
+		m_ImmFence = (VkFence) (new VulkanFence(this))->GetFence();
 	}
 
 	void VulkanDevice::InitDescriptors()
@@ -293,6 +507,27 @@ namespace Echo
 
 			vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
 		});
+	}
+
+	void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
+	{
+		vkResetFences(m_Device, 1, &m_ImmFence);
+		vkResetCommandBuffer(m_ImmCommandBuffer, 0);
+
+		VkCommandBuffer cmd = m_ImmCommandBuffer;
+
+		VkCommandBufferBeginInfo cmdBeginInfo = VulkanInitializers::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		vkBeginCommandBuffer(cmd, &cmdBeginInfo);
+
+		function(cmd);
+
+		vkEndCommandBuffer(cmd);
+
+		VkCommandBufferSubmitInfo cmdInfo = VulkanInitializers::CommandBufferSubmitInfo(cmd);
+		VkSubmitInfo2 submitInfo = VulkanInitializers::SubmitInfo(&cmdInfo, nullptr, nullptr);
+
+		vkQueueSubmit2(m_GraphicsQueue, 1, &submitInfo, m_ImmFence);
+		vkWaitForFences(m_Device, 1, &m_ImmFence, true, 9999999999);
 	}
 
 }

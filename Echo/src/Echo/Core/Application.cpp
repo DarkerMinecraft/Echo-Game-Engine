@@ -19,11 +19,6 @@ namespace Echo
 		PushOverlay(m_ImGuiLayer);
 	}
 
-	Application::~Application()
-	{
-
-	}
-
 	void Application::Run()
 	{
 		Device* device = GetWindow().GetDevice();

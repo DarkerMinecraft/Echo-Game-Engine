@@ -1,7 +1,11 @@
 #pragma once
 
 #include "Echo/Core/Base.h"
+
 #include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 namespace Echo 
 {
@@ -13,10 +17,9 @@ namespace Echo
 
 	enum ShaderType 
 	{
-		Vertex, 
-		Fragment, 
-		Compute,
-		Unknown
+		VertexShader, 
+		FragmentShader, 
+		ComputeShader,
 	};
 
 	class Pipeline 
@@ -28,6 +31,8 @@ namespace Echo
 
 		virtual void Bind() = 0;
 
-		static Ref<Pipeline> Create(PipelineType type, const std::string& filePath);
+		virtual void UpdatePushConstants(const void* pushConstants) = 0;
+
+		static Ref<Pipeline> Create(PipelineType type, const std::string& filePath, size_t pushConstantsSize = -1);
 	};
 }

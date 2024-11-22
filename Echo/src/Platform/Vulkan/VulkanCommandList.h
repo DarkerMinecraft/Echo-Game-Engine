@@ -40,6 +40,7 @@ namespace Echo
 	private:
 		VulkanDevice* m_Device;
 
+		VkCommandPool m_CommandPool;
 		VkCommandBuffer m_CommandBuffer;
 	};
 }

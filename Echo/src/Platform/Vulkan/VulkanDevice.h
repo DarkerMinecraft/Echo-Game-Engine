@@ -24,7 +24,13 @@ namespace Echo
 		virtual FrameData& GetCurrentFrame() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
 
 		virtual void SetClearColor(const glm::vec4& color) override;
-		virtual void DrawBackground(Ref<Pipeline> pipeline) override;
+		virtual void DrawBackground() override;
+
+		virtual size_t GetGPUDrawSize() override { return sizeof(GPUDrawPushConstants); }
+
+		virtual void AddModel(Ref<Pipeline> pipeline, Ref<Model> model) override;
+
+		virtual void DrawGeometry() override;
 
 		virtual void Start() override;
 		virtual void End() override;
@@ -38,6 +44,11 @@ namespace Echo
 
 		VkDescriptorSetLayout GetDescriptorSetLayout() { return m_DrawImageDescriptorLayout; }
 		VkDescriptorSet GetDescriptorSet() { return m_DrawImageDescriptors; }
+		
+		AllocatedBuffer CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+		void DestroyBuffer(const AllocatedBuffer& buffer);
+
+		GPUMeshBuffers UploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
 
 		VkCommandBuffer GetCurrentCommandBuffer() { return m_CurrentBuffer; }
 
@@ -47,7 +58,6 @@ namespace Echo
 		VmaAllocator GetAllocator() { return m_Allocator; }
 
 		AllocatedImage GetAllocatedImage() { return m_AllocatedImage; }
-		AllocatedImage GetImGuiImage() { return m_ImGuiImage; }
 
 		uint32_t GetImageIndex() { return m_ImageIndex; }
 
@@ -55,10 +65,12 @@ namespace Echo
 	private:
 		void InitVulkan();
 		void InitSwapchain();
+		void RecreateSwapchain();
 		void InitCommands();
 		void InitSyncStructures();
 		void InitDescriptors();
-		void InitImGui();
+
+		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
 	private:
 		GLFWwindow* m_Window;
 
@@ -78,14 +90,19 @@ namespace Echo
 		VmaAllocator m_Allocator;
 
 		AllocatedImage m_AllocatedImage;
-		AllocatedImage m_ImGuiImage;
 		VkExtent2D m_DrawExtent;
 
 		VkCommandBuffer m_CurrentBuffer;
 		VkImage m_CurrentImage;
 		uint32_t m_ImageIndex;
 
+		std::map<Pipeline*, std::vector<Model*>> m_Meshes;
+
 		VkClearColorValue m_ClearColorValue;
+
+		VkFence m_ImmFence;
+		VkCommandBuffer m_ImmCommandBuffer;
+		VkCommandPool m_ImmCommandPool;
 
 		Scope<Swapchain> m_Swapchain;
 		FrameData m_Frames[FRAME_OVERLAP];

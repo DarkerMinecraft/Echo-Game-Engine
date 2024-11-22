@@ -35,7 +35,7 @@ namespace Echo
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
 		ImGui::StyleColorsDark();
 
@@ -90,7 +90,7 @@ namespace Echo
 		initInfo.PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
 		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 
-		VkFormat format = ((VulkanSwapchain*)device->GetSwapchain())->GetFormat();
+		VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
 
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -100,7 +100,6 @@ namespace Echo
 
 		device->GetDeletionQueue().PushFunction([=]()
 		{
-			ImGui_ImplVulkan_Shutdown();
 			vkDestroyDescriptorPool(device->GetDevice(), imguiPool, nullptr);
 		});
 
@@ -115,8 +114,6 @@ namespace Echo
 
 	void ImGuiLayer::OnImGuiRender()
 	{
-		static bool show = true;
-		ImGui::ShowDemoWindow(&show);
 	}
 
 	void ImGuiLayer::Begin()

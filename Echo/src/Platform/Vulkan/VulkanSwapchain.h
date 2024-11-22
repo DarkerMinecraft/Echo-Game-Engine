@@ -11,6 +11,7 @@ namespace Echo
 	{
 	public:
 		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height);
+		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height, VulkanSwapchain* oldSwapchain);
 		virtual ~VulkanSwapchain();
 
 		virtual uint32_t AcquireNextImage() override;
@@ -30,6 +31,7 @@ namespace Echo
 		VkFormat GetFormat() { return m_SwapchainImageFormat; }
 	private:
 		void CreateSwapchain(uint32_t width, uint32_t height);
+		void CreateSwapchain(uint32_t width, uint32_t height, VkSwapchainKHR& oldSwapchain);
 		void DestroySwapchain(); 
 	private:
 		VulkanDevice* m_Device;

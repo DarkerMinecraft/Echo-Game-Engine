@@ -7,6 +7,24 @@
 
 namespace Echo
 {
+
+	struct PushConstantsData
+	{
+		glm::vec4 Data1;
+		glm::vec4 Data2;
+		glm::vec4 Data3;
+		glm::vec4 Data4;
+	};
+
+	struct ComputeEffect
+	{
+		const char* Name;
+
+		Ref<Pipeline> ComputePipeline;
+
+		PushConstantsData Data;
+	};
+
 	class EditorLayer : public Layer
 	{
 	public:
@@ -24,11 +42,17 @@ namespace Echo
 
 		virtual void Destroy() override;
 	private:
+		void SetBackgroundEffects();
+	private:
 		Device* m_Device;
 
 		Ref<Scene> m_ActiveScene;
 
-		Ref<Pipeline> m_GradientPipeline;
+		Ref<Pipeline> m_ColoredPipeline;
+		Ref<Model> m_Rectangle;
+
+		std::vector<ComputeEffect> m_BackgroundEffects;
+		int m_CurrentBackgroundEffect{ 0 };
 	};
 }
 

@@ -4,6 +4,29 @@
 namespace Echo 
 {
 
+	VkCommandBufferAllocateInfo VulkanInitializers::CommandBufferAllocateInfo(VkCommandPool pool, uint32_t count)
+	{
+		VkCommandBufferAllocateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		info.pNext = nullptr;
+
+		info.commandPool = pool;
+		info.commandBufferCount = count;
+		info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		return info;
+	}
+
+	VkCommandBufferBeginInfo VulkanInitializers::CommandBufferBeginInfo(VkCommandBufferUsageFlags flags /*= 0*/)
+	{
+		VkCommandBufferBeginInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		info.pNext = nullptr;
+
+		info.pInheritanceInfo = nullptr;
+		info.flags = flags;
+		return info;
+	}
+
 	VkImageSubresourceRange VulkanInitializers::ImageSubresourceRange(VkImageAspectFlags aspectMask)
 	{
 		VkImageSubresourceRange subImage{};
@@ -130,6 +153,19 @@ namespace Echo
 		renderInfo.pStencilAttachment = nullptr;
 
 		return renderInfo;
+	}
+
+	VkPipelineShaderStageCreateInfo VulkanInitializers::PipelineShaderStageCreateInfo(VkShaderStageFlagBits flags, VkShaderModule module)
+	{
+		VkPipelineShaderStageCreateInfo stageInfo{};
+
+		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageInfo.pNext = nullptr;
+		stageInfo.stage = flags;
+		stageInfo.module = module;
+		stageInfo.pName = "main";
+
+		return stageInfo;
 	}
 
 }

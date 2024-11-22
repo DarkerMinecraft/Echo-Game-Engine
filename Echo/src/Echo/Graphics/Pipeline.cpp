@@ -9,12 +9,12 @@
 namespace Echo 
 {
 
-	Ref<Pipeline> Pipeline::Create(PipelineType type, const std::string& filePath)
+	Ref<Pipeline> Pipeline::Create(PipelineType type, const std::string& filePath, size_t pushConstantsSize)
 	{
 		GraphicsAPI api = Application::Get().GetWindow().GetDevice()->GetGraphicsAPI();
 		switch (api) 
 		{
-			case GraphicsAPI::Vulkan: return CreateRef<VulkanPipeline>(type, filePath);
+			case GraphicsAPI::Vulkan: return CreateRef<VulkanPipeline>(type, filePath, pushConstantsSize);
 			case GraphicsAPI::DirectX12: return nullptr;
 			default: return nullptr;
 		}
