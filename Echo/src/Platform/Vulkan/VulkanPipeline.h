@@ -51,13 +51,16 @@ namespace Echo
 	class VulkanPipeline : public Pipeline 
 	{
 	public:
-		VulkanPipeline(PipelineType type, const std::string& filePath, size_t pushConstantsSize = -1);
+		VulkanPipeline(PipelineType type, const std::string& filePath, size_t pushConstantsSize = -1, std::vector<DescriptorType> types = {});
 		virtual ~VulkanPipeline();
 
 		virtual PipelineType GetPipelineType() override { return m_Type; }
 
 		virtual void Bind() override;
 		virtual void UpdatePushConstants(const void* pushConstants) override;
+		
+		virtual void* GetPipelineLayout() override { return m_PipelineLayout; }
+		virtual void* GetDescriptorLayout() override { return m_DescriptorLayout; }
 	private:
 		std::string ReadFile(const std::string& filePath); 
 		std::unordered_map<ShaderType, std::vector<char>> PreProcess(const std::string& source);
@@ -70,7 +73,7 @@ namespace Echo
 
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-		void InitPipeline(size_t pushConstantsSize);
+		void InitPipeline(size_t pushConstantsSize, std::vector<DescriptorType> types);
 		void InitBackgroundPipeline();
 	private:
 		VulkanDevice* m_Device;
@@ -82,6 +85,9 @@ namespace Echo
 
 		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;
+
+		VkDescriptorSetLayout m_DescriptorLayout;
+		VkDescriptorSet m_Descriptor;
 
 		GPUMeshBuffers m_MeshBuffers;
 

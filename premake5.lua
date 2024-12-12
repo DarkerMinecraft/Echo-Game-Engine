@@ -3,7 +3,7 @@ architecture "x64"
 systemversion "latest"
 configurations { "Debug", "Release", "Dist" }
 
-startproject "Echo Editor"
+startproject "Minecraft Clone"
 
 include "Dependencies.lua"
 
@@ -17,3 +17,4 @@ group ""
 
 include "Echo"
 include "Echo Editor"
+include "Minecraft Clone"

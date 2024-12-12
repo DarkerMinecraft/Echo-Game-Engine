@@ -7,6 +7,7 @@
 #include "Synchronization.h"
 #include "Pipeline.h"
 #include "Model.h"
+#include "Descriptors.h"
 
 #include <glm/glm.hpp>
 #include <deque>
@@ -43,6 +44,8 @@ namespace Echo
 
 		Scope<Semaphore> SwapchainSemaphore, RenderSemaphore;
 		Scope<Fence> RenderFence;
+		
+		Scope<DescriptorAllocatorGrowable> FrameDescriptors;
 
 		DeletionQueue DeletionQueue;
 	};
@@ -76,6 +79,7 @@ namespace Echo
 
 		virtual void Start() = 0;
 		virtual void End() = 0;
+		virtual void Wait() = 0;
 
 		static Scope<Device> Create(GraphicsAPI api, void* window);
 	};

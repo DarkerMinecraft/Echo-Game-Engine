@@ -34,6 +34,7 @@ namespace Echo
 
 		virtual void Start() override;
 		virtual void End() override;
+		virtual void Wait() override;
 	public:
 		VkInstance GetInstance() { return m_Instance; }
 		VkDevice GetDevice() { return m_Device; }
@@ -58,10 +59,14 @@ namespace Echo
 		VmaAllocator GetAllocator() { return m_Allocator; }
 
 		AllocatedImage GetAllocatedImage() { return m_AllocatedImage; }
+		AllocatedImage GetCheckerboardImage() { return m_ErrorCheckerboardImage; }
+
+		VkSampler GetDefaultSamplerNearest() { return m_DefaultSamplerNearest; }
 
 		uint32_t GetImageIndex() { return m_ImageIndex; }
 
-		DeletionQueue GetDeletionQueue() { return m_DeletionQueue; }
+		AllocatedImage CreateImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+		void DestroyImage(const AllocatedImage& img);
 	private:
 		void InitVulkan();
 		void InitSwapchain();
@@ -69,9 +74,12 @@ namespace Echo
 		void InitCommands();
 		void InitSyncStructures();
 		void InitDescriptors();
+		void InitDefaultData();
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
-	private:
+
+		AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+	private:	
 		GLFWwindow* m_Window;
 
 		DescriptorAllocator m_DescriptorAllocator;
@@ -108,6 +116,12 @@ namespace Echo
 		FrameData m_Frames[FRAME_OVERLAP];
 		int m_FrameNumber = 0;
 
-		DeletionQueue m_DeletionQueue;
+		AllocatedImage m_WhiteImage;
+		AllocatedImage m_BlackImage;
+		AllocatedImage m_GreyImage;
+		AllocatedImage m_ErrorCheckerboardImage;
+
+		VkSampler m_DefaultSamplerLinear;
+		VkSampler m_DefaultSamplerNearest;
 	};
 }

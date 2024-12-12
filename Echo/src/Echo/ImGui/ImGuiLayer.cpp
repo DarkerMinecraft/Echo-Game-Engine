@@ -24,7 +24,7 @@ namespace Echo
 
 	ImGuiLayer::~ImGuiLayer()
 	{
-
+		
 	}
 
 	void ImGuiLayer::OnAttach()
@@ -97,12 +97,6 @@ namespace Echo
 
 		ImGui_ImplVulkan_Init(&initInfo);
 		ImGui_ImplVulkan_CreateFontsTexture();
-
-		device->GetDeletionQueue().PushFunction([=]()
-		{
-			vkDestroyDescriptorPool(device->GetDevice(), imguiPool, nullptr);
-		});
-
 	}
 
 	void ImGuiLayer::OnDetach()

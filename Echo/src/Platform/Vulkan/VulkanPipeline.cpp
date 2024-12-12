@@ -5,6 +5,7 @@
 
 #include "Echo/Core/Application.h"
 
+#include "Utils/VulkanDescriptors.h"
 #include "Utils/VulkanInitializers.h"
 
 #include <fstream>
@@ -35,10 +36,10 @@ namespace Echo
 			return ShaderType::ComputeShader;
 	}
 
-	VulkanPipeline::VulkanPipeline(PipelineType type, const std::string& filePath, size_t pushConstantsSize)
+	VulkanPipeline::VulkanPipeline(PipelineType type, const std::string& filePath, size_t pushConstantsSize, std::vector<DescriptorType> types)
 		: m_Device((VulkanDevice*) Application::Get().GetWindow().GetDevice()), m_Type(type), m_PushConstantSize(pushConstantsSize)
 	{
-		InitPipeline(pushConstantsSize);
+		InitPipeline(pushConstantsSize, types);
 
 		std::string shaderSource = ReadFile(filePath);
 		auto shaderSources = PreProcess(shaderSource);
@@ -81,11 +82,6 @@ namespace Echo
 			case PipelineType::GraphicsPipeline: 
 			{
 				vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-
-				GPUDrawPushConstants push_constants;
-				push_constants.WorldMatrix = glm::mat4{ 1.f };
-				
-				vkCmdPushConstants(cmd, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(GPUDrawPushConstants), &push_constants);
 				break;
 			}
 		}
@@ -96,14 +92,28 @@ namespace Echo
 		if (!pushConstants) return; 
 		if (m_PushConstantSize == -1) return;
 
-		vkCmdPushConstants(
-			m_Device->GetCurrentCommandBuffer(),
-			m_PipelineLayout,      
-			VK_SHADER_STAGE_COMPUTE_BIT,
-			0,                         
-			static_cast<uint32_t>(this->m_PushConstantSize),
-			pushConstants                        
-		);
+		if (m_Type == PipelineType::ComputePipeline)
+		{
+			vkCmdPushConstants(
+				m_Device->GetCurrentCommandBuffer(),
+				m_PipelineLayout,
+				VK_SHADER_STAGE_COMPUTE_BIT,
+				0,
+				static_cast<uint32_t>(this->m_PushConstantSize),
+				pushConstants
+			);
+		}
+		else 
+		{
+			vkCmdPushConstants(
+				m_Device->GetCurrentCommandBuffer(),
+				m_PipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT,
+				0,
+				static_cast<uint32_t>(this->m_PushConstantSize),
+				pushConstants
+			);
+		}
 	}
 
 	std::string VulkanPipeline::ReadFile(const std::string& filePath)
@@ -264,7 +274,7 @@ namespace Echo
 		return shaderModule;
 	}
 
-	void VulkanPipeline::InitPipeline(size_t pushConstantsSize)
+	void VulkanPipeline::InitPipeline(size_t pushConstantsSize, std::vector<DescriptorType> types)
 	{
 		if (m_Type == PipelineType::ComputePipeline)
 		{
@@ -301,11 +311,26 @@ namespace Echo
 			{
 				VkPushConstantRange bufferRange{};
 				bufferRange.offset = 0;
-				bufferRange.size = sizeof(GPUDrawPushConstants);
+				bufferRange.size = pushConstantsSize;
 				bufferRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 				graphicsLayout.pPushConstantRanges = &bufferRange;
 				graphicsLayout.pushConstantRangeCount = 1;
+			}
+
+			if (!types.empty()) 
+			{
+				DescriptorLayoutBuilder builder;
+
+				for (int i = 0; i < types.size(); i++)
+				{
+					builder.AddBinding(i, ToVulkanDescriptorType(types[i]));
+				}
+
+				m_DescriptorLayout = builder.Build(m_Device->GetDevice(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+
+				graphicsLayout.pSetLayouts = &m_DescriptorLayout;
+				graphicsLayout.setLayoutCount = 1;
 			}
 
 			if (vkCreatePipelineLayout(m_Device->GetDevice(), &graphicsLayout, nullptr, &m_PipelineLayout) != VK_SUCCESS)
@@ -342,8 +367,8 @@ namespace Echo
 			config.SetPolygonMode(VK_POLYGON_MODE_FILL);
 			config.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
 			config.SetMutisamplingNone();
-			config.DisableBlending();
-			config.DisableDepthTest();
+			//config.DisableBlending();
+			//config.DisableDepthTest();
 			
 			config.SetColorAttachmentFormat(m_Device->GetAllocatedImage().ImageFormat);
 			config.SetDepthFormat(VK_FORMAT_UNDEFINED);

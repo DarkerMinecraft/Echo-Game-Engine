@@ -113,6 +113,7 @@ namespace Echo
 
 	void WindowsWindow::Shutdown()
 	{
+		m_Device.reset();
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 	}

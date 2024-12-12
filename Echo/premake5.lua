@@ -24,7 +24,8 @@ project "Echo"
     defines
 	{
 		"_CRT_SECURE_NO_WARNINGS",
-        "GLM_FORCE_CTOR_INIT"
+        "GLM_FORCE_CTOR_INIT",
+        "GLM_FORCE_DEPTH_ZERO_TO_ONE"
 	}
 
     includedirs
@@ -38,7 +39,9 @@ project "Echo"
         "%{IncludeDir.entt}",
         "%{IncludeDir.ImGui}",
         "%{IncludeDir.vkbootstrap}",
-        "%{IncludeDir.VMA}"
+        "%{IncludeDir.VMA}",
+        "%{IncludeDir.tinyobjloader}",
+        "%{IncludeDir.stb}"
     }
 
     libdirs 

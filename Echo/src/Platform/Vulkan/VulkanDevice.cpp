@@ -29,6 +29,7 @@ namespace Echo
 		InitCommands();
 		InitSyncStructures();
 		InitDescriptors();
+		InitDefaultData();
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -48,7 +49,22 @@ namespace Echo
 			m_Frames[i].SwapchainSemaphore.reset();
 		}
 
-		m_DeletionQueue.Flush();
+		vkDestroyImageView(m_Device, m_AllocatedImage.ImageView, nullptr);
+		vmaDestroyImage(m_Allocator, m_AllocatedImage.Image, m_AllocatedImage.Allocation);
+
+		vkDestroySampler(m_Device, m_DefaultSamplerNearest, nullptr);
+		vkDestroySampler(m_Device, m_DefaultSamplerLinear, nullptr);
+
+		DestroyImage(m_WhiteImage);
+		DestroyImage(m_GreyImage);
+		DestroyImage(m_BlackImage);
+		DestroyImage(m_ErrorCheckerboardImage);
+
+		vmaDestroyAllocator(m_Allocator);
+
+		m_DescriptorAllocator.DestroyPool(m_Device);
+		vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
+		vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
 
 		m_Swapchain.reset();
 		
@@ -118,7 +134,7 @@ namespace Echo
 			pipeline->Bind();
 			for (auto model : models) 
 			{
-				model->Bind();
+				model->Bind(pipeline);
 				vkCmdDrawIndexed(m_CurrentBuffer, model->GetIndicesCount(), 1, 0, 0, 0);
 			}
 		}
@@ -135,6 +151,7 @@ namespace Echo
 
 		GetCurrentFrame().RenderFence->Wait();
 		GetCurrentFrame().DeletionQueue.Flush();
+		GetCurrentFrame().FrameDescriptors->ClearPools();
 
 		m_ImageIndex = m_Swapchain->AcquireNextImage();
 		if (m_ImageIndex == -1) 
@@ -147,7 +164,6 @@ namespace Echo
 
 		GetCurrentFrame().Buffer->Begin();
 		m_CurrentBuffer = (VkCommandBuffer) GetCurrentFrame().Buffer->GetBuffer();
-
 		m_CurrentImage = (VkImage) m_Swapchain->GetSwapchainImage(m_ImageIndex);
 
 		VulkanImages::TransitionImage(m_CurrentBuffer, m_AllocatedImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -204,6 +220,16 @@ namespace Echo
 
 		m_FrameNumber++;
 		m_Meshes.clear();
+	}
+
+	void VulkanDevice::Wait()
+	{
+		for (int i = 0; i < FRAME_OVERLAP; i++) 
+		{
+			m_Frames[i].RenderFence->Wait();
+		}
+
+		vkDeviceWaitIdle(m_Device);
 	}
 
 	AllocatedBuffer VulkanDevice::CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
@@ -272,6 +298,86 @@ namespace Echo
 		return newSurface;
 	}
 
+	AllocatedImage VulkanDevice::CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped /*= false*/)
+	{
+		AllocatedImage newImage;
+		newImage.ImageFormat = format;
+		newImage.ImageExtent = size;
+
+		VkImageCreateInfo img_info = VulkanInitializers::ImageCreateInfo(format, usage, size);
+		if (mipmapped)
+		{
+			img_info.mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(size.width, size.height)))) + 1;
+		}
+
+		VmaAllocationCreateInfo allocinfo = {};
+		allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		if (vmaCreateImage(m_Allocator, &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, nullptr) != VK_SUCCESS) 
+		{
+			return m_ErrorCheckerboardImage;
+		}
+
+		VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+		if (format == VK_FORMAT_D32_SFLOAT)
+		{
+			aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+		}
+
+		VkImageViewCreateInfo view_info = VulkanInitializers::ImageViewCreateInfo(format, newImage.Image, aspectFlag);
+		view_info.subresourceRange.levelCount = img_info.mipLevels;
+
+		if (vkCreateImageView(m_Device, &view_info, nullptr, &newImage.ImageView) != VK_SUCCESS) 
+		{
+			return m_ErrorCheckerboardImage;
+		}
+
+		return newImage;
+	}
+
+	AllocatedImage VulkanDevice::CreateImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped /*= false*/)
+	{
+		size_t data_size = size.depth * size.width * size.height * 4;
+		AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		memcpy(uploadbuffer.Info.pMappedData, data, data_size);
+
+		AllocatedImage new_image = CreateImage(size, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, mipmapped);
+
+		ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			VulkanImages::TransitionImage(cmd, new_image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			VkBufferImageCopy copyRegion = {};
+			copyRegion.bufferOffset = 0;
+			copyRegion.bufferRowLength = 0;
+			copyRegion.bufferImageHeight = 0;
+
+			copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			copyRegion.imageSubresource.mipLevel = 0;
+			copyRegion.imageSubresource.baseArrayLayer = 0;
+			copyRegion.imageSubresource.layerCount = 1;
+			copyRegion.imageExtent = size;
+
+			vkCmdCopyBufferToImage(cmd, uploadbuffer.Buffer, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+								   &copyRegion);
+
+			VulkanImages::TransitionImage(cmd, new_image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+									 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		});
+
+		DestroyBuffer(uploadbuffer);
+
+		return new_image;
+	}
+
+	void VulkanDevice::DestroyImage(const AllocatedImage& img)
+	{
+		vkDestroyImageView(m_Device, img.ImageView, nullptr);
+		vmaDestroyImage(m_Allocator, img.Image, img.Allocation);
+	}
+
 	void VulkanDevice::InitVulkan()
 	{
 		vkb::InstanceBuilder builder;
@@ -323,11 +429,6 @@ namespace Echo
 		allocatorInfo.instance = m_Instance;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
-
-		m_DeletionQueue.PushFunction([&]()
-		{
-			vmaDestroyAllocator(m_Allocator);
-		});
 	}
 
 	void VulkanDevice::InitSwapchain()
@@ -369,19 +470,14 @@ namespace Echo
 		{
 			throw std::runtime_error("Failed to create image view");
 		}
-
-		m_DeletionQueue.PushFunction([=]()
-		{
-			vkDestroyImageView(m_Device, m_AllocatedImage.ImageView, nullptr);
-			vmaDestroyImage(m_Allocator, m_AllocatedImage.Image, m_AllocatedImage.Allocation);
-		});
 	}
 
 	void VulkanDevice::RecreateSwapchain()
 	{
 		vkDeviceWaitIdle(m_Device);
 		
-		m_DeletionQueue.Flush();
+		vkDestroyImageView(m_Device, m_AllocatedImage.ImageView, nullptr);
+		vmaDestroyImage(m_Allocator, m_AllocatedImage.Image, m_AllocatedImage.Allocation);
 
 		int width, height;
 		glfwGetFramebufferSize(m_Window, &width, &height);
@@ -421,12 +517,6 @@ namespace Echo
 			throw std::runtime_error("Failed to create image view");
 		}
 
-		m_DeletionQueue.PushFunction([=]()
-		{
-			vkDestroyImageView(m_Device, m_AllocatedImage.ImageView, nullptr);
-			vmaDestroyImage(m_Allocator, m_AllocatedImage.Image, m_AllocatedImage.Allocation);
-		});
-
 		InitDescriptors();
 	}
 
@@ -448,11 +538,6 @@ namespace Echo
 		VkCommandBufferAllocateInfo cmdAllocInfo = VulkanInitializers::CommandBufferAllocateInfo(m_ImmCommandPool, 1);
 
 		vkAllocateCommandBuffers(m_Device, &cmdAllocInfo, &m_ImmCommandBuffer);
-
-		m_DeletionQueue.PushFunction([=]() 
-		{
-			vkDestroyCommandPool(m_Device, m_ImmCommandPool, nullptr);
-		});
 	}
 
 	void VulkanDevice::InitSyncStructures()
@@ -485,28 +570,61 @@ namespace Echo
 
 		m_DrawImageDescriptors = m_DescriptorAllocator.Allocate(m_Device, m_DrawImageDescriptorLayout);
 
-		VkDescriptorImageInfo imgInfo{};
-		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imgInfo.imageView = m_AllocatedImage.ImageView;
+		DescriptorWriter writer;
+		writer.WriteImage(0, m_AllocatedImage.ImageView, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-		VkWriteDescriptorSet drawImageWrite = {};
-		drawImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		drawImageWrite.pNext = nullptr;
+		writer.UpdateSet(m_Device, m_DrawImageDescriptors);
 
-		drawImageWrite.dstBinding = 0;
-		drawImageWrite.dstSet = m_DrawImageDescriptors;
-		drawImageWrite.descriptorCount = 1;
-		drawImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		drawImageWrite.pImageInfo = &imgInfo;
-
-		vkUpdateDescriptorSets(m_Device, 1, &drawImageWrite, 0, nullptr);
-
-		m_DeletionQueue.PushFunction([&]()
+		for (int i = 0; i < FRAME_OVERLAP; i++) 
 		{
-			m_DescriptorAllocator.DestroyPool(m_Device);
+			std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+				{ DescriptorType::StorageImage, 3 },
+				{ DescriptorType::StorageBuffer, 3 },
+				{ DescriptorType::UniformBuffer, 3 },
+				{ DescriptorType::CombinedImageSampler, 4 },
+			};
 
-			vkDestroyDescriptorSetLayout(m_Device, m_DrawImageDescriptorLayout, nullptr);
-		});
+			m_Frames[i].FrameDescriptors = CreateScope<VulkanDescriptorAllocatorGrowable>(this);
+			m_Frames[i].FrameDescriptors->Init(1000, frame_sizes);
+		}
+	}
+
+	void VulkanDevice::InitDefaultData()
+	{
+		uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+		m_WhiteImage = CreateImage((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+								   VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
+		m_GreyImage = CreateImage((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+								  VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+		m_BlackImage = CreateImage((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+								   VK_IMAGE_USAGE_SAMPLED_BIT);
+
+							  
+		uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+		std::array<uint32_t, 16 * 16 > pixels; 
+		for (int x = 0; x < 16; x++)
+		{
+			for (int y = 0; y < 16; y++)
+			{
+				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+			}
+		}
+		m_ErrorCheckerboardImage = CreateImage(pixels.data(), VkExtent3D{ 16, 16, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+											   VK_IMAGE_USAGE_SAMPLED_BIT);
+		VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+
+		sampl.magFilter = VK_FILTER_NEAREST;
+		sampl.minFilter = VK_FILTER_NEAREST;
+
+		vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerNearest);
+
+		sampl.magFilter = VK_FILTER_LINEAR;
+		sampl.minFilter = VK_FILTER_LINEAR;
+		vkCreateSampler(m_Device, &sampl, nullptr, &m_DefaultSamplerLinear);
 	}
 
 	void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)

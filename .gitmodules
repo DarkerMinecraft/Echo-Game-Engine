@@ -20,3 +20,9 @@
 [submodule "Echo/vendor/VulkanMemoryAllocator"]
 	path = Echo/vendor/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "Echo/vendor/tinyobjloader"]
+	path = Echo/vendor/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "Echo/vendor/stb"]
+	path = Echo/vendor/stb
+	url = https://github.com/nothings/stb.git

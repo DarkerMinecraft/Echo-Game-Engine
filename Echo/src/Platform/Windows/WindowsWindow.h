@@ -20,6 +20,7 @@ namespace Echo
 
 		virtual unsigned int GetWidth() const override;
 		virtual unsigned int GetHeight() const override;
+		virtual float GetAspectRatio() override { return (float)m_Data.Width / (float)m_Data.Height; }
 
 		virtual bool WasWindowResized() override { return m_Data.FrameBufferResized; };
 		virtual void ResetWindowResizedFlag() override { m_Data.FrameBufferResized = false; };

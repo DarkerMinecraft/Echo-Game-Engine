@@ -8,7 +8,8 @@ namespace Echo
 	class Editor : public Application 
 	{
 	public: 
-		Editor()
+		Editor(unsigned int width, unsigned int height, const char* title)
+			: Application(width, height, title)
 		{
 			PushLayer(new EditorLayer());
 		}
@@ -20,7 +21,11 @@ namespace Echo
 
 	Application* CreateApplication()
 	{
-		return new Editor();
+		return new Editor(
+			1280,
+			720,
+			"Echo Editor"
+		);
 	}
 
 }

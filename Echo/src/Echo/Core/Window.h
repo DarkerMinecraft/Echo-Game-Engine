@@ -8,28 +8,16 @@
 namespace Echo 
 {
 
-#ifdef ECHO_PLATFORM_WIN
-	struct WindowProps 
+	struct WindowProps
 	{
 		const char* Title;
 		unsigned int Width;
 		unsigned int Height;
 
 		WindowProps(const char* title = "Echo Engine", unsigned int width = 1280, unsigned int height = 720)
-			: Title(title), Width(width), Height(height) {}
-	};
-#else 
-	struct WindowProps
-	{
-		const std::string& Title;
-		unsigned int Width;
-		unsigned int Height;
-
-		WindowProps(const std::string title = "Echo Engine", unsigned int width = 1280, unsigned int height = 720)
 			: Title(title), Width(width), Height(height)
 		{}
 	};
-#endif
 
 	class Window 
 	{
@@ -43,6 +31,8 @@ namespace Echo
 
 		virtual unsigned int GetWidth() const = 0;
 		virtual unsigned int GetHeight() const = 0;
+
+		virtual float GetAspectRatio() = 0;
 
 		virtual bool WasWindowResized() = 0;
 		virtual void ResetWindowResizedFlag() = 0;

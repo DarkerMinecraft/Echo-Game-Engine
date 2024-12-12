@@ -7,12 +7,17 @@ namespace Echo
 {
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application()
+	Application::Application(unsigned int width, unsigned int height, const char* title)
 	{
 		EC_CORE_ASSERT(!s_Instance, "Application already exists!")
 		s_Instance = this;
 
-		m_Window = Window::Create();
+		WindowProps props{};
+		props.Width = width;
+		props.Height = height;
+		props.Title = title;
+
+		m_Window = Window::Create(props);
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
 		m_ImGuiLayer = new ImGuiLayer();
@@ -78,6 +83,9 @@ namespace Echo
 
 	void Application::Close()
 	{
+		Device* device = GetWindow().GetDevice();
+		device->Wait();
+
 		for (auto& layer : m_LayerStack) 
 		{
 			layer->Destroy();
@@ -92,8 +100,6 @@ namespace Echo
 
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
-		EC_CORE_INFO(e);
-
 		if(e.GetWidth() == 0 || e.GetHeight() == 0)
 		{
 			m_Minimized = true;
