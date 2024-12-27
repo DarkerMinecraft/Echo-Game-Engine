@@ -1,9 +1,11 @@
 #pragma once
 
-
 namespace Echo 
 {
 
-	class Texture {};
+	class Buffer 
+	{
 
+	};
+	
 }

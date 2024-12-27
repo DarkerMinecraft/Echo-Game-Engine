@@ -1,20 +1,15 @@
 #pragma once
 
-#include "Echo/Graphics/Descriptors.h"
-
 #include <vulkan/vulkan.h>
 
 #include <vector>
 #include <span>
 #include <deque>
 
-
 namespace Echo 
 {
 	
-	class VulkanDevice;
-
-	static VkDescriptorType ToVulkanDescriptorType(DescriptorType type)
+	/*static VkDescriptorType ToVulkanDescriptorType(DescriptorType type)
 	{
 		switch (type)
 		{
@@ -39,7 +34,7 @@ namespace Echo
 			default:
 				throw std::runtime_error("Unsupported DescriptorType");
 		}
-	}
+	} */
 
 	struct DescriptorLayoutBuilder
 	{
@@ -68,7 +63,7 @@ namespace Echo
 		VkDescriptorSet Allocate(VkDevice device, VkDescriptorSetLayout layout);
 	};
 
-	class VulkanDescriptorAllocatorGrowable : public DescriptorAllocatorGrowable
+	/*class VulkanDescriptorAllocatorGrowable : public DescriptorAllocatorGrowable
 	{
 	public:
 		VulkanDescriptorAllocatorGrowable(VulkanDevice* device);
@@ -101,5 +96,5 @@ namespace Echo
 
 		void Clear();
 		void UpdateSet(VkDevice device, VkDescriptorSet set);
-	};
+	};*/
 }

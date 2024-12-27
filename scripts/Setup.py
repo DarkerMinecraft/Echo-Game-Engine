@@ -6,21 +6,34 @@ from SetupPython import PythonConfiguration as PythonRequirements
 
 PythonRequirements.Validate()
 
-from SetupPremake import PremakeConfiguration as PremakeRequirements
+from SetupCMake import CMakeConfiguration as CMakeRequirements
 from SetupVulkan import VulkanConfiguration as VulkanRequirements
 os.chdir('./../')
 
-premakeInstalled = PremakeRequirements.Validate()
+cmakeInstalled = CMakeRequirements.Validate()
 VulkanRequirements.Validate()
 
 print("\nUpdating submodules...")
 subprocess.call(["git", "submodule", "update", "--init", "--recursive"])
 
-if (premakeInstalled):
-    if platform.system() == "Windows":
-        print("\nRunning premake...")
-        subprocess.call([os.path.abspath("./scripts/Win-GenerateProjects.bat"), "nopause"])
+if (cmakeInstalled):
+    print("\nRunning Cmake")
+    
+    system = platform.system()
+    build_dir = "build"
+    if not os.path.exists(build_dir):
+        os.makedirs(build_dir)
+    os.chdir(build_dir)
+
+    if system == "Windows":
+        subprocess.call(["cmake", "-G", "Visual Studio 17 2022", ".."])
+    elif system == "Linux":
+        subprocess.call(["cmake", "-G", "Unix Makefiles", ".."])
+    elif system == "Darwin":
+        subprocess.call(["cmake", "-G", "Xcode", ".."])
+    else:
+        print(f"Unsupported platform: {system}")
 
     print("\nSetup completed!")
 else:
-    print("Hazel requires Premake to generate project files.")
+    print("Echo requires CMake to generate project files.")

@@ -1,96 +1,56 @@
 #pragma once
 
 #include "Echo/Graphics/Pipeline.h"
+
 #include "VulkanDevice.h"
 
-#include <unordered_map>
-#include <shaderc/shaderc.hpp>
+#include <vector>
 
-namespace Echo 
+namespace Echo
 {
-
-	struct CompilationInfo
+	
+	enum PipelineType 
 	{
-		std::string FilePath;
-		shaderc_shader_kind Kind;
-		std::vector<char> Source;
-		shaderc::CompileOptions Options;
+		Graphics,
+		Compute,
+		Raytracing
 	};
 
-	class PipelineConfig 
+	class VulkanPipeline : public Pipeline
 	{
 	public:
-		PipelineConfig() { Clear(); }
-
-		std::vector<VkPipelineShaderStageCreateInfo> ShaderStages;
-
-		VkPipelineVertexInputStateCreateInfo VertexInputInfo;
-		VkPipelineInputAssemblyStateCreateInfo InputAssembly;
-		VkPipelineRasterizationStateCreateInfo Rasterizer;
-		VkPipelineColorBlendAttachmentState ColorBlendAttachment;
-		VkPipelineMultisampleStateCreateInfo Multisampling;
-		VkPipelineDepthStencilStateCreateInfo DepthStencil;
-		VkPipelineRenderingCreateInfo RenderInfo;
-		VkFormat ColorAttachmentFormat;
-
-		VkPipeline BuildPipeline(VkDevice device, VkPipelineLayout layout);
-		void SetShaders(VkShaderModule vertexShader, VkShaderModule fragmentShader);
-		void SetVertexInput(VkVertexInputBindingDescription bindingDescription, std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions);
-		void SetInputTopology(VkPrimitiveTopology topology);
-		void SetPolygonMode(VkPolygonMode mode);
-		void SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
-		void SetMutisamplingNone(); 
-		void DisableBlending();
-		void SetColorAttachmentFormat(VkFormat format);
-		void SetDepthFormat(VkFormat format);
-		void DisableDepthTest();
-
-		void Clear();
-	};
-
-	class VulkanPipeline : public Pipeline 
-	{
-	public:
-		VulkanPipeline(PipelineType type, const std::string& filePath, size_t pushConstantsSize = -1, std::vector<DescriptorType> types = {});
+		VulkanPipeline(VulkanDevice* device, const PipelineDesc& pipelineDescription);
 		virtual ~VulkanPipeline();
-
-		virtual PipelineType GetPipelineType() override { return m_Type; }
-
-		virtual void Bind() override;
-		virtual void UpdatePushConstants(const void* pushConstants) override;
 		
-		virtual void* GetPipelineLayout() override { return m_PipelineLayout; }
-		virtual void* GetDescriptorLayout() override { return m_DescriptorLayout; }
+		virtual void Bind() override;
+		virtual void WritePushConstants(const void* pushConstants) override;
 	private:
-		std::string ReadFile(const std::string& filePath); 
-		std::unordered_map<ShaderType, std::vector<char>> PreProcess(const std::string& source);
+		void CreateShaderModules(const PipelineDesc& pipelineDescription);
+		VkShaderModule CreateShaderModule(const std::vector<uint32_t>& code);
 
-		void Compile(const std::string& filePath, const std::unordered_map<ShaderType, std::vector<char>>& shaders);
+		void InitPipelineLayout(const PipelineDesc& pipelineDescription);
+		void CreateDescriptorSet(const PipelineDesc& pipelineDescription);
+		void InitPipeline(const PipelineDesc& pipelineDescription);
 
-		void PreprocessShader(CompilationInfo& info);
-		void CompileFileToAssembly(CompilationInfo& info);
-		std::vector<char> CompileFile(CompilationInfo& info);
-
-		VkShaderModule CreateShaderModule(const std::vector<char>& code);
-
-		void InitPipeline(size_t pushConstantsSize, std::vector<DescriptorType> types);
-		void InitBackgroundPipeline();
+		std::vector<uint32_t> ReadFile(const std::string& filePath);
+		const char* LoadShaderCode(const std::string& filePath);
+		VkDescriptorSetLayout CreateDescriptorSetLayout(const PipelineDesc& desc);
+		std::vector<VkPushConstantRange> CreatePushConstants(const PipelineDesc& desc);
 	private:
-		VulkanDevice* m_Device;
-		PipelineType m_Type;
+		VulkanDevice* m_Device; 
 
-		VkShaderModule m_VertexShaderModule;
-		VkShaderModule m_FragmentShaderModule;
-		VkShaderModule m_ComputeShaderModule;
-
-		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;
+		VkPipeline m_Pipeline;
 
-		VkDescriptorSetLayout m_DescriptorLayout;
-		VkDescriptorSet m_Descriptor;
+		VkDescriptorPool m_DescriptorPool;
+		VkDescriptorSet m_DescriptorSet;
+		VkDescriptorSetLayout m_DescriptorSetLayout;
 
-		GPUMeshBuffers m_MeshBuffers;
+		uint32_t m_PushConstantSize;
+		uint32_t m_PushConstantOffset;
 
-		size_t m_PushConstantSize;
+		VkShaderModule m_VertexShader, m_FragmentShader, m_ComputeShader, m_GeometryShader, m_RaytracingShader;
+		PipelineType m_Type;
 	};
+
 }

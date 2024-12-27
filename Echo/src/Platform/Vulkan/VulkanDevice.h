@@ -2,126 +2,99 @@
 
 #include "Echo/Graphics/Device.h"
 
-#include "Utils/VulkanTypes.h"
-
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 
 #include "vk_mem_alloc.h"
-#include "Utils/VulkanDescriptors.h"
- 
-namespace Echo
+#include "Utils/VulkanTypes.h"
+
+namespace Echo 
 {
 
-	class VulkanDevice : public Device
+	class VulkanSwapchain;
+
+	struct VulkanFrameData 
+	{
+		VkSemaphore SwapchainSemaphore, RenderSemaphore;
+		VkFence RenderFence;
+
+		VkCommandPool CommandPool;
+		VkCommandBuffer CommandBuffer;
+	};
+
+	class VulkanDevice : public Device 
 	{
 	public:
-		VulkanDevice(void* window);
+		VulkanDevice(void* windowHwnd, int width, int height);
 		virtual ~VulkanDevice();
-
-		virtual GraphicsAPI GetGraphicsAPI() override { return GraphicsAPI::Vulkan; }
-		virtual Swapchain* GetSwapchain() override { return m_Swapchain.get(); }
-		virtual FrameData& GetCurrentFrame() override { return m_Frames[m_FrameNumber % FRAME_OVERLAP]; }
-
-		virtual void SetClearColor(const glm::vec4& color) override;
-		virtual void DrawBackground() override;
-
-		virtual size_t GetGPUDrawSize() override { return sizeof(GPUDrawPushConstants); }
-
-		virtual void AddModel(Ref<Pipeline> pipeline, Ref<Model> model) override;
-
-		virtual void DrawGeometry() override;
 
 		virtual void Start() override;
 		virtual void End() override;
-		virtual void Wait() override;
+
+		virtual Ref<Buffer> CreateBuffer(const BufferDesc& bufferDescription) override;
+		virtual Ref<Texture> CreateTexture(const TextureDesc& textureDescription) override;
+		virtual Ref<Pipeline> CreatePipeline(const PipelineDesc& pipelineDescription) override;
+		virtual Ref<FrameBuffer> CreateFrameBuffer(const FrameBufferDesc& frameBufferDescription) override;
+
+		virtual void CMDDispatch(float groupXScale, float groupYScale) override; 
 	public:
-		VkInstance GetInstance() { return m_Instance; }
 		VkDevice GetDevice() { return m_Device; }
-		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
 		VkSurfaceKHR GetSurface() { return m_Surface; }
+		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
 
-		VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
-
-		VkDescriptorSetLayout GetDescriptorSetLayout() { return m_DrawImageDescriptorLayout; }
-		VkDescriptorSet GetDescriptorSet() { return m_DrawImageDescriptors; }
-		
-		AllocatedBuffer CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
-		void DestroyBuffer(const AllocatedBuffer& buffer);
-
-		GPUMeshBuffers UploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
-
-		VkCommandBuffer GetCurrentCommandBuffer() { return m_CurrentBuffer; }
-
-		VkImage GetCurrentImage() { return m_CurrentImage; }
-		VkExtent2D GetDrawExtent() { return m_DrawExtent; }
+		VulkanSwapchain* GetSwapchain() { return m_Swapchain.get(); }
 
 		VmaAllocator GetAllocator() { return m_Allocator; }
 
-		AllocatedImage GetAllocatedImage() { return m_AllocatedImage; }
-		AllocatedImage GetCheckerboardImage() { return m_ErrorCheckerboardImage; }
+		VkCommandBuffer GetActiveCommandBuffer() { return m_ActiveCommandBuffer; }
+		AllocatedImage GetDrawImage() { return m_DrawImage; }
 
-		VkSampler GetDefaultSamplerNearest() { return m_DefaultSamplerNearest; }
+		VulkanFrameData& GetCurrentFrame() { return m_FramesData[m_FrameNumber % FRAME_OVERLAP]; }
 
-		uint32_t GetImageIndex() { return m_ImageIndex; }
+		AllocatedBuffer CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+		void DestroyBuffer(const AllocatedBuffer& buffer);
 
+		AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
 		AllocatedImage CreateImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
 		void DestroyImage(const AllocatedImage& img);
 	private:
-		void InitVulkan();
-		void InitSwapchain();
-		void RecreateSwapchain();
-		void InitCommands();
+		void CreateSwapchain(int width, int height);
+		void RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain);
+
+		void Initalize(void* windowHwnd);
 		void InitSyncStructures();
-		void InitDescriptors();
-		void InitDefaultData();
+		void InitCommands();
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
-
-		AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
-	private:	
-		GLFWwindow* m_Window;
-
-		DescriptorAllocator m_DescriptorAllocator;
-		VkDescriptorSet m_DrawImageDescriptors;
-		VkDescriptorSetLayout m_DrawImageDescriptorLayout;
+	private:
+		Scope<VulkanSwapchain> m_Swapchain;
 
 		VkInstance m_Instance;
 		VkDebugUtilsMessengerEXT m_DebugMessenger;
+		VkSurfaceKHR m_Surface;
+
 		VkPhysicalDevice m_PhysicalDevice;
 		VkDevice m_Device;
-		VkSurfaceKHR m_Surface;
 
 		VkQueue m_GraphicsQueue;
 		uint32_t m_GraphicsQueueFamily;
 
-		VmaAllocator m_Allocator;
-
-		AllocatedImage m_AllocatedImage;
-		VkExtent2D m_DrawExtent;
-
-		VkCommandBuffer m_CurrentBuffer;
-		VkImage m_CurrentImage;
-		uint32_t m_ImageIndex;
-
-		std::map<Pipeline*, std::vector<Model*>> m_Meshes;
-
-		VkClearColorValue m_ClearColorValue;
-
-		VkFence m_ImmFence;
-		VkCommandBuffer m_ImmCommandBuffer;
 		VkCommandPool m_ImmCommandPool;
+		VkCommandBuffer m_ImmCommandBuffer;
+		VkFence m_ImmFence;
 
-		Scope<Swapchain> m_Swapchain;
-		FrameData m_Frames[FRAME_OVERLAP];
+		VkCommandBuffer m_ActiveCommandBuffer;
+		VkImage m_ActiveImage;
+
+		VulkanFrameData m_FramesData[FRAME_OVERLAP];
+
+		uint32_t m_ImageIndex;
 		int m_FrameNumber = 0;
 
-		AllocatedImage m_WhiteImage;
-		AllocatedImage m_BlackImage;
-		AllocatedImage m_GreyImage;
-		AllocatedImage m_ErrorCheckerboardImage;
+		VkExtent2D m_DrawExtent;
 
-		VkSampler m_DefaultSamplerLinear;
-		VkSampler m_DefaultSamplerNearest;
+		VmaAllocator m_Allocator;
+
+		AllocatedImage m_DrawImage;
 	};
+
 }

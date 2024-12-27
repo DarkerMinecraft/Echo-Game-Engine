@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Echo/Core/Window.h"
-#include "Platform/Vulkan/VulkanDevice.h"
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
@@ -10,7 +9,7 @@
 namespace Echo 
 {
 
-	class WindowsWindow : public Window 
+	class WindowsWindow : public Window
 	{
 	public:
 		WindowsWindow(const WindowProps& props);

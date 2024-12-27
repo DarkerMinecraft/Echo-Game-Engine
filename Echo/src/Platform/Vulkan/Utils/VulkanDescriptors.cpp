@@ -93,7 +93,7 @@ namespace Echo
 		return ds;
 	}
 
-	VulkanDescriptorAllocatorGrowable::VulkanDescriptorAllocatorGrowable(VulkanDevice* device)
+	/*VulkanDescriptorAllocatorGrowable::VulkanDescriptorAllocatorGrowable(VulkanDevice* device)
 		: m_Device(device)
 	{
 
@@ -275,6 +275,6 @@ namespace Echo
 		}
 
 		vkUpdateDescriptorSets(device, (uint32_t)Writes.size(), Writes.data(), 0, nullptr);
-	}
+	}*/
 
 }

@@ -15,3 +15,8 @@ Makefile
 *.mk
 *.project
 Echo Editor/imgui.ini
+build/CMakeFiles/3.31.3/CompilerIdC/Debug/CompilerIdC.tlog/link.secondary.1.tlog
+/build
+/build
+/scripts/__pycache__
+/Echo/vendor/Vulkan

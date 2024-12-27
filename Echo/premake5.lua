@@ -41,7 +41,8 @@ project "Echo"
         "%{IncludeDir.vkbootstrap}",
         "%{IncludeDir.VMA}",
         "%{IncludeDir.tinyobjloader}",
-        "%{IncludeDir.stb}"
+        "%{IncludeDir.stb}",
+        "%{IncludeDir.DXC}"
     }
 
     libdirs 
@@ -54,8 +55,10 @@ project "Echo"
         "GLFW",
         "ImGui",
         "%{Library.Vulkan}",
-        "vk-bootstrap"
+        "vk-bootstrap",
+        "Slang"
     }
+
 
     filter "system:windows" 
         defines "USING_DIRECTX_HEADERS"
@@ -65,32 +68,12 @@ project "Echo"
 		runtime "Debug"
 		symbols "on"
 
-        links
-		{
-            "%{Library.ShaderC_Debug}",
-			"%{Library.SPIRV_Cross_Debug}",
-			"%{Library.SPIRV_Cross_GLSL_Debug}"
-		}
-
 	filter "configurations:Release"
 		defines "ECHO_RELEASE"
 		runtime "Release"
 		optimize "on"
 
-        links
-		{
-            "%{Library.ShaderC_Release}",
-			"%{Library.SPIRV_Cross_Release}",
-			"%{Library.SPIRV_Cross_GLSL_Release}"
-		}
-
 	filter "configurations:Dist"
 		defines "ECHO_DIST"
 		runtime "Release"
 		optimize "on"
-
-        links
-		{
-			"%{Library.SPIRV_Cross_Release}",
-			"%{Library.SPIRV_Cross_GLSL_Release}"
-		}

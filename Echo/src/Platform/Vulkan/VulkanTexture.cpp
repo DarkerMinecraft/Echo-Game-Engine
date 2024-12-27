@@ -1,7 +1,4 @@
 #include "pch.h"
-
-#include "Echo/Core/Application.h"
-
 #include "VulkanTexture.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -10,10 +7,12 @@
 namespace Echo 
 {
 
-	VulkanTexture::VulkanTexture(const std::string& texturePath)
-		: m_Device((VulkanDevice*)Application::Get().GetWindow().GetDevice())
+	
+
+	VulkanTexture::VulkanTexture(VulkanDevice* device, const TextureDesc& textureDescription)
+		: m_Device(device)
 	{
-		CreateTexture(texturePath);
+		CreateTexture(textureDescription);
 	}
 
 	VulkanTexture::~VulkanTexture()
@@ -21,34 +20,59 @@ namespace Echo
 		m_Device->DestroyImage(m_Image);
 	}
 
-	void VulkanTexture::Bind(Pipeline* pipeline)
+	void VulkanTexture::CreateTexture(const TextureDesc& textureDesciption)
 	{
-		VkCommandBuffer cmd = m_Device->GetCurrentCommandBuffer();
-
-		VkDescriptorSet imageSet = (VkDescriptorSet) m_Device->GetCurrentFrame().FrameDescriptors->Allocate((VkDescriptorSetLayout) pipeline->GetDescriptorLayout());
+		if (textureDesciption.TexturePath != "") 
 		{
-			DescriptorWriter writer;
-			writer.WriteImage(0, m_Image.ImageView, m_Device->GetDefaultSamplerNearest(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-
-			writer.UpdateSet(m_Device->GetDevice(), imageSet);
+			LoadTexture(textureDesciption.TexturePath);
 		}
+		else 
+		{
+			m_Width = textureDesciption.Width;
+			m_Height = textureDesciption.Height;
 
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, (VkPipelineLayout)pipeline->GetPipelineLayout(), 0, 1, &imageSet, 0, nullptr);
+			VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+			if (textureDesciption.Format == TextureFormat::Depth32F)
+			{
+				format = VK_FORMAT_D32_SFLOAT;
+			}
+
+			VkImageUsageFlags usage = 0;
+			if (HasUsage(textureDesciption.Usage, TextureUsage::Sampled))
+			{
+				usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+			}
+			if (HasUsage(textureDesciption.Usage, TextureUsage::ColorAttachment))
+			{
+				usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+			}
+			if (HasUsage(textureDesciption.Usage, TextureUsage::DepthAttachment))
+			{
+				usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+			}
+
+			m_Image = m_Device->CreateImage(VkExtent3D{ static_cast<unsigned int>(m_Width), static_cast<unsigned int>(m_Height), 1 }, format, usage);
+		}
 	}
 
-	void VulkanTexture::CreateTexture(const std::string& texturePath)
+	void VulkanTexture::LoadTexture(const std::string& textureFilePath)
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		m_Pixels = stbi_load(textureFilePath.c_str(),
+									&texWidth, &texHeight, &texChannels,
+									STBI_rgb_alpha);
 
-		if (!pixels) 
+		if (!m_Pixels) 
 		{
-			EC_CORE_ERROR("Failed to load texture image {0}! Using checkerboard", texturePath);
-			m_Image = m_Device->GetCheckerboardImage();
-			return;
+			EC_CORE_ERROR("Failed to load texture: {0}", textureFilePath);
 		}
 
-		m_Image = m_Device->CreateImage(pixels, VkExtent3D{ static_cast<unsigned int>(texWidth), static_cast<unsigned int>(texHeight), 1 }, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		m_Width = static_cast<uint32_t>(texWidth);
+		m_Height = static_cast<uint32_t>(texHeight);
+			
+		m_Image = m_Device->CreateImage(m_Pixels, VkExtent3D{ static_cast<unsigned int>(texWidth), static_cast<unsigned int>(texHeight), 1 }, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		stbi_image_free(m_Pixels);
 	}
 
 }

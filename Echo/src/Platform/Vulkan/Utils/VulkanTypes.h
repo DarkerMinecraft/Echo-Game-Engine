@@ -27,10 +27,4 @@ namespace Echo
 		AllocatedBuffer IndexBuffer;
 		AllocatedBuffer VertexBuffer;	
 	};
-
-	struct GPUDrawPushConstants
-	{
-		glm::mat4 WorldMatrix;
-	};
-
 }

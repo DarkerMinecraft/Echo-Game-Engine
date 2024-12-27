@@ -3,15 +3,10 @@
 
 #include "Echo/Core/Application.h"
 
-#include "Platform/Vulkan/Utils/VulkanInitializers.h"
-#include "Platform/Vulkan/Utils/VulkanImages.h"
-
 #include "imgui.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "backends/imgui_impl_glfw.h"
-#include <Platform/Vulkan/VulkanDevice.h>
-#include <Platform/Vulkan/VulkanSwapchain.h>
-#include <Platform/Vulkan/VulkanCommandList.h>
+
 
 namespace Echo 
 {
@@ -51,7 +46,7 @@ namespace Echo
 
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+		//VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
 		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -74,14 +69,14 @@ namespace Echo
 
 		VkDescriptorPool imguiPool;
 
-		vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr, &imguiPool);
+		//vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr, &imguiPool);
 
 		ImGui_ImplVulkan_InitInfo initInfo{};
 
-		initInfo.Instance = device->GetInstance();
-		initInfo.PhysicalDevice = device->GetPhysicalDevice();
-		initInfo.Device = device->GetDevice();
-		initInfo.Queue = device->GetGraphicsQueue();
+		//initInfo.Instance = device->GetInstance();
+		//initInfo.PhysicalDevice = device->GetPhysicalDevice();
+		//initInfo.Device = device->GetDevice();
+		//initInfo.Queue = device->GetGraphicsQueue();
 		initInfo.DescriptorPool = imguiPool;
 		initInfo.MinImageCount = 3;
 		initInfo.ImageCount = 3;
@@ -125,34 +120,34 @@ namespace Echo
 	void ImGuiLayer::DrawImGui()
 	{
 		Application& app = Application::Get();
-		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+		//VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
-		VkCommandBuffer cmd = device->GetCurrentCommandBuffer();
-		if (cmd == nullptr) return;
+		//VkCommandBuffer cmd = device->GetCurrentCommandBuffer();
+		//if (cmd == nullptr) return;
 
-		VkExtent2D extent = {
-			device->GetSwapchain()->GetExtent().Width,
-			device->GetSwapchain()->GetExtent().Height
-		};
+		//VkExtent2D extent = {
+			//device->GetSwapchain()->GetExtent().Width,
+			//device->GetSwapchain()->GetExtent().Height
+		//};
 
-		VkRenderingAttachmentInfo colorAttachment = VulkanInitializers::AttachmentInfo(
-			(VkImageView) device->GetSwapchain()->GetSwapchainImageView(device->GetImageIndex()),
-			nullptr, 
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		);
+		//VkRenderingAttachmentInfo colorAttachment = VulkanInitializers::AttachmentInfo(
+			//(VkImageView) device->GetSwapchain()->GetSwapchainImageView(device->GetImageIndex()),
+			//nullptr, 
+			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		//);
 
-		VkRenderingInfo renderInfo = VulkanInitializers::RenderingInfo(
-			extent,
-			&colorAttachment,
-			nullptr
-		);
+		//VkRenderingInfo renderInfo = VulkanInitializers::RenderingInfo(
+			//extent,
+			//&colorAttachment,
+			//nullptr
+		//);
 
-		vkCmdBeginRendering(cmd, &renderInfo);
+		//vkCmdBeginRendering(cmd, &renderInfo);
 
 		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
-		vkCmdEndRendering(cmd);
+		//vkCmdEndRendering(cmd);
 
 		ImGuiIO& io = ImGui::GetIO();
 

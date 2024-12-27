@@ -1,38 +1,33 @@
 #pragma once
 
-#include "Echo/Graphics/Swapchain.h"
-#include <cstdint>
 #include "VulkanDevice.h"
+
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace Echo 
 {
 
-	class VulkanSwapchain : public Swapchain 
+	class VulkanSwapchain 
 	{
 	public:
-		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height);
-		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height, VulkanSwapchain* oldSwapchain);
-		virtual ~VulkanSwapchain();
+		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height, VulkanSwapchain* oldSwapchain = nullptr);
+		~VulkanSwapchain();
 
-		virtual uint32_t AcquireNextImage() override;
+		uint32_t AcquireNextImage();
 
-		virtual void* GetSwapchainImage(uint32_t imageIndex) override { return m_SwapchainImages[imageIndex]; }
-		virtual void* GetSwapchainImageView(uint32_t imageIndex) override { return m_SwapchainImageViews[imageIndex]; }
+		VkImage GetSwapchainImage(uint32_t imageIndex) { return m_SwapchainImages[imageIndex]; }
+		VkImageView GetSwapchainImageView(uint32_t imageIndex) { return m_SwapchainImageViews[imageIndex]; }
 
-		virtual Extent2D GetExtent() override { 
-			Extent2D extent{};
-			extent.Width = m_SwapchainExtent.width;
-			extent.Height = m_SwapchainExtent.height;
-
-			return extent;
-		}
-	public:
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
 		VkFormat GetFormat() { return m_SwapchainImageFormat; }
+
+		VkExtent2D GetExtent() { return m_SwapchainExtent; }
+		
+		void DestroySwapchain();
 	private:
 		void CreateSwapchain(uint32_t width, uint32_t height);
 		void CreateSwapchain(uint32_t width, uint32_t height, VkSwapchainKHR& oldSwapchain);
-		void DestroySwapchain(); 
 	private:
 		VulkanDevice* m_Device;
 

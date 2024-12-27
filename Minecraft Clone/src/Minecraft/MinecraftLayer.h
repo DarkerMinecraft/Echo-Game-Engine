@@ -2,6 +2,9 @@
 
 #include <Echo/Core/Layer.h>
 
+#include <Echo/Graphics/FrameBuffer.h>
+#include <Echo/Graphics/Pipeline.h>
+
 namespace Minecraft 
 {
 
@@ -21,6 +24,9 @@ namespace Minecraft
 		virtual void OnImGuiRender() override;
 
 		virtual void Destroy() override;
+	private:
+		Echo::Ref<Echo::FrameBuffer> m_BackgroundFrameBuffer;
+		Echo::Ref<Echo::Pipeline> m_BackgroundComputePipeline;
 	};
 
 }

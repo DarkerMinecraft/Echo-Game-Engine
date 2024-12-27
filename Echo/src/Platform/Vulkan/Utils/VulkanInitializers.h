@@ -1,8 +1,5 @@
 #pragma once
 
-#include "Echo/Graphics/Synchronization.h"
-#include "Echo/Graphics/CommandList.h"
-
 #include <vulkan/vulkan.h>
 
 namespace Echo 

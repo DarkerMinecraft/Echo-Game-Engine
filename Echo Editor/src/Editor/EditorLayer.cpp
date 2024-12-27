@@ -29,25 +29,27 @@ namespace Echo
 	{
 		m_ActiveScene = CreateRef<Scene>();
 
-		m_ColoredPipeline = Pipeline::Create(GraphicsPipeline, "assets/shaders/Colored.glsl", sizeof(ColoredPushConstants));
+		m_ColoredPipeline = Pipeline::Create(GraphicsPipeline, "assets/shaders/Colored.glsl", 2, sizeof(ColoredPushConstants), {}, {0, 3});
 	
 		m_RectanglePos = m_RectangleRot = { 0, 0, 0 };
 		m_RectangleScale = 0.6f;
 
-		m_TexturedMeshPipeline = Pipeline::Create(GraphicsPipeline, "assets/shaders/TexturedMesh.glsl", sizeof(ColoredPushConstants), 
-		{
-			DescriptorType::CombinedImageSampler
-		});
+		m_TexturedMeshPipeline = Pipeline::Create(GraphicsPipeline, "assets/shaders/TexturedMesh.glsl", 3, sizeof(ColoredPushConstants),
+			{
+				DescriptorType::CombinedImageSampler
+			},
+			{0, 1}
+		);
 		m_MeshTexture = Texture::Create("assets/textures/viking_room.png");
 		m_Mesh = Model::Create("assets/objs/viking_room.obj", m_MeshTexture);
 
 		m_Rectangle = Model::Create(
 			{ 0, 1, 2, 2, 1, 3 },
 			{
-				{ {0.5, -0.5f, 0.0}, {1, -1}, {}, {} },
-				{ {0.5, 0.5f, 0.0}, {1, 1}, {}, {} },
-				{ {-0.5, -0.5f, 0.0 }, {-1, -1}, {}, {} },
-				{ {-0.5, 0.5f, 0.0 }, {-1, 1}, {}, {} },
+				{ {0.5, -0.5f, 0.0f }, {1, -1}, {}, {} },
+				{ {0.5, 0.5f, 0.0f }, {1, 1}, {}, {}},
+				{ {-0.5, -0.5f, 0.0f }, {-1, -1}, {}, {} },
+				{ {-0.5, 0.5f, 0.0f }, {-1, 1}, {}, {} },
 			}, m_MeshTexture
 		);
 

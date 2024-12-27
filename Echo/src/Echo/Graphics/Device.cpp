@@ -6,15 +6,14 @@
 namespace Echo 
 {
 
-	Scope<Device> Device::Create(GraphicsAPI api, void* window)
+	Scope<Device> Device::Create(GraphicsAPI api, void* windowHwnd, int width, int height)
 	{
 		switch (api) 
 		{
-			case GraphicsAPI::Vulkan: return CreateScope<VulkanDevice>(window);
-			case GraphicsAPI::DirectX12: return nullptr;
-			default: return nullptr;
+			case Vulkan: return CreateScope<VulkanDevice>(windowHwnd, width, height);
+			case DirectX12: return nullptr;
 		}
-
+		
 		return nullptr;
 	}
 
