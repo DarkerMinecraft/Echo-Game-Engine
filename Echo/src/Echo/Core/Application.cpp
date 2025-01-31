@@ -17,11 +17,12 @@ namespace Echo
 		props.Height = height;
 		props.Title = title;
 
+		m_ImGuiLayer = new ImGuiLayer();
+
 		m_Window = Window::Create(props);
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
-		//m_ImGuiLayer = new ImGuiLayer();
-		//PushOverlay(m_ImGuiLayer);
+		PushOverlay(m_ImGuiLayer);
 	}
 
 	void Application::Run()
@@ -41,10 +42,10 @@ namespace Echo
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(ts);
 
-				/*m_ImGuiLayer->Begin();
+				m_ImGuiLayer->Begin();
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
-				m_ImGuiLayer->End();*/
+				m_ImGuiLayer->End();
 
 				device->End();
 			} 
@@ -83,9 +84,7 @@ namespace Echo
 
 	void Application::Close()
 	{
-		Device* device = GetWindow().GetDevice();
-
-		for (auto& layer : m_LayerStack) 
+		for (Layer* layer : m_LayerStack) 
 		{
 			layer->Destroy();
 		}

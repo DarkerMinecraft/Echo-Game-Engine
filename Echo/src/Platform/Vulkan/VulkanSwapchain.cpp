@@ -16,7 +16,6 @@ namespace Echo
 		else 
 		{
 			VkSwapchainKHR old = oldSwapchain->GetSwapchain();
-			oldSwapchain->DestroySwapchain();
 			CreateSwapchain(width, height, old);
 		}
 	}
@@ -47,6 +46,16 @@ namespace Echo
 		}
 
 		return imageIndex;
+	}
+
+	AllocatedImage VulkanSwapchain::GetSwapchainImage(uint32_t imageIndex)
+	{
+		AllocatedImage image{};
+		image.Image = m_SwapchainImages[imageIndex];
+		image.ImageView = m_SwapchainImageViews[imageIndex];
+		image.ImageExtent = VkExtent3D{ m_SwapchainExtent.width, m_SwapchainExtent.height, 0 };
+		image.ImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+		return image;
 	}
 
 	void VulkanSwapchain::DestroySwapchain()

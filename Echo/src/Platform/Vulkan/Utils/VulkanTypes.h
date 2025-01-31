@@ -22,9 +22,4 @@ namespace Echo
 		VmaAllocationInfo Info;
 	};
 
-	struct GPUMeshBuffers
-	{
-		AllocatedBuffer IndexBuffer;
-		AllocatedBuffer VertexBuffer;	
-	};
 }

@@ -34,6 +34,8 @@ if (cmakeInstalled):
     else:
         print(f"Unsupported platform: {system}")
 
+    subprocess.call(["cmake", "--install", "build"])
+
     print("\nSetup completed!")
 else:
     print("Echo requires CMake to generate project files.")

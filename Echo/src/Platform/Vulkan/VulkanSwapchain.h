@@ -16,7 +16,7 @@ namespace Echo
 
 		uint32_t AcquireNextImage();
 
-		VkImage GetSwapchainImage(uint32_t imageIndex) { return m_SwapchainImages[imageIndex]; }
+		AllocatedImage GetSwapchainImage(uint32_t imageIndex);
 		VkImageView GetSwapchainImageView(uint32_t imageIndex) { return m_SwapchainImageViews[imageIndex]; }
 
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }

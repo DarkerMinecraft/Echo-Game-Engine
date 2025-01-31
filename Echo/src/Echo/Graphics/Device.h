@@ -2,12 +2,15 @@
 
 #include "Echo/Core/Base.h"
 
+#include "Echo/ImGui/ImGuiLayer.h"
+
 #include "RHIDesc.h"
 
 #include "Buffer.h"
 #include "Texture.h"
 #include "Pipeline.h"
 #include "FrameBuffer.h"
+#include "Mesh.h"
 
 namespace Echo 
 {
@@ -32,7 +35,11 @@ namespace Echo
 		virtual Ref<Pipeline> CreatePipeline(const PipelineDesc& pipleineDescription) = 0;
 		virtual Ref<FrameBuffer> CreateFrameBuffer(const FrameBufferDesc& frameBufferDescription) = 0;
 
+		virtual Ref<Mesh> CreateMesh(std::vector<Vertex3D> meshData, std::vector<uint32_t> indices) = 0;
+		virtual Ref<Mesh> CreateMesh(std::vector<Vertex2D> meshData, std::vector<uint32_t> indices) = 0;
+
 		virtual void CMDDispatch(float groupXScale, float groupYScale) = 0;
+		virtual void CMDDrawIndexed(uint32_t indicesSize) = 0;
 		
 		static Scope<Device> Create(GraphicsAPI api, void* windowHwnd, int width, int height);
 	};

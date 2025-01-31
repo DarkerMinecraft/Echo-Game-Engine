@@ -22,3 +22,13 @@
 [submodule "Echo/vendor/Slang"]
 	path = Echo/vendor/Slang
 	url = https://github.com/shader-slang/slang.git
+[submodule "Echo/vendor/GLFW"]
+	path = Echo/vendor/GLFW
+	url = https://github.com/glfw/glfw.git
+[submodule "Echo/vendor/imgui"]
+	path = Echo/vendor/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "Echo/vendor/DirectXTK12"]
+	path = Echo/vendor/DirectXTK12
+	url = https://github.com/microsoft/DirectXTK12.git

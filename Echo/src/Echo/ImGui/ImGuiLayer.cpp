@@ -3,10 +3,13 @@
 
 #include "Echo/Core/Application.h"
 
-#include "imgui.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "backends/imgui_impl_glfw.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Echo/Graphics/RHI.h"
 
+#include <imgui.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <backends/imgui_impl_glfw.h>
+#include <GLFW/glfw3.h>
 
 namespace Echo 
 {
@@ -30,12 +33,12 @@ namespace Echo
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 		ImGui::StyleColorsDark();
 
 		ImGuiStyle& style = ImGui::GetStyle();
-		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) 
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
@@ -46,38 +49,15 @@ namespace Echo
 
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
-		//VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
-
-		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
-
-		VkDescriptorPoolCreateInfo pool_info = {};
-		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		pool_info.maxSets = 1000;
-		pool_info.poolSizeCount = (uint32_t)std::size(pool_sizes);
-		pool_info.pPoolSizes = pool_sizes;
-
-		VkDescriptorPool imguiPool;
-
-		//vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr, &imguiPool);
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
 		ImGui_ImplVulkan_InitInfo initInfo{};
 
-		//initInfo.Instance = device->GetInstance();
-		//initInfo.PhysicalDevice = device->GetPhysicalDevice();
-		//initInfo.Device = device->GetDevice();
-		//initInfo.Queue = device->GetGraphicsQueue();
-		initInfo.DescriptorPool = imguiPool;
+		initInfo.Instance = device->GetInstance();
+		initInfo.PhysicalDevice = device->GetPhysicalDevice();
+		initInfo.Device = device->GetDevice();
+		initInfo.Queue = device->GetGraphicsQueue();
+		initInfo.DescriptorPool = device->GetImGuiDescriptorPool();
 		initInfo.MinImageCount = 3;
 		initInfo.ImageCount = 3;
 		initInfo.UseDynamicRendering = true;
@@ -85,20 +65,37 @@ namespace Echo
 		initInfo.PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
 		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 
-		VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
+		static VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
 
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&initInfo);
 		ImGui_ImplVulkan_CreateFontsTexture();
+
+		TextureDesc texDesc{};
+		texDesc.Format = TextureFormat::BGRA8;
+		texDesc.UseSwapchainExtent = true;
+		texDesc.Usage = TextureUsage::ColorAttachment;
+
+		Ref<Texture> fbColorAttachment = RHI::CreateTexture(texDesc);
+
+		FrameBufferDesc fbDesc;
+		fbDesc.UseSwapchainImage = true;
+		fbDesc.UseSwapchainExtent = true;
+		fbDesc.ClearOnBegin = false;
+
+		m_ImGuiFrameBuffer = RHI::CreateFrameBuffer(fbDesc);
 	}
 
 	void ImGuiLayer::OnDetach()
 	{
-		ImGui_ImplVulkan_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
+		
+	}
+
+	void ImGuiLayer::OnUpdate(Timestep ts)
+	{
+		
 	}
 
 	void ImGuiLayer::OnImGuiRender()
@@ -107,8 +104,8 @@ namespace Echo
 
 	void ImGuiLayer::Begin()
 	{
-		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
 		ImGui::NewFrame();
 	}
 
@@ -120,34 +117,14 @@ namespace Echo
 	void ImGuiLayer::DrawImGui()
 	{
 		Application& app = Application::Get();
-		//VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
-		//VkCommandBuffer cmd = device->GetCurrentCommandBuffer();
-		//if (cmd == nullptr) return;
+		VkCommandBuffer cmd = device->GetActiveCommandBuffer();
 
-		//VkExtent2D extent = {
-			//device->GetSwapchain()->GetExtent().Width,
-			//device->GetSwapchain()->GetExtent().Height
-		//};
-
-		//VkRenderingAttachmentInfo colorAttachment = VulkanInitializers::AttachmentInfo(
-			//(VkImageView) device->GetSwapchain()->GetSwapchainImageView(device->GetImageIndex()),
-			//nullptr, 
-			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		//);
-
-		//VkRenderingInfo renderInfo = VulkanInitializers::RenderingInfo(
-			//extent,
-			//&colorAttachment,
-			//nullptr
-		//);
-
-		//vkCmdBeginRendering(cmd, &renderInfo);
-
+		m_ImGuiFrameBuffer->Start();
 		ImGui::Render();
-		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-
-		//vkCmdEndRendering(cmd);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+		m_ImGuiFrameBuffer->End();
 
 		ImGuiIO& io = ImGui::GetIO();
 
@@ -158,5 +135,15 @@ namespace Echo
 		}
 	}
 
+	void ImGuiLayer::Destroy()
+	{
+		Application& app = Application::Get();
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+
+		vkDeviceWaitIdle(device->GetDevice());
+		ImGui_ImplGlfw_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
+		ImGui::DestroyContext();
+	}
 
 }

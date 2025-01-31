@@ -9,6 +9,7 @@
 #include "FrameBuffer.h"
 
 #include "RHIDesc.h"
+#include "Mesh.h"
 
 namespace Echo 
 {
@@ -36,9 +37,24 @@ namespace Echo
 			return GetDevice()->CreateFrameBuffer(frameBufferDescription);
 		}
 
+		static inline Ref<Mesh> CreateMesh(std::vector<Vertex3D> meshData, std::vector<uint32_t> indices)
+		{
+			return GetDevice()->CreateMesh(meshData, indices);
+		}
+
+		static inline Ref<Mesh> CreateMesh(std::vector<Vertex2D> meshData, std::vector<uint32_t> indices)
+		{
+			return GetDevice()->CreateMesh(meshData, indices);
+		};
+
 		static inline void CMDDispatch(float groupXScale, float groupYScale) 
 		{
 			GetDevice()->CMDDispatch(groupXScale, groupYScale);
+		}
+
+		static inline void CMDDrawIndexed(uint32_t indicesSize) 
+		{
+			GetDevice()->CMDDrawIndexed(indicesSize);
 		}
 
 	private:

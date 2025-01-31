@@ -4,11 +4,10 @@
 #include "VulkanTexture.h"
 
 #include "VulkanSwapchain.h"
+#include "Utils/VulkanImages.h"
 
 namespace Echo 
 {
-
-	
 
 	VulkanFrameBuffer::VulkanFrameBuffer(VulkanDevice* device, const FrameBufferDesc& frameBufferDescription)
 		: m_Device(device)
@@ -18,7 +17,6 @@ namespace Echo
 
 	VulkanFrameBuffer::~VulkanFrameBuffer()
 	{
-
 	}
 
 	void VulkanFrameBuffer::Start()
@@ -26,11 +24,11 @@ namespace Echo
 		VkCommandBuffer cmd = m_Device->GetActiveCommandBuffer();
 
 		std::vector<VkRenderingAttachmentInfo> colorAttachments;
-		for (auto colorView : m_ColorViews)
+		for (auto colorTex : m_ColorAttachments)
 		{
 			VkRenderingAttachmentInfo colorAttachment{};
 			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-			colorAttachment.imageView = colorView;
+			colorAttachment.imageView = ((VulkanTexture*)colorTex.get())->GetImageView();
 			colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			if (m_ClearOnBegin)
 			{
@@ -47,12 +45,34 @@ namespace Echo
 			colorAttachments.push_back(colorAttachment);
 		}
 
+		if (m_UseSwapchain) 
+		{
+			VkRenderingAttachmentInfo colorAttachment{};
+			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			colorAttachment.imageView = m_Device->GetActiveImage().ImageView;
+			colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			if (m_ClearOnBegin)
+			{
+				colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				colorAttachment.clearValue.color = { 0.1f, 0.1f, 0.1f, 1.0f };
+			}
+			else
+			{
+				colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+			}
+
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+			colorAttachments.push_back(colorAttachment);
+
+		}
+
 		VkRenderingAttachmentInfo depthAttachment{};
 		VkRenderingAttachmentInfo* pDepthAttachment = nullptr;
-		if (m_DepthView)
+		if (m_HasDepthAttachment)
 		{
 			depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-			depthAttachment.imageView = m_DepthView;
+			depthAttachment.imageView = ((VulkanTexture*)m_DepthAttachment.get())->GetImageView();
 			depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 			depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 			if (m_ClearOnBegin)
@@ -85,40 +105,79 @@ namespace Echo
 		vkCmdEndRendering(cmd);
 	}
 
+	void VulkanFrameBuffer::UpdateSwapchain(uint32_t width, uint32_t height)
+	{
+		if (!m_UseSwapchain && !m_UseSwapchainExtent) return;
+
+		m_Width = width;
+		m_Height = height;
+
+		if (m_UseSwapchain)
+		{
+			m_ColorAttachments.clear();
+
+			m_ColorAttachments.push_back(m_Device->GetDrawImage());
+		}
+	}
+
+	AllocatedImage VulkanFrameBuffer::GetColorAttachment(uint32_t index)
+	{
+		if (m_UseSwapchain)
+		{
+			return m_Device->GetActiveImage();
+		}
+		else
+		{
+			return ((VulkanTexture*)m_ColorAttachments[index].get())->GetAllocatedImage();
+		}
+	}
+
 	void VulkanFrameBuffer::CreateFrameBuffer(const FrameBufferDesc& frameBufferDescription)
 	{
 		m_ClearOnBegin = frameBufferDescription.ClearOnBegin;
+		m_UseSwapchain = frameBufferDescription.UseSwapchainImage;
+		m_UseDrawImage = frameBufferDescription.UseDrawImage;
+		m_UseSwapchainExtent = frameBufferDescription.UseSwapchainExtent;
+		m_UseColorAttachmentSwapchain = frameBufferDescription.UseColorAttachmentSwapchain;
+		m_HasDepthAttachment = frameBufferDescription.DepthAttachment != nullptr;
 
-		if (frameBufferDescription.UseSwapchain)
+		if (frameBufferDescription.UseSwapchainImage)
+		{
+			VulkanSwapchain* swapchain = m_Device->GetSwapchain();
+			m_Width = swapchain->GetExtent().width;
+			m_Height = swapchain->GetExtent().height;
+		}
+		else if (frameBufferDescription.UseDrawImage) 
 		{
 			VulkanSwapchain* swapchain = m_Device->GetSwapchain();
 			m_Width = swapchain->GetExtent().width;
 			m_Height = swapchain->GetExtent().height;
 
-			m_ColorViews.push_back(m_Device->GetDrawImage().ImageView);
+			m_ColorAttachments.push_back(m_Device->GetDrawImage());
 		}
 		else
 		{
-			m_Width = frameBufferDescription.Width;
-			m_Height = frameBufferDescription.Height;
-
-			for (auto& tex : frameBufferDescription.ColorAttachments)
+			if (!frameBufferDescription.UseSwapchainExtent)
 			{
-				VulkanTexture* vkTex = (VulkanTexture*)tex.get();
-				if (vkTex)
-				{
-					m_ColorViews.push_back(vkTex->GetImageView());
-				}
+				m_Width = frameBufferDescription.Width;
+				m_Height = frameBufferDescription.Height;
+			}
+			else 
+			{
+				VulkanSwapchain* swapchain = m_Device->GetSwapchain();
+				m_Width = swapchain->GetExtent().width;
+				m_Height = swapchain->GetExtent().height;
+			}
+
+			for (auto& colorAttachment : frameBufferDescription.ColorAttachments) 
+			{
+				m_ColorAttachments.push_back(colorAttachment);
 			}
 		}
 
-		if (frameBufferDescription.DepthAttachment)
+		if (frameBufferDescription.DepthAttachment != nullptr)
 		{
-			VulkanTexture* vkDepth = (VulkanTexture*) (frameBufferDescription.DepthAttachment.get());
-			if (vkDepth)
-			{
-				m_DepthView = vkDepth->GetImageView();
-			}
+			m_DepthAttachment = frameBufferDescription.DepthAttachment;
 		}
 
 	}

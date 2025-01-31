@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "WindowsWindow.h"
 #include "Echo/Events/WindowEvents.h"
+#include "Echo/Core/Application.h"
 
 #include <cassert>
 #include <chrono>

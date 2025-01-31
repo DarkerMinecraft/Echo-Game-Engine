@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.31.3)
 project(Echo)
 set(CMAKE_CXX_STANDARD 20)
 
+add_library(Echo STATIC)
+
 target_precompile_headers(Echo PRIVATE src/pch.h)
 
 file(GLOB_RECURSE SRC_FILES
@@ -24,22 +26,21 @@ target_include_directories(Echo PRIVATE
     ${CMAKE_SOURCE_DIR}/Echo/vendor/VulkanMemoryAllocator/include
     ${CMAKE_SOURCE_DIR}/Echo/vendor/tinyobjloader
     ${CMAKE_SOURCE_DIR}/Echo/vendor/stb
+    ${CMAKE_SOURCE_DIR}/Echo/vendor/DirectXTK12/Inc
 )
 
 link_directories(${VULKAN_SDK}/Lib)
 
 target_link_libraries(Echo PRIVATE
-    GLFW
+    glfw
     ImGui
-    $ENV{VULKAN_SDK}/vulkan-1.lib
+    $ENV{VULKAN_SDK}/Lib/vulkan-1.lib
+    $ENV{VULKAN_SDK}/Lib/dxcompiler.lib
     vk-bootstrap
-    Slang
+    DirectXTK12
+
 )
-
-target_sources(Echo PRIVATE ${SRC_FILES} src/pch.cpp)
-
-find_package(nuget CONFIG REQUIRED)
-nuget_restore(Echo directxtk12_desktop_2019 2024.6.5.1)
+target_sources(Echo PRIVATE ${SRC_FILES} src/pch.cpp "src/Platform/Shader/ShaderCompiler.h" "src/Platform/Shader/ShaderCompiler.cpp" "src/Platform/Vulkan/VulkanBuffer.cpp" "src/Echo/ImGui/ImGuiBuild.cpp" "src/Platform/Vulkan/VulkanMesh.h" "src/Echo/Graphics/Mesh.h" "src/Platform/Vulkan/VulkanMesh.cpp")
 
 if(WIN32)
     target_compile_definitions(Echo PRIVATE USING_DIRECTX_HEADERS)
