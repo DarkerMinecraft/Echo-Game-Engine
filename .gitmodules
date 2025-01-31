@@ -19,9 +19,6 @@
 [submodule "Echo/vendor/stb"]
 	path = Echo/vendor/stb
 	url = https://github.com/nothings/stb.git
-[submodule "Echo/vendor/Slang"]
-	path = Echo/vendor/Slang
-	url = https://github.com/shader-slang/slang.git
 [submodule "Echo/vendor/GLFW"]
 	path = Echo/vendor/GLFW
 	url = https://github.com/glfw/glfw.git
