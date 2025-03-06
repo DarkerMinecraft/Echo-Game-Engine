@@ -26,3 +26,6 @@
 [submodule "Echo/vendor/DirectXTK12"]
 	path = Echo/vendor/DirectXTK12
 	url = https://github.com/microsoft/DirectXTK12.git
+[submodule "Echo/vendor/VulkanMemoryAllocator"]
+	path = Echo/vendor/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

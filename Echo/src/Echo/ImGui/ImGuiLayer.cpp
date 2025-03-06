@@ -10,7 +10,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
 #include <Echo/Graphics/CommandList.h>
-#include "../Graphics/Commands/CommandFactory.h"
+#include "Echo/Graphics/Commands/CommandFactory.h"
 
 namespace Echo
 {
@@ -79,7 +79,6 @@ namespace Echo
 
 	void ImGuiLayer::OnDetach()
 	{
-		m_ImGuiImage->Destroy();
 	}
 
 	void ImGuiLayer::OnUpdate(Timestep ts)

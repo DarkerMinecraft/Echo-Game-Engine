@@ -136,8 +136,6 @@ namespace Echo
 			.set_minimum_version(1, 3)
 			.set_required_features_13(features)
 			.set_required_features_12(features12)
-			.add_desired_extension("VK_KHR_dynamic_rendering_local_read")
-			.add_required_extension_features(dynamicRenderingLocalReadFeatures)
 			.set_surface(m_Surface)
 			.select()
 			.value();

@@ -9,6 +9,9 @@ endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;Dist" CACHE STRING "Configs" FORCE)
 
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
 foreach(CONFIG_TYPE Debug Release Dist)
     string(TOUPPER ${CONFIG_TYPE} CONFIG_UPPER)
     if(NOT DEFINED CMAKE_EXE_LINKER_FLAGS_${CONFIG_UPPER})
