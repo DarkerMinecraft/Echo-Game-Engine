@@ -19,6 +19,21 @@ namespace Echo
 		{}
 	};
 
+	enum Cursor 
+	{
+		ARROW,
+		RESIZE_ALL,
+		RESIZE_NS,
+		RESIZE_EW,
+		RESIZE_NWSE,
+		RESIZE_NESW,
+		RESIZE_ROW,
+		RESIZE_COL,
+		HAND,
+		NOT_ALLOWED,
+		TEXT
+	};
+
 	class Window 
 	{
 	public:
@@ -36,6 +51,8 @@ namespace Echo
 
 		virtual bool WasWindowResized() = 0;
 		virtual void ResetWindowResizedFlag() = 0;
+
+		virtual void SetCursor(Cursor cursor) = 0;
 
 		virtual void Wait() = 0;
 

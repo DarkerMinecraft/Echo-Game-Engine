@@ -1,9 +1,6 @@
-#pragma once
+#pragma once 
 
 #include "VulkanDevice.h"
-
-#include <vector>
-#include <vulkan/vulkan.h>
 
 namespace Echo 
 {
@@ -11,32 +8,30 @@ namespace Echo
 	class VulkanSwapchain 
 	{
 	public:
-		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height, VulkanSwapchain* oldSwapchain = nullptr);
-		~VulkanSwapchain();
+		VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height);
+		VulkanSwapchain(VulkanDevice* device, VkSwapchainKHR oldSwapchain, uint32_t width, uint32_t height);
 
-		uint32_t AcquireNextImage();
-
-		AllocatedImage GetSwapchainImage(uint32_t imageIndex);
-		VkImageView GetSwapchainImageView(uint32_t imageIndex) { return m_SwapchainImageViews[imageIndex]; }
-
+		VkExtent2D GetExtent() { return m_Extent; }
 		VkSwapchainKHR GetSwapchain() { return m_Swapchain; }
-		VkFormat GetFormat() { return m_SwapchainImageFormat; }
 
-		VkExtent2D GetExtent() { return m_SwapchainExtent; }
-		
+		uint32_t AcquireNextImage(VkSemaphore semaphore);
+
+		VkImage GetImage(uint32_t index) { return m_Images[index]; }
+
 		void DestroySwapchain();
 	private:
-		void CreateSwapchain(uint32_t width, uint32_t height);
-		void CreateSwapchain(uint32_t width, uint32_t height, VkSwapchainKHR& oldSwapchain);
+		void CreateSwapchain();
+		void CreateSwapchain(VkSwapchainKHR oldSwapchain);
 	private:
 		VulkanDevice* m_Device;
-
+		uint32_t m_Width, m_Height;
+		
 		VkSwapchainKHR m_Swapchain;
-		VkFormat m_SwapchainImageFormat;
+		VkFormat m_Format;
+		VkExtent2D m_Extent;
 
-		std::vector<VkImage> m_SwapchainImages;
-		std::vector<VkImageView> m_SwapchainImageViews;
-		VkExtent2D m_SwapchainExtent;
+		std::vector<VkImage> m_Images;
+		std::vector<VkImageView> m_ImageViews;
 	};
 
 }

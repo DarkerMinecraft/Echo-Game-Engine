@@ -26,18 +26,17 @@ namespace Echo
 		static Application& Get() { return *s_Instance; }
 		Window& GetWindow() { return *m_Window; }
 
-		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
-
 		void Close();
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
 	private:
 		Scope<Window> m_Window;
-		ImGuiLayer* m_ImGuiLayer;
 
 		bool m_Running = true;
 		bool m_Minimized = false;
+
+		ImGuiLayer* m_ImGuiLayer;
 
 		LayerStack m_LayerStack;
 

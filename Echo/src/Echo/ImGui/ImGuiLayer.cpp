@@ -4,25 +4,26 @@
 #include "Echo/Core/Application.h"
 
 #include "Platform/Vulkan/VulkanDevice.h"
-#include "Echo/Graphics/RHI.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <backends/imgui_impl_glfw.h>
 #include <GLFW/glfw3.h>
+#include <Echo/Graphics/CommandList.h>
+#include "../Graphics/Commands/CommandFactory.h"
 
-namespace Echo 
+namespace Echo
 {
 
 	ImGuiLayer::ImGuiLayer()
 		: Layer("ImGuiLayer")
 	{
-		
+
 	}
 
 	ImGuiLayer::~ImGuiLayer()
 	{
-		
+
 	}
 
 	void ImGuiLayer::OnAttach()
@@ -72,25 +73,13 @@ namespace Echo
 
 		ImGui_ImplVulkan_Init(&initInfo);
 		ImGui_ImplVulkan_CreateFontsTexture();
-
-		TextureDesc texDesc{};
-		texDesc.Format = TextureFormat::BGRA8;
-		texDesc.UseSwapchainExtent = true;
-		texDesc.Usage = TextureUsage::ColorAttachment;
-
-		Ref<Texture> fbColorAttachment = RHI::CreateTexture(texDesc);
-
-		FrameBufferDesc fbDesc;
-		fbDesc.UseSwapchainImage = true;
-		fbDesc.UseSwapchainExtent = true;
-		fbDesc.ClearOnBegin = false;
-
-		m_ImGuiFrameBuffer = RHI::CreateFrameBuffer(fbDesc);
+		
+		m_DrawImage = Image::Create({ .DrawImage = true });
 	}
 
 	void ImGuiLayer::OnDetach()
 	{
-		
+		m_ImGuiImage->Destroy();
 	}
 
 	void ImGuiLayer::OnUpdate(Timestep ts)
@@ -100,6 +89,7 @@ namespace Echo
 
 	void ImGuiLayer::OnImGuiRender()
 	{
+		
 	}
 
 	void ImGuiLayer::Begin()
@@ -111,20 +101,28 @@ namespace Echo
 
 	void ImGuiLayer::End()
 	{
-		
+		DrawImGui();
 	}
 
 	void ImGuiLayer::DrawImGui()
 	{
 		Application& app = Application::Get();
 		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+		m_ImGuiImage = Image::Create({ .DrawImageExtent = true, .Format = BGRA8 });
 
-		VkCommandBuffer cmd = device->GetActiveCommandBuffer();
+		CommandList cmd;
 
-		m_ImGuiFrameBuffer->Start();
-		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
-		m_ImGuiFrameBuffer->End();
+		cmd.Begin();
+		cmd.RecordCommand(CommandFactory::TransitionImageCommand(m_DrawImage, General, TransferSrc));
+		cmd.RecordCommand(CommandFactory::TransitionImageCommand(m_ImGuiImage, Undefined, TransferDst));
+		cmd.RecordCommand(CommandFactory::CopyImageToImageCommand(m_DrawImage, m_ImGuiImage));
+		cmd.RecordCommand(CommandFactory::TransitionImageCommand(m_ImGuiImage, TransferDst, ColorAttachment));
+		cmd.RecordCommand(CommandFactory::BeginRenderingCommand(m_ImGuiImage));
+		cmd.RecordCommand(CommandFactory::RenderImGuiCommand());
+		cmd.RecordCommand(CommandFactory::EndRenderingCommand());
+		cmd.RecordCommand(CommandFactory::TransitionImageCommand(m_ImGuiImage, ColorAttachment, General));
+		cmd.SetSrcImage(m_ImGuiImage);
+		cmd.Execute();
 
 		ImGuiIO& io = ImGui::GetIO();
 

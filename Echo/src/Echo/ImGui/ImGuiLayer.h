@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Echo/Core/Layer.h"
-
-#include "Echo/Graphics/FrameBuffer.h"
+#include "Echo/Graphics/Image.h"
 
 namespace Echo 
 {
+
 	class ImGuiLayer : public Layer
 	{
 	public:
@@ -20,9 +20,13 @@ namespace Echo
 		void Begin();
 		void End();
 
-		void DrawImGui();
 		void Destroy();
 	private:
-		Ref<FrameBuffer> m_ImGuiFrameBuffer;
+		void DrawImGui();
+	private:
+		Ref<Image> m_DrawImage;
+		Ref<Image> m_ImGuiImage;
 	};
+	
+
 }

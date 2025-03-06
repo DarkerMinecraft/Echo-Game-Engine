@@ -14,7 +14,7 @@ cmakeInstalled = CMakeRequirements.Validate()
 VulkanRequirements.Validate()
 
 print("\nUpdating submodules...")
-subprocess.call(["git", "submodule", "update", "--init", "--recursive"])
+subprocess.call(["git", "submodule", "update", "--remote", "--merge", "--init", "--recursive"])
 
 if (cmakeInstalled):
     print("\nRunning Cmake")
@@ -33,8 +33,6 @@ if (cmakeInstalled):
         subprocess.call(["cmake", "-G", "Xcode", ".."])
     else:
         print(f"Unsupported platform: {system}")
-
-    subprocess.call(["cmake", "--install", "build"])
 
     print("\nSetup completed!")
 else:

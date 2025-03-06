@@ -1,0 +1,32 @@
+#pragma once
+
+#include "Echo/Graphics/CommandBuffer.h"
+
+namespace Echo 
+{
+
+	enum ImageLayout
+	{
+		General,
+		Undefined,
+		ColorAttachment,
+		DepthAttachment,
+		TransferSrc,
+		TransferDst,
+	};
+
+	struct Extent2D 
+	{
+		uint32_t Width;
+		uint32_t Height;
+	};
+
+	class ICommand 
+	{
+	public:
+		virtual ~ICommand() = default;
+
+		virtual void Execute(CommandBuffer* cmd) = 0;
+	};
+
+}

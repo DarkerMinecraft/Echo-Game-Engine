@@ -1,17 +1,33 @@
 #pragma once
 
+#include "Echo/Core/Base.h"
+
+#include "Echo/Graphics/CommandBuffer.h"
+
+#include <vector>
+
 namespace Echo 
 {
 
-	class Buffer 
+	class VertexBuffer 
 	{
 	public:
-		virtual ~Buffer() = default;
+		virtual ~VertexBuffer() = default;
 
-		virtual void BindBuffer() = 0;
-		virtual void WriteToBuffer(void* data) = 0;
+		virtual void Bind(CommandBuffer* cmd) = 0;
 
-		virtual void* GetNativeBuffer() = 0;
+		static Ref<VertexBuffer> Create(std::vector<float> vertices);
+		static Ref<VertexBuffer> Create(std::vector<float> vertices, std::vector<float> color);
 	};
-	
+
+	class IndexBuffer
+	{
+	public:
+		virtual ~IndexBuffer() = default;
+
+		virtual void Bind(CommandBuffer* cmd) = 0;
+
+		static Ref<IndexBuffer> Create(std::vector<uint32_t> indices);
+	};
+
 }

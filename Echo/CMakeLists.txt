@@ -9,9 +9,9 @@ target_precompile_headers(Echo PRIVATE src/pch.h)
 file(GLOB_RECURSE SRC_FILES
     "src/**.h"
     "src/**.cpp"
-    "vendor/glm/**.hpp"
-    "vendor/glm/**.inl"
 )
+
+source_group(TREE "${CMAKE_SOURCE_DIR}/Echo/src" FILES ${SRC_FILES})
 
 target_include_directories(Echo PRIVATE
     src
@@ -38,14 +38,16 @@ target_link_libraries(Echo PRIVATE
     $ENV{VULKAN_SDK}/Lib/dxcompiler.lib
     vk-bootstrap
     DirectXTK12
-
 )
-target_sources(Echo PRIVATE ${SRC_FILES} src/pch.cpp "src/Platform/Shader/ShaderCompiler.h" "src/Platform/Shader/ShaderCompiler.cpp" "src/Platform/Vulkan/VulkanBuffer.cpp" "src/Echo/ImGui/ImGuiBuild.cpp" "src/Platform/Vulkan/VulkanMesh.h" "src/Echo/Graphics/Mesh.h" "src/Platform/Vulkan/VulkanMesh.cpp")
+
+target_sources(Echo PRIVATE 
+    ${SRC_FILES} 
+    src/pch.cpp
+)
 
 if(WIN32)
     target_compile_definitions(Echo PRIVATE USING_DIRECTX_HEADERS)
 endif()
-
 
 foreach(CONFIG Debug Release Dist)
     target_compile_definitions(Echo PRIVATE $<$<CONFIG:${CONFIG}>:ECHO_${CONFIG}>)

@@ -1,54 +1,50 @@
 #pragma once
 
 #include "Echo/Graphics/Pipeline.h"
-#include "Platform/Shader/ShaderCompiler.h"
+
 #include "VulkanDevice.h"
 
-#include <vector>
-
-namespace Echo
+namespace Echo 
 {
-	
-	enum PipelineType 
-	{
-		Graphics,
-		Compute,
-		Raytracing
-	};
 
-	class VulkanPipeline : public Pipeline
+	class VulkanPipeline : public Pipeline 
 	{
 	public:
-		VulkanPipeline(VulkanDevice* device, ShaderLibrary library, const PipelineDesc& pipelineDescription);
+		VulkanPipeline(Device* device, Ref<Material> material, PipelineDesc& desc);
+		VulkanPipeline(Device* device, const char* computeFilePath, PipelineDesc& desc);
 		virtual ~VulkanPipeline();
-		
-		virtual void Bind() override;
-		virtual void WriteDescriptorBuffer(Ref<Buffer> buffer, uint32_t bufferSize, uint32_t binding) override;
-		virtual void WriteDescriptorStorageImage(Ref<FrameBuffer> frameBuffer, uint32_t binding) override;
+
+		virtual void Bind(CommandBuffer* cmd) override;
+
+		virtual void WriteDesciptorStorageImage(Ref<Image> image, uint32_t binding) override;
+
+		PipelineType GetType()  { return m_PipelineType; }
+		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
+
+		VkDescriptorSet GetDescriptorSet() { return m_DescriptorSet; }
+		VkPipeline GetPipeline() { return m_Pipeline; }
+		VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
 	private:
-		void CreateShaderModules(const PipelineDesc& pipelineDescription);
-		VkShaderModule CreateShaderModule(SpirvData code);
+		void CreateComputePipeline(const char* computeFilePath, PipelineDesc& desc);
+		void CreateGraphicsPipeline(Ref<Material> material, PipelineDesc& desc);
 
-		void InitPipelineLayout(const PipelineDesc& pipelineDescription);
-		void CreateDescriptorSet(const PipelineDesc& pipelineDescription);
-		void InitPipeline(const PipelineDesc& pipelineDescription);
-
-		VkDescriptorSetLayout CreateDescriptorSetLayout(const PipelineDesc& desc);
+		void CreatePipelineLayout(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout);
+		void CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout, uint32_t maxSets);
 	private:
-		VulkanDevice* m_Device; 
-
-		ShaderLibrary m_Library;
-
-		VkPipelineLayout m_PipelineLayout;
-		VkPipeline m_Pipeline;
-
-		VkDescriptorPool m_DescriptorPool;
-		VkDescriptorSet m_DescriptorSet;
-		VkDescriptorSetLayout m_DescriptorSetLayout;
-
-		VkShaderModule m_VertexShader, m_FragmentShader, m_ComputeShader, m_GeometryShader, m_RaytracingShader;
+		static ShaderLibrary s_ShaderLibrary;
+	private:
+		VulkanDevice* m_Device;
 		PipelineType m_PipelineType;
-		ShaderType m_ShaderType;
+		
+		Ref<Material> m_Material;
+
+		VkPipeline m_Pipeline;
+		VkPipelineLayout m_PipelineLayout;
+		VkDescriptorSetLayout m_DescriptorSetLayout;
+		VkDescriptorSet m_DescriptorSet = nullptr;
+		VkDescriptorPool m_DescriptorPool;
+
+		VkShaderModule m_ComputeShaderModule;
 	};
 
 }

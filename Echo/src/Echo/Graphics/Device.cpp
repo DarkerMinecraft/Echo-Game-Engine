@@ -3,17 +3,18 @@
 
 #include "Platform/Vulkan/VulkanDevice.h"
 
+#include "Echo/Core/Base.h"
+
 namespace Echo 
 {
 
-	Scope<Device> Device::Create(GraphicsAPI api, void* windowHwnd, int width, int height)
+	Scope<Device> Device::Create(DeviceType type, const void* window, unsigned int width, unsigned int height)
 	{
-		switch (api) 
+		switch (type)
 		{
-			case Vulkan: return CreateScope<VulkanDevice>(windowHwnd, width, height);
-			case DirectX12: return nullptr;
+			case DeviceType::Vulkan: return CreateScope<VulkanDevice>(window, width, height);
 		}
-		
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
 	}
 

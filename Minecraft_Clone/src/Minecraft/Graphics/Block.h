@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Echo/Graphics/Model.h"
-
 namespace Minecraft 
 {
 
@@ -9,7 +7,6 @@ namespace Minecraft
 	{
 	public:
 	private:
-		Echo::Ref<Echo::Model> m_BlockModel;
 	};
 
 }

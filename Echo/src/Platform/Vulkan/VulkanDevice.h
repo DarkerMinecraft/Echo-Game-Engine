@@ -1,131 +1,96 @@
 #pragma once
 
 #include "Echo/Graphics/Device.h"
-#include "Echo/ImGui/ImGuiLayer.h"
-#include "Platform/Shader/ShaderCompiler.h"
-#include "Utils/VulkanTypes.h"
 
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
-#include <deque>
+
+#define GLFW_INCLUDE_VULKAN
+#include <glfw/glfw3.h>
+
+#include "vk_mem_alloc.h"
+#include "Utils/VulkanTypes.h"
+#include <Platform/Shader/ShaderCompiler.h>
 
 namespace Echo
 {
 
 	class VulkanSwapchain;
 
-	struct VulkanFrameData
-	{
-		VkSemaphore SwapchainSemaphore, RenderSemaphore;
-		VkFence RenderFence;
-
-		VkCommandPool CommandPool;
-		VkCommandBuffer CommandBuffer;
-	};
-
 	class VulkanDevice : public Device
 	{
 	public:
-		VulkanDevice(void* windowHwnd, int width, int height);
-		virtual ~VulkanDevice();
+		VulkanDevice(const void* window, unsigned int width, unsigned int height);
+		~VulkanDevice();
 
-		virtual void Start() override;
-		virtual void End() override;
+		virtual DeviceType GetDeviceType() const { return DeviceType::Vulkan; };
 
-		virtual Ref<Buffer> CreateBuffer(const BufferDesc& bufferDescription) override;
-		virtual Ref<Texture> CreateTexture(const TextureDesc& textureDescription) override;
-		virtual Ref<Pipeline> CreatePipeline(const PipelineDesc& pipelineDescription) override;
-		virtual Ref<FrameBuffer> CreateFrameBuffer(const FrameBufferDesc& frameBufferDescription) override;
+		ShaderLibrary GetShaderLibrary() { return m_ShaderLibrary; }
 
-		virtual Ref<Mesh> CreateMesh(std::vector<Vertex3D> meshData, std::vector<uint32_t> indices) override;
-		virtual Ref<Mesh> CreateMesh(std::vector<Vertex2D> meshData, std::vector<uint32_t> indices) override;
-
-		virtual void CMDDispatch(float groupXScale, float groupYScale) override;
-		virtual void CMDDrawIndexed(uint32_t indicesSize) override;
-	public:
 		VkInstance GetInstance() { return m_Instance; }
-		VkDevice GetDevice() { return m_Device; }
-		VkSurfaceKHR GetSurface() { return m_Surface; }
-		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
-
 		VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
-		VkDescriptorPool GetImGuiDescriptorPool() { return m_ImGuiPool; }
+		VkQueue GetPresentQueue() { return m_PresentQueue; }
+		VkDevice GetDevice() { return m_Device; }
+		VkPhysicalDevice GetPhysicalDevice() { return m_PhysicalDevice; }
+		VkSurfaceKHR GetSurface() { return m_Surface; }
 
-		VulkanSwapchain* GetSwapchain() { return m_Swapchain.get(); }
+		VkDescriptorPool GetImGuiDescriptorPool() { return m_ImGuiDescriptorPool; }
+		
+		uint32_t GetGraphicsQueueFamily() { return m_GraphicsQueueFamily; }
+		uint32_t GetPresentQueueFamily() { return m_PresentQueueFamily; }
+
+		VulkanSwapchain& GetSwapchain() { return *m_Swapchain; }
 
 		VmaAllocator GetAllocator() { return m_Allocator; }
 
-		VkCommandBuffer GetActiveCommandBuffer() { return m_ActiveCommandBuffer; }
+		VkExtent2D GetDrawExtent() { return m_DrawExtent; }
+		AllocatedImage GetDrawImage() { return m_DrawImage; }
 
-		AllocatedImage GetActiveImage() { return m_ActiveImage; }
-		Ref<Texture> GetDrawImage() { return m_DrawImage; }
-
-		VulkanFrameData& GetCurrentFrame() { return m_FramesData[m_FrameNumber % FRAME_OVERLAP]; }
-
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		VkImage GetSwapchainImage(uint32_t imageIndex);
 
 		AllocatedBuffer CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 		void DestroyBuffer(const AllocatedBuffer& buffer);
 
-		AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
-		AllocatedImage CreateImage(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
-		void DestroyImage(const AllocatedImage& img);
+		void DestroyImage(const AllocatedImage& image);
 
-		VkCommandBuffer BeginSingleTimeCommands();
-		void EndSingleTimeCommands(VkCommandBuffer cmd);
-	private:
-		void CreateSwapchain(int width, int height);
+		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+		void* GetMappedData(const AllocatedBuffer& buffer);
+		
 		void RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain);
-
-		void Initalize(void* windowHwnd);
+	private:
+		void InitVulkan();
+		void InitSwapchain();
 		void InitSyncStructures();
 		void InitCommands();
 		void CreateImGuiDescriptorPool();
-
-		void CreateSingleUseCommandPool();
-
-		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);		
 	private:
-		Scope<VulkanSwapchain> m_Swapchain;
-
-		ShaderLibrary m_ShaderLibrary;
-		
-		VkDescriptorPool m_ImGuiPool;
-		VkCommandPool m_SingleUseCommandPool;
+		GLFWwindow* m_Window;
+		unsigned int m_Width;
+		unsigned int m_Height;
 
 		VkInstance m_Instance;
-		VkDebugUtilsMessengerEXT m_DebugMessenger;
-		VkSurfaceKHR m_Surface;
-
 		VkPhysicalDevice m_PhysicalDevice;
 		VkDevice m_Device;
-
 		VkQueue m_GraphicsQueue;
 		uint32_t m_GraphicsQueueFamily;
+		VkQueue m_PresentQueue;
+		uint32_t m_PresentQueueFamily;
+		VkSurfaceKHR m_Surface;
+		VkDebugUtilsMessengerEXT m_DebugMessenger;
 
-		VkCommandPool m_ImmCommandPool;
-		VkCommandBuffer m_ImmCommandBuffer;
 		VkFence m_ImmFence;
+		VkCommandBuffer m_ImmCommandBuffer;
+		VkCommandPool m_ImmCommandPool;
 
-		VkCommandBuffer m_ActiveCommandBuffer;
-		AllocatedImage m_ActiveImage;
-
-		VulkanFrameData m_FramesData[FRAME_OVERLAP];
-
-		uint32_t m_ImageIndex;
-		int m_FrameNumber = 0;
-
+		VkDescriptorPool m_ImGuiDescriptorPool;
+		
+		VmaAllocator m_Allocator;
+		AllocatedImage m_DrawImage;
 		VkExtent2D m_DrawExtent;
 
-		VmaAllocator m_Allocator;
+		ShaderLibrary m_ShaderLibrary;
 
-		Ref<Texture> m_DrawImage;
-
-		std::vector<Ref<Pipeline>> m_Pipelines;
-		std::vector<Ref<Texture>> m_Textures;
-		std::vector<Ref<Buffer>> m_Buffers;
-		std::vector<Ref<FrameBuffer>> m_FrameBuffers;
-		std::vector<Ref<Mesh>> m_Meshes;
+		Scope<VulkanSwapchain> m_Swapchain;
 	};
 
 }

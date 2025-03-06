@@ -10,6 +10,7 @@ set_target_properties(Minecraft_Clone PROPERTIES OUTPUT_NAME "Minecraft Clone")
 
 target_include_directories(Minecraft_Clone PRIVATE
     src
+    assets
     ${CMAKE_SOURCE_DIR}/Echo/src
     ${CMAKE_SOURCE_DIR}/Echo/vendor/spdlog/include
     ${CMAKE_SOURCE_DIR}/Echo/vendor/glm
@@ -21,6 +22,20 @@ file(GLOB_RECURSE MINECRAFT_SRC_FILES
     "src/**.h"
     "src/**.cpp"
 )
+
+source_group(TREE "${CMAKE_SOURCE_DIR}/Minecraft_Clone/src" FILES ${SRC_FILES})
+
+file(GLOB_RECURSE ASSET_FILES "${CMAKE_SOURCE_DIR}/Minecraft_Clone/assets/**")
+
+# Gather all HLSL shader files (adjust the path as needed)
+file(GLOB HLSL_FILES "${ASSET_FILES}/shaders/*.hlsl")
+
+source_group(TREE "${CMAKE_SOURCE_DIR}/Minecraft_Clone/assets" FILES ${ASSET_FILES})
+
+# Force CMake (and therefore Visual Studio) to treat them as HLSL files
+foreach(shader ${HLSL_FILES})
+    set_source_files_properties(${shader} PROPERTIES LANGUAGE HLSL)
+endforeach()
 
 target_sources(Minecraft_Clone PRIVATE ${MINECRAFT_SRC_FILES})
 
@@ -52,3 +67,9 @@ add_custom_target(CopyAssets ALL
 )
 
 add_dependencies(Minecraft_Clone CopyAssets)
+
+# Add the asset files directly to the Minecraft_Clone target
+target_sources(Minecraft_Clone PRIVATE ${ASSET_FILES})
+
+# Optionally, group them under an "Assets" folder in the IDE for better organization
+source_group("Assets" FILES ${ASSET_FILES})

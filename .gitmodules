@@ -10,9 +10,6 @@
 [submodule "Echo/vendor/vk-bootstrap"]
 	path = Echo/vendor/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap
-[submodule "Echo/vendor/VulkanMemoryAllocator"]
-	path = Echo/vendor/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 [submodule "Echo/vendor/tinyobjloader"]
 	path = Echo/vendor/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git

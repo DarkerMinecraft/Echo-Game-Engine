@@ -26,6 +26,8 @@ namespace Echo
 
 		virtual void Wait() override;
 
+		virtual void SetCursor(Cursor cursor) override;
+
 		virtual void SetVSync(bool enabled) override;
 		virtual bool IsVSync() const override;
 

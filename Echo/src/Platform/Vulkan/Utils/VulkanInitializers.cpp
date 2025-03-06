@@ -4,6 +4,16 @@
 namespace Echo 
 {
 
+	VkCommandPoolCreateInfo VulkanInitializers::CommandPoolCreateInfo(VkCommandPoolCreateFlags flags, uint32_t queueFamilyIndex)
+	{
+		VkCommandPoolCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		info.pNext = nullptr;
+		info.queueFamilyIndex = queueFamilyIndex;
+		info.flags = flags;
+		return info;
+	}
+
 	VkCommandBufferAllocateInfo VulkanInitializers::CommandBufferAllocateInfo(VkCommandPool pool, uint32_t count)
 	{
 		VkCommandBufferAllocateInfo info = {};
@@ -60,6 +70,26 @@ namespace Echo
 		info.commandBuffer = cmd;
 		info.deviceMask = 0;
 
+		return info;
+	}
+
+	VkFenceCreateInfo VulkanInitializers::FenceCreateInfo(VkFenceCreateFlags flags)
+	{
+		VkFenceCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		info.pNext = nullptr;
+
+		info.flags = flags;
+
+		return info;
+	}
+
+	VkSemaphoreCreateInfo VulkanInitializers::SemaphoreCreateInfo(VkSemaphoreCreateFlags flags)
+	{
+		VkSemaphoreCreateInfo info = {};
+		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		info.pNext = nullptr;
+		info.flags = flags;
 		return info;
 	}
 

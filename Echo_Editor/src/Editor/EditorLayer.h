@@ -1,6 +1,10 @@
 #pragma once
 
 #include <Echo/Core/Layer.h>
+#include <Echo/Graphics/Image.h>
+#include <Echo/Graphics/Pipeline.h>
+
+#include <Echo/Graphics/Buffer.h>
 
 namespace Echo
 {
@@ -22,7 +26,12 @@ namespace Echo
 
 		virtual void Destroy() override;
 	private:
-		void SetBackgroundEffects();
+		Ref<Image> m_DrawImage;
+
+		Ref<Pipeline> m_ComputePipeline;
+		Ref<Pipeline> m_TrianglePipeline;
+
+		Ref<VertexBuffer> m_TriangleVertexBuffer;
 	};
 }
 

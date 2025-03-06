@@ -1,149 +1,154 @@
 #include "pch.h"
 #include "VulkanBuffer.h"
 
-namespace Echo 
+#include "VulkanCommandBuffer.h"
+
+#include <vk_mem_alloc.h>
+
+namespace Echo
 {
 
-
-
-	VulkanBuffer::VulkanBuffer(VulkanDevice* device, const BufferDesc& bufferDescription)
-		: m_Device(device)
+	VulkanVertexBuffer::VulkanVertexBuffer(Device* device, std::vector<float> vertices)
+		: m_Device((VulkanDevice*)device)
 	{
-		CreateBuffer(bufferDescription);
+		CreateBuffer(vertices);
 	}
 
-	VulkanBuffer::~VulkanBuffer()
+	VulkanVertexBuffer::VulkanVertexBuffer(Device* device, std::vector<float> vertices, std::vector<float> colors)
+		: m_Device((VulkanDevice*)device)
 	{
-		vkDestroyBuffer(m_Device->GetDevice(), m_Buffer, nullptr);
-		vkFreeMemory(m_Device->GetDevice(), m_BufferMemory, nullptr);
+		CreateBuffer(vertices, colors);
 	}
 
-	void VulkanBuffer::BindBuffer()
+	VulkanVertexBuffer::~VulkanVertexBuffer()
 	{
-		VkCommandBuffer cmd = m_Device->GetActiveCommandBuffer();
-
-		if (m_BufferUsage & BUFFER_USAGE_VERTEX) 
-		{
-			VkBuffer vertexBuffers[] = { m_Buffer };
-			vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, { 0 });
-		} else if (m_BufferUsage & BUFFER_USAGE_INDEX) 
-		{
-			vkCmdBindIndexBuffer(cmd, m_Buffer, 0, VK_INDEX_TYPE_UINT32);
-		}
+		m_Device->DestroyBuffer(m_Buffer);
 	}
 
-	void VulkanBuffer::WriteToBuffer(void* data)
+	void VulkanVertexBuffer::Bind(CommandBuffer* cmd)
 	{
-		void* mappedData;
-		vkMapMemory(m_Device->GetDevice(), m_BufferMemory, 0, sizeof(data), 0, &mappedData);
-		memcpy(mappedData, data, sizeof(data));
-		vkUnmapMemory(m_Device->GetDevice(), m_BufferMemory);
+		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+
+		VkBuffer vertexBuffers[] = { m_Buffer.Buffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	}
 
-	void VulkanBuffer::CreateBuffer(const BufferDesc& desc)
+	void VulkanVertexBuffer::CreateBuffer(std::vector<float> vertices)
 	{
-		VkBufferUsageFlags usageFlags = 0;
-		if (desc.Usage & BUFFER_USAGE_VERTEX) usageFlags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		if (desc.Usage & BUFFER_USAGE_INDEX) usageFlags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-		if (desc.Usage & BUFFER_USAGE_UNIFORM) usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		if (desc.Usage & BUFFER_USAGE_STORAGE) usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		if (desc.Usage & BUFFER_USAGE_TRANSFER_SRC) usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		if (desc.Usage & BUFFER_USAGE_TRANSFER_DST) usageFlags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		if (desc.UseStagingBuffer) usageFlags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		const size_t bufferSize = vertices.size() * sizeof(float);
 
-		m_BufferUsage = desc.Usage;
+		m_Buffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+										  VMA_MEMORY_USAGE_GPU_ONLY);
 
-		VkMemoryPropertyFlags memoryProperties = 0;
-		if (desc.Flags & MEMORY_HOST_VISIBLE) memoryProperties |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		if (desc.Flags & MEMORY_DEVICE_LOCAL) memoryProperties |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		if (desc.Flags & MEMORY_HOST_COHERENT) memoryProperties |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		AllocatedBuffer staging = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+		void* data = m_Device->GetMappedData(staging);
 
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = desc.BufferSize;
-		bufferInfo.usage = usageFlags;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		memcpy(data, vertices.data(), bufferSize);
 
-		if (vkCreateBuffer(m_Device->GetDevice(), &bufferInfo, nullptr, &m_Buffer) != VK_SUCCESS)
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
 		{
-			throw std::runtime_error("Failed to create buffer!");
+			VkBufferCopy vertexCopy{ 0 };
+			vertexCopy.dstOffset = 0;
+			vertexCopy.srcOffset = 0;
+			vertexCopy.size = bufferSize;
+
+			vkCmdCopyBuffer(cmd, staging.Buffer, m_Buffer.Buffer, 1, &vertexCopy);
+		});
+
+		m_Device->DestroyBuffer(staging);
+	}
+
+	void VulkanVertexBuffer::CreateBuffer(std::vector<float> vertices, std::vector<float> colors)
+	{
+		const size_t positionComponentCount = 2;
+		const size_t colorComponentCount = 3;
+
+		size_t vertexCount = vertices.size() / positionComponentCount;
+
+		const size_t interleavedComponentCount = positionComponentCount + colorComponentCount;
+
+		std::vector<float> interleaved;
+		interleaved.resize(vertexCount * interleavedComponentCount);
+
+		for (size_t i = 0; i < vertexCount; i++)
+		{
+			for (size_t j = 0; j < positionComponentCount; j++)
+			{
+				interleaved[i * interleavedComponentCount + j] = vertices[i * positionComponentCount + j];
+			}
+
+			for (size_t j = 0; j < colorComponentCount; j++)
+			{
+				interleaved[i * interleavedComponentCount + positionComponentCount + j] = colors[i * colorComponentCount + j];
+			}
 		}
 
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_Device->GetDevice(), m_Buffer, &memRequirements);
+		const size_t bufferSize = interleaved.size() * sizeof(float);
 
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = m_Device->FindMemoryType(memRequirements.memoryTypeBits, memoryProperties);
+		m_Buffer = m_Device->CreateBuffer(bufferSize,
+										  VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+										  VMA_MEMORY_USAGE_GPU_ONLY);
 
-		if (vkAllocateMemory(m_Device->GetDevice(), &allocInfo, nullptr, &m_BufferMemory) != VK_SUCCESS)
+		AllocatedBuffer staging = m_Device->CreateBuffer(bufferSize,
+														 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+
+		void* data = m_Device->GetMappedData(staging);
+		memcpy(data, interleaved.data(), bufferSize);
+
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
 		{
-			throw std::runtime_error("Failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(m_Device->GetDevice(), m_Buffer, m_BufferMemory, 0);
-
-		if (desc.InitialData && !desc.UseStagingBuffer)
-		{
-			void* mappedData;
-			vkMapMemory(m_Device->GetDevice(), m_BufferMemory, 0, desc.BufferSize, 0, &mappedData);
-			memcpy(mappedData, desc.InitialData, desc.BufferSize);
-			vkUnmapMemory(m_Device->GetDevice(), m_BufferMemory);
-		}
-
-		if (desc.InitialData && desc.UseStagingBuffer) 
-		{
-			VkBuffer stagingBuffer;
-			VkDeviceMemory stagingBufferMemory;
-
-			CreateStagingBuffer(desc.BufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-			void* data;
-			vkMapMemory(m_Device->GetDevice(), stagingBufferMemory, 0, desc.BufferSize, 0, &data);
-			memcpy(data, desc.InitialData, desc.BufferSize);
-			vkUnmapMemory(m_Device->GetDevice(), stagingBufferMemory);
-
-			VkCommandBuffer cmd = m_Device->BeginSingleTimeCommands();
 			VkBufferCopy copyRegion{};
 			copyRegion.srcOffset = 0;
-			copyRegion.dstOffset = 0; 
-			copyRegion.size = desc.BufferSize;
-			vkCmdCopyBuffer(cmd, stagingBuffer, m_Buffer, 1, &copyRegion);
-			m_Device->EndSingleTimeCommands(cmd);
+			copyRegion.dstOffset = 0;
+			copyRegion.size = bufferSize;
+			vkCmdCopyBuffer(cmd, staging.Buffer, m_Buffer.Buffer, 1, &copyRegion);
+		});
 
-			vkDestroyBuffer(m_Device->GetDevice(), stagingBuffer, nullptr);
-			vkFreeMemory(m_Device->GetDevice(), stagingBufferMemory, nullptr);
-		}
+		m_Device->DestroyBuffer(staging);
 	}
 
-	void VulkanBuffer::CreateStagingBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	VulkanIndexBuffer::VulkanIndexBuffer(Device* device, std::vector<uint32_t> indices)
+		: m_Device((VulkanDevice*)device)
 	{
-		VkBufferCreateInfo bufferInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		CreateBuffer(indices);
+	}
 
-		if (vkCreateBuffer(m_Device->GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+	VulkanIndexBuffer::~VulkanIndexBuffer()
+	{
+		m_Device->DestroyBuffer(m_Buffer);
+	}
+
+	void VulkanIndexBuffer::Bind(CommandBuffer* cmd)
+	{
+		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+
+		vkCmdBindIndexBuffer(commandBuffer, m_Buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+	}
+
+	void VulkanIndexBuffer::CreateBuffer(std::vector<uint32_t> indices)
+	{
+		const size_t bufferSize = indices.size() * sizeof(uint32_t);
+
+		m_Buffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+										  VMA_MEMORY_USAGE_GPU_ONLY);
+
+		AllocatedBuffer staging = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+		void* data = m_Device->GetMappedData(staging);
+
+		memcpy(data, indices.data(), bufferSize);
+
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
 		{
-			throw std::runtime_error("Failed to create buffer!");
-		}
+			VkBufferCopy indexCopy{ 0 };
+			indexCopy.dstOffset = 0;
+			indexCopy.srcOffset = 0;
+			indexCopy.size = bufferSize;
 
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_Device->GetDevice(), buffer, &memRequirements);
+			vkCmdCopyBuffer(cmd, staging.Buffer, m_Buffer.Buffer, 1, &indexCopy);
+		});
 
-		VkMemoryAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = m_Device->FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(m_Device->GetDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(m_Device->GetDevice(), buffer, bufferMemory, 0);
+		m_Device->DestroyBuffer(staging);
 	}
 
 }

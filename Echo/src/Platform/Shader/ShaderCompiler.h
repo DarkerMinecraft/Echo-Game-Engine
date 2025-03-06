@@ -41,11 +41,14 @@ namespace Echo
 	class ShaderCompiler 
 	{
 	public:
-		ShaderCompiler(const std::wstring& filePath, RendererType rendererType, ShaderType shaderType);
+		ShaderCompiler(const std::string& filePath, RendererType rendererType, ShaderType shaderType);
+		ShaderCompiler(const char* shaderSource, RendererType rendererType, ShaderType shaderType);
 
 		SpirvData GetSpriv() { return m_Spirv; }
 	private:
-		void LoadHLSL(const std::wstring& filePath, RendererType rendererType, ShaderType shaderType);
+		void LoadHLSL(const std::string& filePath, RendererType rendererType, ShaderType shaderType);
+		void LoadHLSLFromSource(const char* shaderSource,
+								RendererType rendererType, ShaderType shaderType);
 	private:
 		SpirvData m_Spirv;
 	};
@@ -53,9 +56,11 @@ namespace Echo
 	class ShaderLibrary 
 	{
 	public:
-		SpirvData AddSpirvShader(const std::wstring& filePath, ShaderType type);
-		SpirvData GetSpirv(const wchar_t* name) { return m_SpirvMap[name]; }
+		SpirvData AddSpirvShader(const std::string& filePath, ShaderType type);
+		SpirvData AddSpirvShader(const char* shaderSource, std::string shaderName, ShaderType type);
+
+		SpirvData GetSpirv(const char* name) { return m_SpirvMap[name]; }
 	private:
-		std::map<const wchar_t*, SpirvData> m_SpirvMap;
+		std::map<const char*, SpirvData> m_SpirvMap;
 	};
 }

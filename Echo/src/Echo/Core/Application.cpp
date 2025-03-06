@@ -37,8 +37,6 @@ namespace Echo
 
 			if(!m_Minimized)
 			{
-				device->Start();
-
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(ts);
 
@@ -46,8 +44,6 @@ namespace Echo
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
 				m_ImGuiLayer->End();
-
-				device->End();
 			} 
 
 			m_Window->OnUpdate();

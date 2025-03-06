@@ -2,10 +2,6 @@
 
 #include <Echo/Core/Layer.h>
 
-#include <Echo/Graphics/FrameBuffer.h>
-#include <Echo/Graphics/Pipeline.h>
-#include <Echo/Graphics/Mesh.h>
-
 #include <glm/glm.hpp>
 
 namespace Minecraft 
@@ -28,12 +24,6 @@ namespace Minecraft
 
 		virtual void Destroy() override;
 	private:
-		Echo::Ref<Echo::FrameBuffer> m_BackgroundFrameBuffer;
-		Echo::Ref<Echo::Buffer> m_NightSkyBuffer;
-		Echo::Ref<Echo::Pipeline> m_BackgroundComputePipeline;
-
-		Echo::Ref<Echo::Mesh> m_TriangleMesh;
-
 		glm::vec4 m_Data1;
 	};
 

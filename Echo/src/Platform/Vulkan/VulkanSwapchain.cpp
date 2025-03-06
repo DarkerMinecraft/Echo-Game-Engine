@@ -1,114 +1,83 @@
 #include "pch.h"
 #include "VulkanSwapchain.h"
 
-#include <VkBootstrap.h>
+#include "VkBootstrap.h"
 
-namespace Echo 
+namespace Echo
 {
 
-	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height, VulkanSwapchain* oldSwapchain /*= nullptr*/)
-		: m_Device(device)
+	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, uint32_t width, uint32_t height)
+		: m_Device(device), m_Width(width), m_Height(height)
 	{
-		if (!oldSwapchain) 
-		{
-			CreateSwapchain(width, height);
-		}
-		else 
-		{
-			VkSwapchainKHR old = oldSwapchain->GetSwapchain();
-			CreateSwapchain(width, height, old);
-		}
+		CreateSwapchain();
 	}
 
-	VulkanSwapchain::~VulkanSwapchain()
+	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, VkSwapchainKHR oldSwapchain, uint32_t width, uint32_t height)
+		: m_Device(device), m_Width(width), m_Height(height)
 	{
-		DestroySwapchain();
+		CreateSwapchain(oldSwapchain);
 	}
 
-	uint32_t VulkanSwapchain::AcquireNextImage()
+	void VulkanSwapchain::CreateSwapchain()
+	{
+		vkb::SwapchainBuilder swapchainBuilder{ m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetSurface()};
+
+		m_Format = VK_FORMAT_B8G8R8A8_UNORM;
+
+		vkb::Swapchain vkbSwapchain = swapchainBuilder
+			.set_desired_format(VkSurfaceFormatKHR{ .format = m_Format, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_extent(m_Width, m_Height)
+			.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+			.build()
+			.value();
+
+		m_Extent = vkbSwapchain.extent;
+
+		m_Swapchain = vkbSwapchain.swapchain;
+		m_Images = vkbSwapchain.get_images().value();
+		m_ImageViews = vkbSwapchain.get_image_views().value();
+	}
+
+	uint32_t VulkanSwapchain::AcquireNextImage(VkSemaphore semaphore)
 	{
 		uint32_t imageIndex;
-
-		VkSemaphore swapchainSemaphore = m_Device->GetCurrentFrame().SwapchainSemaphore;
-		VkResult result = vkAcquireNextImageKHR(m_Device->GetDevice(),
-												m_Swapchain,
-												1000000000,
-												swapchainSemaphore,
-												nullptr,
-												&imageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
-		{
-			return -1;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-		{
-			throw std::runtime_error("Failed to acquire swap chain image!");
-		}
+		vkAcquireNextImageKHR(m_Device->GetDevice(), m_Swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
 
 		return imageIndex;
-	}
-
-	AllocatedImage VulkanSwapchain::GetSwapchainImage(uint32_t imageIndex)
-	{
-		AllocatedImage image{};
-		image.Image = m_SwapchainImages[imageIndex];
-		image.ImageView = m_SwapchainImageViews[imageIndex];
-		image.ImageExtent = VkExtent3D{ m_SwapchainExtent.width, m_SwapchainExtent.height, 0 };
-		image.ImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
-		return image;
 	}
 
 	void VulkanSwapchain::DestroySwapchain()
 	{
 		vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
 
-		for (int i = 0; i < m_SwapchainImageViews.size(); i++)
+		for (int i = 0; i < m_ImageViews.size(); i++)
 		{
-			vkDestroyImageView(m_Device->GetDevice(), m_SwapchainImageViews[i], nullptr);
+			vkDestroyImageView(m_Device->GetDevice(), m_ImageViews[i], nullptr);
 		}
 	}
 
-	void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height)
+	void VulkanSwapchain::CreateSwapchain(VkSwapchainKHR oldSwapchain)
 	{
 		vkb::SwapchainBuilder swapchainBuilder{ m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetSurface() };
 
-		m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+		m_Format = VK_FORMAT_B8G8R8A8_UNORM;
 
 		vkb::Swapchain vkbSwapchain = swapchainBuilder
-			.set_desired_format(VkSurfaceFormatKHR{ .format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
-			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
-			.set_desired_extent(width, height)
+			.set_desired_format(VkSurfaceFormatKHR{ .format = m_Format, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+			.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+			.set_desired_extent(m_Width, m_Height)
 			.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-			.build()
-			.value();
-
-		m_SwapchainExtent = vkbSwapchain.extent;
-
-		m_Swapchain = vkbSwapchain.swapchain;
-		m_SwapchainImages = vkbSwapchain.get_images().value();
-		m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
-	}
-
-	void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, VkSwapchainKHR& oldSwapchain)
-	{
-		vkb::SwapchainBuilder swapchainBuilder{ m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetSurface() };
-
-		m_SwapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
-
-		vkb::Swapchain vkbSwapchain = swapchainBuilder
-			.set_desired_format(VkSurfaceFormatKHR{ .format = m_SwapchainImageFormat, .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
-			.set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR)
-			.set_desired_extent(width, height)
 			.set_old_swapchain(oldSwapchain)
-			.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 			.build()
 			.value();
 
-		m_SwapchainExtent = vkbSwapchain.extent;
+		m_Extent = vkbSwapchain.extent;
 
 		m_Swapchain = vkbSwapchain.swapchain;
-		m_SwapchainImages = vkbSwapchain.get_images().value();
-		m_SwapchainImageViews = vkbSwapchain.get_image_views().value();
+		m_Images = vkbSwapchain.get_images().value();
+		m_ImageViews = vkbSwapchain.get_image_views().value();
 	}
 
 }
+
