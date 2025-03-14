@@ -40,6 +40,8 @@ namespace Echo
 		vkDeviceWaitIdle(m_Device);
 		DestroyImage(m_DrawImage);
 
+		m_Images.clear();
+
 		vmaDestroyAllocator(m_Allocator);
 
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -340,7 +342,6 @@ namespace Echo
 			height,
 			1
 		};
-
 
 		m_DrawExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 		m_DrawImage = CreateImage(drawImageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,

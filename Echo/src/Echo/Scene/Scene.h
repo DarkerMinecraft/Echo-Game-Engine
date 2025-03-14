@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Echo/Graphics/CommandList.h"
+#include "Echo/Graphics/Camera.h"
 
 #include <entt.hpp>
 
@@ -20,8 +21,8 @@ namespace Echo
 
 		void DestroyEntity(Entity entity);
 
-		void OnRender(CommandList& cmd);
-		void OnUpdate(Timestep ts);
+		void OnUpdateEditor(CommandList& cmd, const Camera& camera, Timestep ts);
+		void OnUpdateRuntime(CommandList& cmd, Timestep ts);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 	private:

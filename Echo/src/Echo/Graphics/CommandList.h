@@ -21,7 +21,7 @@ namespace Echo
 		
 		void Begin();
 
-		void TransitionImage(Ref<Image> img, ImageLayout newLayout, ImageLayout oldLayout) { RecordCommand(CommandFactory::TransitionImageCommand(img, newLayout, oldLayout)); }
+		void TransitionImage(Ref<Image> img, ImageLayout newLayout) { RecordCommand(CommandFactory::TransitionImageCommand(img, newLayout)); }
 		void CopyImageToImage(Ref<Image> srcImage, Ref<Image> dstImage) { RecordCommand(CommandFactory::CopyImageToImageCommand(srcImage, dstImage)); }
 		void ClearColor(Ref<Image> img, const glm::vec4& clearValues) { RecordCommand(CommandFactory::ClearColorCommand(img, clearValues)); }
 		void Dispatch(float x, float y, float z) { RecordCommand(CommandFactory::DispatchCommand(x, y, z)); }

@@ -76,8 +76,8 @@ namespace Echo
 		void RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain);
 
 		void AddImage(VulkanImage* image) { m_Images.push_back(image); }
-		virtual void AddImGuiImage(Ref<Image> image) override { m_ImGuiImages.push_back(image); }
-		virtual std::vector<Ref<Image>> GetImGuiImages() override { return m_ImGuiImages; }
+		void AddImGuiImage(VulkanImage* image) { m_ImGuiImages.push_back(image); }
+		std::vector<VulkanImage*> GetImGuiImages() { return m_Images; }
 
 		void AddFrame() { m_CurrentFrame++; }
 	private:
@@ -118,7 +118,7 @@ namespace Echo
 		uint32_t m_CurrentFrame = 0;
 
 		std::vector<VulkanImage*> m_Images;
-		std::vector<Ref<Image>> m_ImGuiImages;
+		std::vector<VulkanImage*> m_ImGuiImages;
 
 		Scope<VulkanSwapchain> m_Swapchain;
 	};

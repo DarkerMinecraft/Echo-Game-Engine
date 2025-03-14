@@ -95,6 +95,15 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
+	void VulkanPipeline::WriteDescriptorCombinedImage(Ref<Image> img, uint32_t binding /*= 0*/)
+	{
+		VulkanImage* image = (VulkanImage*)img.get();
+
+		DescriptorWriter writer;
+		writer.WriteImage(binding, image->GetImage().ImageView, image->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+	}
+
 	void VulkanPipeline::WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding /*= 0*/)
 	{
 		VulkanTexture2D* texture = (VulkanTexture2D*)tex.get();
@@ -127,7 +136,7 @@ namespace Echo
 		m_ComputeShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(computeFilePath);
 
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
-		CreateDescriptorSet(desc.DescriptionSetLayouts, desc.MaxSets);
+		CreateDescriptorSet(desc.DescriptionSetLayouts);
 
 		VkComputePipelineCreateInfo pipelineCreateInfo{};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -149,7 +158,7 @@ namespace Echo
 	void VulkanPipeline::CreateGraphicsPipeline(Ref<Material> material, PipelineDesc& desc)
 	{
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
-		CreateDescriptorSet(desc.DescriptionSetLayouts, desc.MaxSets);
+		CreateDescriptorSet(desc.DescriptionSetLayouts);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -367,9 +376,10 @@ namespace Echo
 		}
 	}
 
-	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout, uint32_t maxSets)
+	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout)
 	{
-		if (maxSets == 0) return;
+		if (descriptorSetLayout.empty()) return;
+		int maxSets = descriptorSetLayout.size();
 
 		m_DescriptorAllocator = DescriptorAllocatorGrowable();
 

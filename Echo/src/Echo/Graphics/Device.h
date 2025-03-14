@@ -21,9 +21,6 @@ namespace Echo
 
 		virtual DeviceType GetDeviceType() const = 0;
 
-		virtual void AddImGuiImage(Ref<Image> img) = 0;
-		virtual std::vector<Ref<Image>> GetImGuiImages() = 0;
-
 		static Scope<Device> Create(DeviceType type, Window* window, unsigned int width, unsigned int height);
 	};
 

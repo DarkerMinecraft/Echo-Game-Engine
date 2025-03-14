@@ -13,14 +13,15 @@ namespace Echo
 	class VulkanBeginRenderingCommand : public ICommand
 	{
 	public:
-		VulkanBeginRenderingCommand(Ref<Image> image, glm::vec4 clearColor = {1.0f, 1.0f, 1.0f, 1.0f})
-			: m_Image(image), m_ClearColor(clearColor)
+		VulkanBeginRenderingCommand(Ref<Image> image, bool depthTexture = false)
+			: m_Image(image), m_IsDepthTexture(depthTexture)
 		{}
 		VulkanBeginRenderingCommand() = default;
+
 		virtual void Execute(CommandBuffer* cmd) override;
 	private:
 		Ref<Image> m_Image = nullptr;
-		glm::vec4 m_ClearColor{1.0f};
+		bool m_IsDepthTexture;
 	};
 
 	class VulkanEndRenderingCommand : public ICommand

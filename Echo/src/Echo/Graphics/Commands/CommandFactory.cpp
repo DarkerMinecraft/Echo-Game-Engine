@@ -14,11 +14,11 @@
 namespace Echo 
 {
 
-	Ref<ICommand> CommandFactory::TransitionImageCommand(Ref<Image> image, ImageLayout oldLayout, ImageLayout newLayout)
+	Ref<ICommand> CommandFactory::TransitionImageCommand(Ref<Image> image, ImageLayout newLayout)
 	{
 		switch (GetDeviceType())
 		{
-			case DeviceType::Vulkan: return CreateRef<VulkanTransitionImageCommand>(image, oldLayout, newLayout);
+			case DeviceType::Vulkan: return CreateRef<VulkanTransitionImageCommand>(image, newLayout);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

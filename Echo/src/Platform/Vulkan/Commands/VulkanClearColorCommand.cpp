@@ -13,6 +13,10 @@ namespace Echo
 	{
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		VulkanImage* img = (VulkanImage*)m_Image.get();
+		if (img->GetCurrentLayout() != VK_IMAGE_LAYOUT_GENERAL) 
+		{
+			img->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL);
+		}
 
 		VkClearColorValue clearValue = { m_ClearValues.x, m_ClearValues.y, m_ClearValues.z, m_ClearValues.w };
 		VkImageSubresourceRange subresourceRange = VulkanInitializers::ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);

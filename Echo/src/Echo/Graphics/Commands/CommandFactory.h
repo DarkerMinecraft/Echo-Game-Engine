@@ -15,7 +15,7 @@ namespace Echo
 	class CommandFactory
 	{
 	public:
-		static Ref<ICommand> TransitionImageCommand(Ref<Image> image, ImageLayout oldLayout, ImageLayout newLayout);
+		static Ref<ICommand> TransitionImageCommand(Ref<Image> image, ImageLayout newLayout);
 		static Ref<ICommand> CopyImageToImageCommand(Ref<Image> srcImage, Ref<Image> dstImage);
 
 		static Ref<ICommand> ClearColorCommand(Ref<Image> image, const glm::vec4& clearValues);

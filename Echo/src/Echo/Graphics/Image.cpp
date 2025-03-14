@@ -9,19 +9,11 @@ namespace Echo
 	Ref<Image> Image::Create(const ImageDescription& desc)
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
-		Ref<Image> image;
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  image = CreateRef<VulkanImage>(device, desc);
+			case DeviceType::Vulkan:  return CreateRef<VulkanImage>(device, desc);
 		}
-
-		if (desc.DrawToImGui) 
-		{
-			device->AddImGuiImage(image);
-		}
-
-		return image;
 	}
 
 }

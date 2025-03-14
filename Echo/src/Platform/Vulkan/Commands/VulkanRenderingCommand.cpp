@@ -19,7 +19,7 @@ namespace Echo
 		VulkanImage* img = (VulkanImage*)m_Image.get();
 		VulkanDevice* device = (VulkanDevice*)Application::Get().GetWindow().GetDevice();
 
-		VkRenderingAttachmentInfo colorAttachment;
+		VkRenderingAttachmentInfo attachment;
 		VkRenderingInfo renderingInfo;
 
 		VkExtent2D extent;
@@ -30,15 +30,23 @@ namespace Echo
 		}
 		else if (img) 
 		{
+			if (!m_IsDepthTexture && img->GetCurrentLayout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			{
+				img->TransitionImageLayout(commandBuffer->GetCommandBuffer(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			}
+			else if (m_IsDepthTexture && img->GetCurrentLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+			{
+				img->TransitionImageLayout(commandBuffer->GetCommandBuffer(), VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+			}
 			extent = { img->GetWidth(), img->GetHeight() };
-			colorAttachment = VulkanInitializers::AttachmentInfo(img->GetImage().ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			renderingInfo = VulkanInitializers::RenderingInfo({ img->GetWidth(), img->GetHeight() }, &colorAttachment, nullptr);
+			attachment = VulkanInitializers::AttachmentInfo(img->GetImage().ImageView, nullptr, m_IsDepthTexture ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			renderingInfo = VulkanInitializers::RenderingInfo({ img->GetWidth(), img->GetHeight() }, &attachment, nullptr);
 		}
 		else
 		{
 			extent = device->GetSwapchain().GetExtent();
-			colorAttachment = VulkanInitializers::AttachmentInfo(device->GetSwapchainImageView(commandBuffer->GetImageIndex()), nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			renderingInfo = VulkanInitializers::RenderingInfo(device->GetSwapchain().GetExtent(), &colorAttachment, nullptr);
+			attachment = VulkanInitializers::AttachmentInfo(device->GetSwapchainImageView(commandBuffer->GetImageIndex()), nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			renderingInfo = VulkanInitializers::RenderingInfo(device->GetSwapchain().GetExtent(), &attachment, nullptr);
 		}
 
 		vkCmdBeginRendering(commandBuffer->GetCommandBuffer(), &renderingInfo);

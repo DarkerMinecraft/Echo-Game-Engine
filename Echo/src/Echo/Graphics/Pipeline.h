@@ -144,7 +144,6 @@ namespace Echo
 			ShaderStage Stage;
 		};
 		std::vector<DescriptionSetLayout> DescriptionSetLayouts;
-		uint32_t MaxSets;
 
 		Ref<Image> RenderTarget;
 	};
@@ -157,7 +156,10 @@ namespace Echo
 		virtual void Bind(CommandBuffer* cmd) = 0;
 
 		virtual void WriteDescriptorStorageImage(Ref<Image> image, uint32_t binding = 0) = 0;
+
 		virtual void WriteDescriptorCombinedTexture(Ref<Texture> tex, uint32_t binding = 0) = 0;
+		virtual void WriteDescriptorCombinedImage(Ref<Image> img, uint32_t binding = 0) = 0;
+
 		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) = 0;
 		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) = 0;
 

@@ -32,17 +32,7 @@ namespace Echo
 			int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&m_RdocAPI);
 			assert(ret == 1);
 		}
-		m_Image = Image::Create({ .Width = 1280, .Height = 720, .DrawToImGui = true });
-
-		PipelineDesc computePipelineDesc{};
-
-		computePipelineDesc.DescriptionSetLayouts =
-		{
-			{0, DescriptorType::StorageImage, 1, ShaderStage::Compute}
-		};
-		computePipelineDesc.MaxSets = 1;
-
-		m_ComputePipeline = Pipeline::Create("assets/shaders/gradient.slang", computePipelineDesc);
+		m_Image = Image::Create({ .Width = 1280, .Height = 720, .Flags = SampledBit | ColorAttachmentBit | TransferDstBit });
 
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -57,7 +47,6 @@ namespace Echo
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
-		m_ActiveScene->OnUpdate(ts);
 		RendererQuad::ResetStats();
 
 		if (m_RdocAPI && Input::IsKeyPressed(EC_KEY_F11)) m_RdocAPI->StartFrameCapture(nullptr, nullptr);
@@ -65,19 +54,11 @@ namespace Echo
 		CommandList cmd;
 
 		cmd.Begin();
-		{
-			cmd.TransitionImage(m_Image, Undefined, General);
-			cmd.ClearColor(m_Image, { 0.3f, 0.3f, 0.3f, 0.3f });
-		}
-
-		{
-			cmd.TransitionImage(m_Image, General, ColorAttachment);
-			cmd.BeginRendering(m_Image);
-			m_ActiveScene->OnRender(cmd);
-			cmd.EndRendering();
-			cmd.TransitionImage(m_Image, ColorAttachment, ShaderReadOnly);
-		}
-
+		cmd.ClearColor(m_Image, { 0.3f, 0.3f, 0.3f, 0.3f });
+		cmd.BeginRendering(m_Image);
+		m_ActiveScene->OnUpdateRuntime(cmd, ts);
+		cmd.EndRendering();
+		cmd.TransitionImage(m_Image, ShaderReadOnly);
 		cmd.SetSrcImage(m_Image);
 		cmd.Execute();
 
@@ -209,7 +190,7 @@ namespace Echo
 		{
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
-		ImGui::Image((ImTextureID)m_Image->GetColorAttachmentID(), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((ImTextureID)m_Image->GetImGuiTexture(), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		//Gizmos 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();

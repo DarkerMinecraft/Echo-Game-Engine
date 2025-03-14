@@ -37,7 +37,7 @@ namespace Echo
 			}
 		};
 
-		VulkanImages::TransitionImage(commandBuffer, img->GetImage().Image, MapImageLayout(m_OldLayout), MapImageLayout(m_NewLayout));
+		img->TransitionImageLayout(commandBuffer, MapImageLayout(m_NewLayout));
 	}
 
 }

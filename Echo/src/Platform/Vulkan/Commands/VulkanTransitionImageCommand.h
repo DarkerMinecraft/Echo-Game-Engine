@@ -9,14 +9,14 @@ namespace Echo
 	class VulkanTransitionImageCommand : public ICommand
 	{
 	public:
-		VulkanTransitionImageCommand(Ref<Image> image, ImageLayout oldLayout, ImageLayout newLayout)
-			: m_Image(image), m_OldLayout(oldLayout), m_NewLayout(newLayout)
+		VulkanTransitionImageCommand(Ref<Image> image, ImageLayout newLayout)
+			: m_Image(image), m_NewLayout(newLayout)
 		{}
 
 		virtual void Execute(CommandBuffer* cmd) override;
 	private:
 		Ref<Image> m_Image;
-		ImageLayout m_OldLayout, m_NewLayout;
+		ImageLayout m_NewLayout;
 	};
 
 }

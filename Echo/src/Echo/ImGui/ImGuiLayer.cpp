@@ -6,6 +6,7 @@
 
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanSwapchain.h"
+#include "Platform/Vulkan/VulkanImage.h"
 
 #include <backends/imgui_impl_win32.h>
 #include <vulkan/vulkan.h>
@@ -199,11 +200,10 @@ namespace Echo
 		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
 		vkDeviceWaitIdle(device->GetDevice());
-		for (Ref<Image> img : device->GetImGuiImages())
+		for (auto img : device->GetImGuiImages()) 
 		{
 			img->Destroy();
 		}
-
 		ImGui_ImplWin32_Shutdown();
 		ImGui_ImplVulkan_Shutdown();
 		ImGui::DestroyContext();

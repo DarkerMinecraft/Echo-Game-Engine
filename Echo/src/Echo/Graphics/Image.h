@@ -7,6 +7,32 @@
 namespace Echo
 {
 
+	typedef enum ImageFlags
+	{
+		ColorAttachmentBit = 0x01,        // 1 << 0
+		TransferSrcBit = 0x02,            // 1 << 1
+		TransferDstBit = 0x04,            // 1 << 2
+		SampledBit = 0x08,                // 1 << 3
+		StorageBit = 0x10,                // 1 << 4
+		DepthStencilAttachmentBit = 0x20  // 1 << 5
+	} ImageFlags;
+
+
+	inline ImageFlags operator|(ImageFlags a, ImageFlags b)
+	{
+		return static_cast<ImageFlags>(static_cast<int>(a) | static_cast<int>(b));
+	}
+
+	inline ImageFlags operator&(ImageFlags a, ImageFlags b)
+	{
+		return static_cast<ImageFlags>(static_cast<int>(a) & static_cast<int>(b));
+	}
+
+	inline ImageFlags& operator|=(ImageFlags& a, ImageFlags b)
+	{
+		return a = a | b;
+	}
+
 	enum ImageFormat
 	{
 		RGBA8,
@@ -25,10 +51,9 @@ namespace Echo
 	struct ImageDescription
 	{
 		uint32_t Width, Height;
-		bool DrawImage = false;
-		bool DrawImageExtent = false;
-		bool DrawToImGui = false;
+		bool WindowExtent = false;
 
+		ImageFlags Flags;
 		ImageFormat Format = RGBA16;
 	};
 
@@ -37,7 +62,7 @@ namespace Echo
 	public:
 		virtual ~Image() = default;
 
-		virtual void* GetColorAttachmentID() = 0;
+		virtual void* GetImGuiTexture() = 0;
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
 

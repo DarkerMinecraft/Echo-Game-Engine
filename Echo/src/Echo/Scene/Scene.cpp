@@ -50,17 +50,35 @@ namespace Echo
 		m_Registry.destroy(entity);
 	}
 
-	void Scene::OnRender(CommandList& cmd)
+	void Scene::OnUpdateEditor(CommandList& cmd, const Camera& camera, Timestep ts)
 	{
+
+	}
+
+	void Scene::OnUpdateRuntime(CommandList& cmd, Timestep ts)
+	{
+		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+		{
+			if (!nsc.Instance)
+			{
+				nsc.Instance = nsc.InstantiateScript();
+				nsc.Instance->m_Entity = Entity{ entity, this };
+
+				nsc.Instance->OnCreate();
+			}
+
+			nsc.Instance->OnUpdate(ts);
+		});
+
 		Camera* mainCamera = nullptr;
 		glm::mat4 cameraTransform;
 		{
 			auto view = m_Registry.view<TransformComponent, CameraComponent>();
-			for (auto entity : view) 
+			for (auto entity : view)
 			{
-                auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
 
-				if (camera.Primary) 
+				if (camera.Primary)
 				{
 					mainCamera = &camera.Camera;
 					cameraTransform = transform.GetTransform();
@@ -82,22 +100,6 @@ namespace Echo
 
 			RendererQuad::EndScene();
 		}
-	}
-
-	void Scene::OnUpdate(Timestep ts)
-	{
-		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
-		{
-			if (!nsc.Instance)
-			{
-				nsc.Instance = nsc.InstantiateScript();
-				nsc.Instance->m_Entity = Entity{ entity, this };
-
-				nsc.Instance->OnCreate();
-			}
-
-			nsc.Instance->OnUpdate(ts);
-		});
 	}
 
 	void Scene::OnViewportResize(uint32_t width, uint32_t height)

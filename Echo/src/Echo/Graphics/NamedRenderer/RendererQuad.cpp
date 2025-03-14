@@ -152,7 +152,6 @@ namespace Echo
 			{0, DescriptorType::UniformBuffer, 1, ShaderStage::Vertex},
 			{1, DescriptorType::SampledImage, s_Data.MaxTextureSlots, ShaderStage::Fragment }
 		};
-		desc.MaxSets = 2;
 
 		desc.VertexLayout =
 		{

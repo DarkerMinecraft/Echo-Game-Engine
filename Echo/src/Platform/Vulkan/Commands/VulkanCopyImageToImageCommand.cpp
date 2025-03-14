@@ -14,11 +14,22 @@ namespace Echo
 	{
 		VulkanCommandBuffer* vulkanCmd = (VulkanCommandBuffer*)cmd;
 		VkCommandBuffer commandBuffer = vulkanCmd->GetCommandBuffer();
-		AllocatedImage srcImage = ((VulkanImage*)m_srcImage.get())->GetImage();
-		AllocatedImage dstImage = ((VulkanImage*)m_dstImage.get())->GetImage();
 
-		VulkanImages::CopyImageToImage(commandBuffer, srcImage.Image, dstImage.Image, { srcImage.ImageExtent.width, srcImage.ImageExtent.height }, { dstImage.ImageExtent.width, dstImage.ImageExtent.height });
+		VulkanImage* dstImage = (VulkanImage*)m_dstImage.get();
+		VulkanImage* srcImage = (VulkanImage*)m_srcImage.get();
 
+		if (dstImage->GetCurrentLayout() != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		{
+			dstImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		}
+
+		if (srcImage->GetCurrentLayout() != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			srcImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		}
+
+
+		VulkanImages::CopyImageToImage(commandBuffer, srcImage->GetImage().Image, dstImage->GetImage().Image, {srcImage->GetImage().ImageExtent.width, srcImage->GetImage().ImageExtent.height}, {dstImage->GetImage().ImageExtent.width, dstImage->GetImage().ImageExtent.height});
 	}
 
 }

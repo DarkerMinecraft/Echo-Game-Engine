@@ -15,7 +15,7 @@ namespace Echo
 
 		virtual uint32_t GetWidth() override;
 		virtual uint32_t GetHeight() override;
-		virtual void* GetColorAttachmentID() override;
+		virtual void* GetImGuiTexture() override;
 
 		virtual void Resize(uint32_t width, uint32_t height) override { Resize({ width, height }); };
 		virtual void Resize(const glm::vec2& size) override;
@@ -23,7 +23,12 @@ namespace Echo
 		virtual void Destroy() override;
 
 		void UpdateSize();
-		AllocatedImage GetImage();
+		AllocatedImage GetImage() { return m_Image; }
+
+		void TransitionImageLayout(VkCommandBuffer cmd, VkImageLayout newLayout);
+		VkImageLayout GetCurrentLayout() { return m_CurrentLayout; }
+
+		VkSampler GetSampler() { return m_Sampler; }
 	private:
 		void CreateAllocatedImage(const ImageDescription& desc);
 		void CreateImage(uint32_t width, uint32_t height); 
@@ -32,14 +37,15 @@ namespace Echo
 		uint32_t m_Width, m_Height;
 
 		AllocatedImage m_Image;
-
-		bool m_UseDrawImage;
-		bool m_DrawImageExtent;
-		bool m_DrawToImGui;
+		VkImageLayout m_CurrentLayout;
 		VkFormat m_Format;
+
+		bool m_WindowExtent;
 
 		VkDescriptorSet m_DescriptorSet = nullptr;
 		VkSampler m_Sampler;
+
+		VkImageUsageFlags m_UsageFlags;
 
 		bool m_HasBeenDestroyed = false;
 	};
