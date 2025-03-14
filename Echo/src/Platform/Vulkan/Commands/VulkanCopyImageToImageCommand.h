@@ -15,6 +15,7 @@ namespace Echo
 		VulkanCopyImageToImageCommand(Ref<Image> srcImage, Ref<Image> dstImage)
 			: m_srcImage(srcImage), m_dstImage(dstImage)
 		{}
+
 		virtual void Execute(CommandBuffer* cmd) override;
 	private:
 		Ref<Image> m_srcImage;

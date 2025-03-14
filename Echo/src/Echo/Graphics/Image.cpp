@@ -9,13 +9,19 @@ namespace Echo
 	Ref<Image> Image::Create(const ImageDescription& desc)
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
+		Ref<Image> image;
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanImage>(device, desc);
+			case DeviceType::Vulkan:  image = CreateRef<VulkanImage>(device, desc);
 		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
+
+		if (desc.DrawToImGui) 
+		{
+			device->AddImGuiImage(image);
+		}
+
+		return image;
 	}
 
 }

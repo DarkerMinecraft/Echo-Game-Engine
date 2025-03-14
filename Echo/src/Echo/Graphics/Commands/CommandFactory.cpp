@@ -102,11 +102,31 @@ namespace Echo
 		}
 	}
 
+	Ref<ICommand> CommandFactory::DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride)
+	{
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanDrawIndexedIndirect>(indirectBuffer, offset, drawCount, stride);
+		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
 	Ref<ICommand> CommandFactory::BeginRenderingCommand(Ref<Image> image)
 	{
 		switch (GetDeviceType())
 		{
 			case DeviceType::Vulkan: return CreateRef<VulkanBeginRenderingCommand>(image);
+		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
+	Ref<ICommand> CommandFactory::BeginRenderingCommand()
+	{
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanBeginRenderingCommand>();
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

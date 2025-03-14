@@ -5,7 +5,9 @@
 #include "Platform/Vulkan/Utils/VulkanImages.h"
 #include "Platform/Vulkan/VulkanImage.h"
 
-namespace Echo 
+#include "Echo/Core/Application.h"
+
+namespace Echo
 {
 
 	void VulkanCopyImageToImageCommand::Execute(CommandBuffer* cmd)
@@ -16,6 +18,7 @@ namespace Echo
 		AllocatedImage dstImage = ((VulkanImage*)m_dstImage.get())->GetImage();
 
 		VulkanImages::CopyImageToImage(commandBuffer, srcImage.Image, dstImage.Image, { srcImage.ImageExtent.width, srcImage.ImageExtent.height }, { dstImage.ImageExtent.width, dstImage.ImageExtent.height });
+
 	}
 
 }

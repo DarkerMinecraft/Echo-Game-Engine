@@ -8,133 +8,125 @@
 
 #include "Echo/Core/Application.h"
 
-namespace Echo 
+#include <backends/imgui_impl_vulkan.h>
+
+namespace Echo
 {
 
 	VulkanCommandBuffer::VulkanCommandBuffer(Device* device)
-		: m_Device((VulkanDevice*) device)
+		: m_Device(static_cast<VulkanDevice*>(device)), m_FrameData(m_Device->GetFrameData())
 	{
-		InitCommands();
-
 		m_SrcImage = m_Device->GetDrawImage();
 	}
 
 	VulkanCommandBuffer::~VulkanCommandBuffer()
 	{
-		vkDeviceWaitIdle(m_Device->GetDevice());
-		vkQueueWaitIdle(m_Device->GetGraphicsQueue());
 
-		vkFreeCommandBuffers(m_Device->GetDevice(), m_CommandPool, 1, &m_CommandBuffer);
-		vkDestroyCommandPool(m_Device->GetDevice(), m_CommandPool, nullptr);
-
-		vkDestroyFence(m_Device->GetDevice(), m_RenderFence, nullptr);
-		vkDestroySemaphore(m_Device->GetDevice(), m_WaitSemaphore, nullptr);
-		vkDestroySemaphore(m_Device->GetDevice(), m_SignalSemaphore, nullptr);
 	}
 
 	void VulkanCommandBuffer::Start()
 	{
-		vkDeviceWaitIdle(m_Device->GetDevice());
+		m_FrameData = m_Device->GetFrameData();
 
-		vkWaitForFences(m_Device->GetDevice(), 1, &m_RenderFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(m_Device->GetDevice(), 1, &m_RenderFence);
+		vkWaitForFences(m_Device->GetDevice(), 1, &m_FrameData.RenderFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(m_Device->GetDevice(), 1, &m_FrameData.RenderFence);
 
-		m_ImageIndex = m_Device->GetSwapchain().AcquireNextImage(m_WaitSemaphore);
-		if (m_ImageIndex == -1) 
+		if (m_ShouldPresent)
 		{
-			m_Device->RecreateSwapchain(Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight(), &m_Device->GetSwapchain());
-			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+			m_ImageIndex = m_Device->GetSwapchain().AcquireNextImage(
+				m_FrameData.SwapchainSemaphore
+			);
+			if (m_ImageIndex == -1)
 			{
-				VulkanImages::TransitionImage(cmd, m_Device->GetDrawImage().Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-			});
-			return;
+				m_Device->RecreateSwapchain(Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight(), &m_Device->GetSwapchain());
+				return;
+			}
 		}
 
-		Reset();
+		vkResetCommandBuffer(m_FrameData.CommandBuffer, 0);
 		VkCommandBufferBeginInfo beginInfo = VulkanInitializers::CommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-		vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
+		vkBeginCommandBuffer(m_FrameData.CommandBuffer, &beginInfo);
+
+		if (m_DrawToSwapchain)
+		{
+			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_SrcImage.Image, m_Device->GetSwapchainImage(m_ImageIndex), { m_SrcImage.ImageExtent.width, m_SrcImage.ImageExtent.height }, { m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height });
+			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+		}
 	}
 
 	void VulkanCommandBuffer::End()
 	{
-		VulkanImages::TransitionImage(m_CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		VulkanImages::TransitionImage(m_CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		if (m_ShouldPresent)
+		{
+			if (m_DrawToSwapchain)
+			{
+				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			}
+			else
+			{
+				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+				VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_SrcImage.Image, m_Device->GetSwapchainImage(m_ImageIndex), { m_SrcImage.ImageExtent.width, m_SrcImage.ImageExtent.height }, { m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height });
+				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			}
+		}
 
-		VulkanImages::CopyImageToImage(m_CommandBuffer, m_SrcImage.Image, m_Device->GetSwapchainImage(m_ImageIndex), { m_SrcImage.ImageExtent.width, m_SrcImage.ImageExtent.height }, m_Device->GetSwapchain().GetExtent());
-		VulkanImages::TransitionImage(m_CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-		vkEndCommandBuffer(m_CommandBuffer);
+		vkEndCommandBuffer(m_FrameData.CommandBuffer);
 	}
 
 	void VulkanCommandBuffer::Submit()
 	{
-		VkCommandBufferSubmitInfo cmdInfo = VulkanInitializers::CommandBufferSubmitInfo(m_CommandBuffer);
-		VkSemaphoreSubmitInfo signalSemaphoreInfo = VulkanInitializers::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, m_SignalSemaphore);
-		VkSemaphoreSubmitInfo waitSemaphoreInfo = VulkanInitializers::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, m_WaitSemaphore);
+		VkCommandBufferSubmitInfo cmdInfo = VulkanInitializers::CommandBufferSubmitInfo(m_FrameData.CommandBuffer);
+
+		if (!m_ShouldPresent)
+		{
+			VkSubmitInfo2 submitInfo = VulkanInitializers::SubmitInfo(&cmdInfo, nullptr, nullptr);
+			vkQueueSubmit2(m_Device->GetGraphicsQueue(), 1, &submitInfo, m_FrameData.RenderFence);
+			vkWaitForFences(m_Device->GetDevice(), 1, &m_FrameData.RenderFence, VK_TRUE, UINT64_MAX);
+			return;
+		}
+
+		VkSemaphoreSubmitInfo signalSemaphoreInfo = VulkanInitializers::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, m_FrameData.RenderSemaphore);
+		VkSemaphoreSubmitInfo waitSemaphoreInfo = VulkanInitializers::SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, m_FrameData.SwapchainSemaphore);
 
 		VkSubmitInfo2 submitInfo = VulkanInitializers::SubmitInfo(&cmdInfo, &signalSemaphoreInfo, &waitSemaphoreInfo);
-		vkQueueSubmit2(m_Device->GetGraphicsQueue(), 1, &submitInfo, m_RenderFence);
+		vkQueueSubmit2(m_Device->GetGraphicsQueue(), 1, &submitInfo, m_FrameData.RenderFence);
 
-		VkPresentInfoKHR presentInfo = {};
+		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.pNext = nullptr;
 		VkSwapchainKHR swapchain = m_Device->GetSwapchain().GetSwapchain();
 		presentInfo.pSwapchains = &swapchain;
 		presentInfo.swapchainCount = 1;
 
-		presentInfo.pWaitSemaphores = &m_SignalSemaphore;
+		VkSemaphore renderSemaphore = m_FrameData.RenderSemaphore;
+		presentInfo.pWaitSemaphores = &renderSemaphore;
 		presentInfo.waitSemaphoreCount = 1;
 
 		presentInfo.pImageIndices = &m_ImageIndex;
-
 		VkResult presentResult = vkQueuePresentKHR(m_Device->GetGraphicsQueue(), &presentInfo);
 
 		if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || Application::Get().GetWindow().WasWindowResized())
 		{
 			Application::Get().GetWindow().ResetWindowResizedFlag();
 			m_Device->RecreateSwapchain(Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight(), &m_Device->GetSwapchain());
-
-			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
-			{
-				VulkanImages::TransitionImage(cmd, m_Device->GetDrawImage().Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-			});
 		}
 		else if (presentResult != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to present swap chain image");
 		}
-		if (presentResult == VK_SUCCESS) 
-		{
-			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
-			{
-				VulkanImages::TransitionImage(cmd, m_Device->GetDrawImage().Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-			});
-		}
+
+		m_Device->AddFrame();
 	}
 
-	void VulkanCommandBuffer::Reset()
-	{
-		vkResetCommandBuffer(m_CommandBuffer, 0);
-	}
 
 	void VulkanCommandBuffer::SetSourceImage(Ref<Image> srcImage)
 	{
-		m_SrcImage = ((VulkanImage*)srcImage.get())->GetImage();
-	}
-
-	void VulkanCommandBuffer::InitCommands()
-	{
-		VkCommandPoolCreateInfo poolCreateInfo = VulkanInitializers::CommandPoolCreateInfo(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_Device->GetGraphicsQueueFamily());
-		vkCreateCommandPool(m_Device->GetDevice(), &poolCreateInfo, nullptr, &m_CommandPool);
-		VkCommandBufferAllocateInfo cmdCreateInfo = VulkanInitializers::CommandBufferAllocateInfo(m_CommandPool, 1);
-		vkAllocateCommandBuffers(m_Device->GetDevice(), &cmdCreateInfo, &m_CommandBuffer);
-
-		VkFenceCreateInfo fenceCreateInfo = VulkanInitializers::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-		vkCreateFence(m_Device->GetDevice(), &fenceCreateInfo, nullptr, &m_RenderFence);
-
-		VkSemaphoreCreateInfo semaphoreCreateInfo = VulkanInitializers::SemaphoreCreateInfo();
-		vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_WaitSemaphore);
-		vkCreateSemaphore(m_Device->GetDevice(), &semaphoreCreateInfo, nullptr, &m_SignalSemaphore);
+		m_SrcImage = static_cast<VulkanImage*>(srcImage.get())->GetImage();
 	}
 
 }

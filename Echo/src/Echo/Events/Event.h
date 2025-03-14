@@ -3,6 +3,8 @@
 #include <spdlog/fmt/bundled/format.h>
 #include <functional>
 
+#include "Echo/Core/Base.h"
+
 namespace Echo
 {
 
@@ -44,10 +46,7 @@ namespace Echo
 			return GetCategoryFlags() & category;
 		}
 
-		bool IsHandled() { return m_Handled; }
-		void SetHandled(bool handle) { m_Handled = handle; }
-	protected:
-		bool m_Handled = false;
+		bool Handled = false;
 	};
 
 	class EventDispatcher 
@@ -63,7 +62,7 @@ namespace Echo
 		{
 			if (m_Event.GetEventType() == T::GetStaticType()) 
 			{
-				m_Event.m_Handled = func(*(T*)&m_Event);
+				m_Event.Handled = func(*(T*)&m_Event);
 				return true;
 			}
 			return false;

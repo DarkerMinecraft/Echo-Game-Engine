@@ -3,12 +3,10 @@
 
 #include "Platform/Vulkan/VulkanDevice.h"
 
-#include "Echo/Core/Base.h"
-
 namespace Echo 
 {
 
-	Scope<Device> Device::Create(DeviceType type, const void* window, unsigned int width, unsigned int height)
+	Scope<Device> Device::Create(DeviceType type, Window* window, unsigned int width, unsigned int height)
 	{
 		switch (type)
 		{

@@ -22,8 +22,6 @@ namespace Echo
 		void LoadShadersSource(const char* vertexShaderSource, const char* fragmentShaderSource, const char* shaderName, const char* geometryShaderSource);
 
 		void CreateShaderStages();
-
-		VkShaderModule CreateShaderModule(SpirvData data);
 	private:
 		VulkanDevice* m_Device;
 

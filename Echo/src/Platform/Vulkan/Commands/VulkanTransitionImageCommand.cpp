@@ -4,6 +4,7 @@
 #include "Platform/Vulkan/Utils/VulkanImages.h"
 
 #include "Platform/Vulkan/VulkanCommandBuffer.h"
+#include <Platform/Vulkan/VulkanImage.h>
 
 namespace Echo 
 {
@@ -11,6 +12,7 @@ namespace Echo
 	void VulkanTransitionImageCommand::Execute(CommandBuffer* cmd)
 	{
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+		VulkanImage* img = (VulkanImage*)m_Image.get();
 
 		auto MapImageLayout = [](ImageLayout layout) -> VkImageLayout
 		{
@@ -28,12 +30,14 @@ namespace Echo
 					return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 				case ImageLayout::TransferDst:
 					return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				case ImageLayout::ShaderReadOnly:
+					return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				default:
 					throw std::runtime_error("Unknown Vulkan Image Layout");
 			}
 		};
 
-		VulkanImages::TransitionImage(commandBuffer, (VkImage)m_Image->GetImageHandle(), MapImageLayout(m_OldLayout), MapImageLayout(m_NewLayout));
+		VulkanImages::TransitionImage(commandBuffer, img->GetImage().Image, MapImageLayout(m_OldLayout), MapImageLayout(m_NewLayout));
 	}
 
 }

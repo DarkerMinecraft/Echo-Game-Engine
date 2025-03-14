@@ -3,10 +3,31 @@
 #include "VulkanImage.h"
 #include "VulkanMaterial.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanTexture.h"
+#include "VulkanBuffer.h"
+
 #include <unordered_set>
+#include "VulkanRenderCaps.h"
 
 namespace Echo 
 {
+
+	static VkFormat ShaderDataTypeToVulkanFormat(ShaderDataType type)
+	{
+		switch (type)
+		{
+			case ShaderDataType::Float:     return VK_FORMAT_R32_SFLOAT;
+			case ShaderDataType::Float2:    return VK_FORMAT_R32G32_SFLOAT;
+			case ShaderDataType::Float3:    return VK_FORMAT_R32G32B32_SFLOAT;
+			case ShaderDataType::Float4:    return VK_FORMAT_R32G32B32A32_SFLOAT;
+			case ShaderDataType::Int:       return VK_FORMAT_R32_SINT;
+			case ShaderDataType::Int2:      return VK_FORMAT_R32G32_SINT;
+			case ShaderDataType::Int3:      return VK_FORMAT_R32G32B32_SINT;
+			case ShaderDataType::Int4:      return VK_FORMAT_R32G32B32A32_SINT;
+			case ShaderDataType::Bool:      return VK_FORMAT_R8_UINT;
+			default: return VK_FORMAT_UNDEFINED;
+		}
+	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Material> material, PipelineDesc& desc)
 		: m_Device((VulkanDevice*)device), m_Material(material)
@@ -36,7 +57,7 @@ namespace Echo
 		if (m_DescriptorSet != nullptr)
 		{
 			vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
-			vkDestroyDescriptorPool(m_Device->GetDevice(), m_DescriptorPool, nullptr);
+			m_DescriptorAllocator.DestroyPools(m_Device->GetDevice());
 		}
 
 		vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
@@ -65,46 +86,57 @@ namespace Echo
 		}
 	}
 
-	void VulkanPipeline::WriteDesciptorStorageImage(Ref<Image> image, uint32_t binding)
+	void VulkanPipeline::WriteDescriptorCombinedTexture(Ref<Texture> texture, uint32_t binding /*= 0*/)
+	{
+		VulkanTexture2D* tex = (VulkanTexture2D*)texture.get();
+
+		DescriptorWriter writer;
+		writer.WriteImage(binding, tex->GetTexture().ImageView, tex->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+	}
+
+	void VulkanPipeline::WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding /*= 0*/)
+	{
+		VulkanTexture2D* texture = (VulkanTexture2D*)tex.get();
+
+		DescriptorWriter writer;
+		writer.WriteImage(index, binding, texture->GetTexture().ImageView, texture->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+	}
+
+	void VulkanPipeline::WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding)
+	{
+		VulkanUniformBuffer* ubo = (VulkanUniformBuffer*)uniformBuffer.get();
+
+		DescriptorWriter writer;
+		writer.WriteBuffer(binding, ubo->GetBuffer().Buffer, ubo->GetSize(), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+	}
+
+	void VulkanPipeline::WriteDescriptorStorageImage(Ref<Image> image, uint32_t binding)
 	{
 		VulkanImage* img = (VulkanImage*)image.get();
 
-		VkDescriptorImageInfo imgInfo{};
-		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imgInfo.imageView = img->GetImage().ImageView;
-
-		VkWriteDescriptorSet drawImageWrite = {};
-		drawImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		drawImageWrite.pNext = nullptr;
-
-		drawImageWrite.dstBinding = 0;
-		drawImageWrite.dstSet = m_DescriptorSet;
-		drawImageWrite.descriptorCount = 1;
-		drawImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		drawImageWrite.pImageInfo = &imgInfo;
-
-		vkUpdateDescriptorSets(m_Device->GetDevice(), 1, &drawImageWrite, 0, nullptr);
+		DescriptorWriter writer;
+		writer.WriteImage(binding, img->GetImage().ImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
 	void VulkanPipeline::CreateComputePipeline(const char* computeFilePath, PipelineDesc& desc)
 	{
-		auto source = m_Device->GetShaderLibrary().AddSpirvShader(std::string(computeFilePath), ShaderType::ComputeShader);
-		
-		VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-		shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shaderModuleCreateInfo.codeSize = source.GetSize();
-		shaderModuleCreateInfo.pCode = source.GetData();
-		vkCreateShaderModule(m_Device->GetDevice(), &shaderModuleCreateInfo, nullptr, &m_ComputeShaderModule);
+		m_ComputeShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(computeFilePath);
 
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
 		CreateDescriptorSet(desc.DescriptionSetLayouts, desc.MaxSets);
 
 		VkComputePipelineCreateInfo pipelineCreateInfo{};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineCreateInfo.pNext = nullptr;
 		pipelineCreateInfo.layout = m_PipelineLayout;
 
 		VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
 		shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStageCreateInfo.pNext = nullptr;
 		shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 		shaderStageCreateInfo.module = m_ComputeShaderModule;
 		shaderStageCreateInfo.pName = "main";
@@ -140,27 +172,24 @@ namespace Echo
 			}
 		};
 
-		std::unordered_set<uint32_t> createdBindings;
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = desc.VertexLayout.GetStride();
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-		for (const auto& attr : desc.VertexAttributes)
+		bindingDescriptions.push_back(bindingDescription);
+
+		uint32_t count = 0;
+		for (const auto& element : desc.VertexLayout)
 		{
-			if (createdBindings.find(attr.Binding) == createdBindings.end())
-			{
-				createdBindings.insert(attr.Binding);
+			VkVertexInputAttributeDescription attributeDescription{};
+			attributeDescription.binding = 0;
+			attributeDescription.location = count;
+			attributeDescription.format = ShaderDataTypeToVulkanFormat(element.Type);
+			attributeDescription.offset = element.Offset;
+			attributeDescriptions.push_back(attributeDescription);
 
-				VkVertexInputBindingDescription binding{};
-				binding.binding = attr.Binding;
-				binding.stride = attr.Stride;
-				binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-				bindingDescriptions.push_back(binding);
-			}
-
-			VkVertexInputAttributeDescription attribute{};
-			attribute.binding = attr.Binding;
-			attribute.location = attr.Location;
-			attribute.format = MapFormat(attr.Format);
-			attribute.offset = attr.Offset;
-			attributeDescriptions.push_back(attribute);
+			count++;
 		}
 
 		vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
@@ -199,11 +228,6 @@ namespace Echo
 			(desc.CullMode == Cull::Front) ? VK_CULL_MODE_FRONT_BIT : VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.lineWidth = 1.0f;
-
-		VkPipelineMultisampleStateCreateInfo multisampling{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -250,6 +274,15 @@ namespace Echo
 		VkFormat format = img->GetImage().ImageFormat;
 		renderInfo.pColorAttachmentFormats = &format;
 
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling.minSampleShading = 1.0f;
+		multisampling.pSampleMask = nullptr;
+		multisampling.alphaToCoverageEnable = VK_FALSE;
+		multisampling.alphaToOneEnable = VK_FALSE;
+
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.pNext = &renderInfo;
@@ -272,8 +305,6 @@ namespace Echo
 
 	void VulkanPipeline::CreatePipelineLayout(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout)
 	{
-		std::vector<VkDescriptorSetLayoutBinding> bindings;
-
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
 		{
 			switch (type)
@@ -308,47 +339,41 @@ namespace Echo
 			}
 		};
 
+		DescriptorLayoutBuilder builder;
+		int count = 0;
 		for (const auto& layout : descriptorSetLayout)
 		{
-			VkDescriptorSetLayoutBinding binding{};
-			binding.binding = layout.Binding;
-			binding.descriptorType = MapDescriptorType(layout.Type);
-			binding.descriptorCount = layout.Count;
-			binding.stageFlags = MapShaderStage(layout.Stage);
-			binding.pImmutableSamplers = nullptr;
-
-			bindings.push_back(binding);
+			builder.AddBinding(layout.Binding, layout.Count, MapShaderStage(layout.Stage), MapDescriptorType(layout.Type));
+			count++;
 		}
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (bindings.size() > 0)
-		{
-			vkCreateDescriptorSetLayout(m_Device->GetDevice(), &layoutInfo, nullptr, &m_DescriptorSetLayout);
-		}
+		if (count != 0)
+			m_DescriptorSetLayout = builder.Build(m_Device->GetDevice()); 
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo{};
 
 		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutCreateInfo.pNext = nullptr;
 
-		if (bindings.size() > 0)
+		if (count != 0)
 		{
 			layoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
 			layoutCreateInfo.setLayoutCount = 1;
 		}
 
-		vkCreatePipelineLayout(m_Device->GetDevice(), &layoutCreateInfo, nullptr, &m_PipelineLayout);
+		if (vkCreatePipelineLayout(m_Device->GetDevice(), &layoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create pipeline layout.");
+		}
 	}
 
 	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout, uint32_t maxSets)
 	{
 		if (maxSets == 0) return;
 
-		std::vector<VkDescriptorPoolSize> poolSizes;
+		m_DescriptorAllocator = DescriptorAllocatorGrowable();
+
+		std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> poolSizes;
 		std::unordered_map<VkDescriptorType, uint32_t> descriptorCounts;
 
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
@@ -376,27 +401,15 @@ namespace Echo
 
 		for (auto& [type, count] : descriptorCounts)
 		{
-			VkDescriptorPoolSize poolSize{};
-			poolSize.type = type;
-			poolSize.descriptorCount = count;
+			DescriptorAllocatorGrowable::PoolSizeRatio poolSize{};
+			poolSize.Type = type;
+			poolSize.Ratio = count;
+
 			poolSizes.push_back(poolSize);
 		}
 
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = maxSets;
-
-		vkCreateDescriptorPool(m_Device->GetDevice(), &poolInfo, nullptr, &m_DescriptorPool);
-
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = m_DescriptorPool;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &m_DescriptorSetLayout;
-
-		vkAllocateDescriptorSets(m_Device->GetDevice(), &allocInfo, &m_DescriptorSet);
+		m_DescriptorAllocator.Init(m_Device->GetDevice(), maxSets, poolSizes);
+		m_DescriptorSet = m_DescriptorAllocator.Allocate(m_Device->GetDevice(), m_DescriptorSetLayout);
 	}
 
 }

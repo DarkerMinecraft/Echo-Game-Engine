@@ -4,16 +4,19 @@
 #include "Platform/Vulkan/VulkanCommandBuffer.h"
 #include "Platform/Vulkan/Utils/VulkanInitializers.h"
 
+#include "Platform/Vulkan/VulkanImage.h"
+
 namespace Echo
 {
 
 	void VulkanClearColorCommand::Execute(CommandBuffer* cmd)
 	{
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+		VulkanImage* img = (VulkanImage*)m_Image.get();
 
 		VkClearColorValue clearValue = { m_ClearValues.x, m_ClearValues.y, m_ClearValues.z, m_ClearValues.w };
 		VkImageSubresourceRange subresourceRange = VulkanInitializers::ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		vkCmdClearColorImage(commandBuffer, (VkImage)m_Image->GetImageHandle(), VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &subresourceRange);
+		vkCmdClearColorImage(commandBuffer, img->GetImage().Image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &subresourceRange);
 	}
 }

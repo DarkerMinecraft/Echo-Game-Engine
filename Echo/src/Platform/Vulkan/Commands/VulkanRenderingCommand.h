@@ -5,18 +5,22 @@
 
 #include "Echo/Graphics/Image.h"
 
+#include <glm/glm.hpp>
+
 namespace Echo 
 {
 
 	class VulkanBeginRenderingCommand : public ICommand
 	{
 	public:
-		VulkanBeginRenderingCommand(Ref<Image> image)
-			: m_Image(image)
+		VulkanBeginRenderingCommand(Ref<Image> image, glm::vec4 clearColor = {1.0f, 1.0f, 1.0f, 1.0f})
+			: m_Image(image), m_ClearColor(clearColor)
 		{}
+		VulkanBeginRenderingCommand() = default;
 		virtual void Execute(CommandBuffer* cmd) override;
 	private:
-		Ref<Image> m_Image;
+		Ref<Image> m_Image = nullptr;
+		glm::vec4 m_ClearColor{1.0f};
 	};
 
 	class VulkanEndRenderingCommand : public ICommand

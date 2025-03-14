@@ -5,15 +5,15 @@
 
 namespace Echo
 {
-	Scope<CommandBuffer> CommandBuffer::Create()
+	Ref<CommandBuffer> CommandBuffer::Create()
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanCommandBuffer>(device);
+			case DeviceType::Vulkan:
+				return CreateRef<VulkanCommandBuffer>(device);
 		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
 	}
 }

@@ -27,6 +27,10 @@ target_include_directories(Echo PRIVATE
     ${CMAKE_SOURCE_DIR}/Echo/vendor/tinyobjloader
     ${CMAKE_SOURCE_DIR}/Echo/vendor/stb
     ${CMAKE_SOURCE_DIR}/Echo/vendor/DirectXTK12/Inc
+    ${CMAKE_SOURCE_DIR}/Echo/vendor/Slang/include
+    ${CMAKE_SOURCE_DIR}/Echo/vendor/uuidv4
+    ${CMAKE_SOURCE_DIR}/Echo/vendor/yaml/include
+    ${CMAKE_SOURCE_DIR}/Echo/vendor/ImGuizmo
 )
 
 link_directories(${VULKAN_SDK}/Lib)
@@ -38,6 +42,9 @@ target_link_libraries(Echo PRIVATE
     $ENV{VULKAN_SDK}/Lib/dxcompiler.lib
     vk-bootstrap
     DirectXTK12
+    slang
+    yaml-cpp
+    ImGuizmo
 )
 
 target_sources(Echo PRIVATE 
@@ -47,6 +54,7 @@ target_sources(Echo PRIVATE
 
 if(WIN32)
     target_compile_definitions(Echo PRIVATE USING_DIRECTX_HEADERS)
+    target_compile_definitions(Echo PRIVATE EC_PLATFORM_WINDOWS)
 endif()
 
 foreach(CONFIG Debug Release Dist)

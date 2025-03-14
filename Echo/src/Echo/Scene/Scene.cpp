@@ -1,12 +1,18 @@
 #include "pch.h"
 #include "Scene.h"
 
+#include "Components.h"
+
+#include "Echo/Graphics/NamedRenderer/RendererQuad.h"
+
+#include "Entity.h"
+
 namespace Echo 
 {
 
 	Scene::Scene()
 	{
-
+		
 	}
 
 	Scene::~Scene()
@@ -14,7 +20,134 @@ namespace Echo
 
 	}
 
+	Entity Scene::CreateEntity(const std::string& nam)
+	{
+		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<TransformComponent>();
+		auto& tag = entity.AddComponent<TagComponent>();
+		tag.Tag = nam.empty() ? "Entity" : nam;
+
+		return entity; 
+	}
+
+	Entity Scene::GetPrimaryCameraEntity()
+	{
+		auto view = m_Registry.view<CameraComponent>();
+		for (auto entity : view)
+		{
+			const auto camera = view.get<CameraComponent>(entity);
+			if (camera.Primary)
+			{
+				return Entity{ entity, this };
+			}
+		}
+
+		return {  };
+	}
+
+	void Scene::DestroyEntity(Entity entity)
+	{
+		m_Registry.destroy(entity);
+	}
+
+	void Scene::OnRender(CommandList& cmd)
+	{
+		Camera* mainCamera = nullptr;
+		glm::mat4 cameraTransform;
+		{
+			auto view = m_Registry.view<TransformComponent, CameraComponent>();
+			for (auto entity : view) 
+			{
+                auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+
+				if (camera.Primary) 
+				{
+					mainCamera = &camera.Camera;
+					cameraTransform = transform.GetTransform();
+					break;
+				}
+			}
+		}
+
+		if (mainCamera != nullptr)
+		{
+			RendererQuad::BeginScene(cmd, mainCamera->GetProjection(), cameraTransform);
+
+			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+				RendererQuad::DrawQuad({ .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+			}
+
+			RendererQuad::EndScene();
+		}
+	}
+
 	void Scene::OnUpdate(Timestep ts)
+	{
+		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
+		{
+			if (!nsc.Instance)
+			{
+				nsc.Instance = nsc.InstantiateScript();
+				nsc.Instance->m_Entity = Entity{ entity, this };
+
+				nsc.Instance->OnCreate();
+			}
+
+			nsc.Instance->OnUpdate(ts);
+		});
+	}
+
+	void Scene::OnViewportResize(uint32_t width, uint32_t height)
+	{
+		m_ViewportWidth = width;
+		m_ViewportHeight = height;
+
+		auto view = m_Registry.view<CameraComponent>();
+		for (auto entity : view)
+		{
+			auto& cameraComponent = view.get<CameraComponent>(entity);
+			if (!cameraComponent.FixedAspectRatio)
+			{
+				cameraComponent.Camera.SetViewportSize(width, height);
+			}
+		}
+	}
+
+	template<typename T>
+	void Scene::OnComponentAdd(Entity entity, T& component)
+	{
+		static_assert(false);
+	}
+
+	template<>
+	void Scene::OnComponentAdd<TransformComponent>(Entity entity, TransformComponent& component)
+	{
+
+	}
+
+	template<>
+	void Scene::OnComponentAdd<CameraComponent>(Entity entity, CameraComponent& component)
+	{
+		component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+	}
+
+	template<>
+	void Scene::OnComponentAdd<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
+	{
+
+	}
+
+	template<>
+	void Scene::OnComponentAdd<NativeScriptComponent>(Entity entity, NativeScriptComponent& component)
+	{
+
+	}
+
+	template<>
+	void Scene::OnComponentAdd<TagComponent>(Entity entity, TagComponent& component)
 	{
 
 	}

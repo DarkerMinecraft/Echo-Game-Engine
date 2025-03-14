@@ -2,6 +2,10 @@
 #include "VulkanImage.h"
 #include "Platform/Vulkan/Utils/VulkanInitializers.h"
 
+#include "backends/imgui_impl_vulkan.h"
+#include "Utils/VulkanDescriptors.h"
+#include "Utils/VulkanImages.h"
+
 namespace Echo
 {
 
@@ -9,14 +13,12 @@ namespace Echo
 		: m_Device((VulkanDevice*)device)
 	{
 		CreateAllocatedImage(desc);
+		m_Device->AddImage(this);
 	}
 
 	VulkanImage::~VulkanImage()
 	{
-		if (!m_UseDrawImage)
-		{
-			m_Device->DestroyImage(m_Image);
-		}
+		Destroy();
 	}
 
 	uint32_t VulkanImage::GetWidth()
@@ -39,11 +41,68 @@ namespace Echo
 		return m_Height;
 	}
 
-	void* VulkanImage::GetImageHandle()
+	void* VulkanImage::GetColorAttachmentID()
 	{
-		if(m_UseDrawImage)
-			return m_Device->GetDrawImage().Image;
-		else return m_Image.Image;
+		if (m_DescriptorSet) 
+		{
+			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+		}
+
+		m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Sampler, m_Image.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		return m_DescriptorSet;
+	}
+
+	void VulkanImage::Resize(const glm::vec2& size)
+	{
+		if (m_Width == size.x && m_Height == size.y)
+			return;
+		m_Width = size.x;
+		m_Height = size.y;
+		AllocatedImage oldImage = m_Image;
+		m_Image = m_Device->CreateImage({ m_Width, m_Height, 1 }, m_Format,
+										VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+		m_Device->DestroyImage(oldImage);
+
+		if(m_DrawToImGui) 
+		{
+			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd) 
+			{
+				VulkanImages::TransitionImage(cmd, m_Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			});
+		}
+		else 
+		{
+			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd) 
+			{
+				VulkanImages::TransitionImage(cmd, m_Image.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+			});
+		}
+	}
+
+	void VulkanImage::Destroy()
+	{
+		if (m_HasBeenDestroyed)
+			return; 
+
+		if (!m_UseDrawImage)
+		{
+			m_Device->DestroyImage(m_Image);
+		}
+		if (m_DescriptorSet)
+		{
+			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+		}
+
+		vkDestroySampler(m_Device->GetDevice(), m_Sampler, nullptr);
+		m_HasBeenDestroyed = true;
+	}
+
+	void VulkanImage::UpdateSize()
+	{
+		if (m_DrawImageExtent)
+		{
+			CreateImage(m_Device->GetDrawExtent().width, m_Device->GetDrawExtent().height);
+		}
 	}
 
 	AllocatedImage VulkanImage::GetImage()
@@ -59,7 +118,8 @@ namespace Echo
 		m_DrawImageExtent = desc.DrawImageExtent;
 		m_Width = desc.Width;
 		m_Height = desc.Height;
-		
+		m_DrawToImGui = desc.DrawToImGui;
+
 		if (desc.DrawImageExtent)
 		{
 			m_Width = m_Device->GetDrawExtent().width;
@@ -105,27 +165,25 @@ namespace Echo
 				}
 			};
 
-			m_Image.ImageFormat = MapImageFormat(desc.Format);
-			m_Image.ImageExtent = drawImageExtent;
-
-			VkImageUsageFlags drawImageUsages{};
-			drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-			drawImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-			drawImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
-			drawImageUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-			VkImageCreateInfo rimg_info = VulkanInitializers::ImageCreateInfo(m_Image.ImageFormat, drawImageUsages, drawImageExtent);
-
-			VmaAllocationCreateInfo rimg_allocinfo = {};
-			rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-			rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-			vmaCreateImage(m_Device->GetAllocator(), &rimg_info, &rimg_allocinfo, &m_Image.Image, &m_Image.Allocation, nullptr);
-
-			VkImageViewCreateInfo rview_info = VulkanInitializers::ImageViewCreateInfo(m_Image.ImageFormat, m_Image.Image, VK_IMAGE_ASPECT_COLOR_BIT);
-
-			vkCreateImageView(m_Device->GetDevice(), &rview_info, nullptr, &m_Image.ImageView);
+			m_Image = m_Device->CreateImage(drawImageExtent, MapImageFormat(desc.Format),
+									  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+			m_Format = MapImageFormat(desc.Format);
 		}
+
+		VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+
+		sampl.magFilter = VK_FILTER_NEAREST;
+		sampl.minFilter = VK_FILTER_NEAREST;
+
+		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Sampler);
+	}
+
+	void VulkanImage::CreateImage(uint32_t width, uint32_t height)
+	{
+		AllocatedImage oldImage = m_Image;
+		m_Image = m_Device->CreateImage({ width, height, 1 }, m_Format,
+											  VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+		m_Device->DestroyImage(oldImage);
 	}
 
 }

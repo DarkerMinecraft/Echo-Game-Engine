@@ -3,8 +3,11 @@
 
 #include "Platform/Vulkan/VulkanCommandBuffer.h"
 #include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Platform/Vulkan/VulkanSwapchain.h"
 
 #include "Platform/Vulkan/Utils/VulkanInitializers.h"
+#include "Echo/Core/Application.h"
 
 
 namespace Echo
@@ -12,15 +15,33 @@ namespace Echo
 
 	void VulkanBeginRenderingCommand::Execute(CommandBuffer* cmd)
 	{
+		VulkanCommandBuffer* commandBuffer = ((VulkanCommandBuffer*)cmd);
 		VulkanImage* img = (VulkanImage*)m_Image.get();
-		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+		VulkanDevice* device = (VulkanDevice*)Application::Get().GetWindow().GetDevice();
 
-		VkRenderingAttachmentInfo colorAttachment = VulkanInitializers::AttachmentInfo(img->GetImage().ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		VkRenderingAttachmentInfo colorAttachment;
+		VkRenderingInfo renderingInfo;
 
-		VkExtent2D extent = { img->GetWidth(), img->GetHeight() };
-		VkRenderingInfo renderingInfo = VulkanInitializers::RenderingInfo(extent, &colorAttachment, nullptr);
+		VkExtent2D extent;
+		if (img == nullptr && !((VulkanCommandBuffer*)cmd)->DrawToSwapchain())
+		{
+			EC_CORE_ERROR("No image set for rendering!");
+			return;
+		}
+		else if (img) 
+		{
+			extent = { img->GetWidth(), img->GetHeight() };
+			colorAttachment = VulkanInitializers::AttachmentInfo(img->GetImage().ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			renderingInfo = VulkanInitializers::RenderingInfo({ img->GetWidth(), img->GetHeight() }, &colorAttachment, nullptr);
+		}
+		else
+		{
+			extent = device->GetSwapchain().GetExtent();
+			colorAttachment = VulkanInitializers::AttachmentInfo(device->GetSwapchainImageView(commandBuffer->GetImageIndex()), nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			renderingInfo = VulkanInitializers::RenderingInfo(device->GetSwapchain().GetExtent(), &colorAttachment, nullptr);
+		}
 
-		vkCmdBeginRendering(commandBuffer, &renderingInfo);
+		vkCmdBeginRendering(commandBuffer->GetCommandBuffer(), &renderingInfo);
 
 		VkViewport viewport = {};
 		viewport.x = 0;
@@ -30,7 +51,7 @@ namespace Echo
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
 
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(commandBuffer->GetCommandBuffer(), 0, 1, &viewport);
 
 		VkRect2D scissor = {};
 		scissor.offset.x = 0;
@@ -38,7 +59,7 @@ namespace Echo
 		scissor.extent.width = extent.width;
 		scissor.extent.height = extent.height;
 
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		vkCmdSetScissor(commandBuffer->GetCommandBuffer(), 0, 1, &scissor);
 	}
 
 	void VulkanEndRenderingCommand::Execute(CommandBuffer* cmd)

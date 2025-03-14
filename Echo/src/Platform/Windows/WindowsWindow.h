@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Echo/Core/Window.h"
+#include <windows.h>
 
-#define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "Echo/Core/Window.h"
 
 namespace Echo 
 {
@@ -27,6 +25,7 @@ namespace Echo
 		virtual void Wait() override;
 
 		virtual void SetCursor(Cursor cursor) override;
+		virtual VkSurfaceKHR SetWindowSurface(VkInstance instance) override;
 
 		virtual void SetVSync(bool enabled) override;
 		virtual bool IsVSync() const override;
@@ -42,6 +41,7 @@ namespace Echo
 			unsigned int Width, Height;
 			bool VSync;
 			bool FrameBufferResized = false;
+			bool StartUp = true;
 
 			EventCallbackFn EventCallback;
 		};
@@ -49,10 +49,10 @@ namespace Echo
 		void Init(const WindowProps& props);
 		void Shutdown();
 	private:
-		GLFWwindow* m_Window;
-		Scope<Device> m_Device;
-
+		HWND m_Window;
 		WindowData m_Data;
+		
+		Scope<Device> m_Device;
 	};
 
 }

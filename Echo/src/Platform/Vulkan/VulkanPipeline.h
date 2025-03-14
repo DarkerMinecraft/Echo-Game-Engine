@@ -3,6 +3,7 @@
 #include "Echo/Graphics/Pipeline.h"
 
 #include "VulkanDevice.h"
+#include "Utils/VulkanDescriptors.h"
 
 namespace Echo 
 {
@@ -16,7 +17,10 @@ namespace Echo
 
 		virtual void Bind(CommandBuffer* cmd) override;
 
-		virtual void WriteDesciptorStorageImage(Ref<Image> image, uint32_t binding) override;
+		virtual void WriteDescriptorStorageImage(Ref<Image> image, uint32_t binding = 0) override;
+		virtual void WriteDescriptorCombinedTexture(Ref<Texture> tex, uint32_t binding = 0) override;
+		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) override;
+		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) override;
 
 		PipelineType GetType()  { return m_PipelineType; }
 		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
@@ -43,6 +47,8 @@ namespace Echo
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 		VkDescriptorSet m_DescriptorSet = nullptr;
 		VkDescriptorPool m_DescriptorPool;
+
+		DescriptorAllocatorGrowable m_DescriptorAllocator;
 
 		VkShaderModule m_ComputeShaderModule;
 	};

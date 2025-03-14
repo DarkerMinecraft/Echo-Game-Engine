@@ -3,6 +3,8 @@
 #include "Echo/Graphics/CommandBuffer.h"
 #include "Echo/Graphics/Commands/ICommand.h"
 
+#include "Echo/Graphics/Buffer.h"
+
 namespace Echo 
 {
 
@@ -33,5 +35,19 @@ namespace Echo
 		uint32_t m_FirstIndex;
 		uint32_t m_VertexOffset;
 		uint32_t m_FirstInstance;
+	};
+
+	class VulkanDrawIndexedIndirect : public ICommand 
+	{
+	public:
+		VulkanDrawIndexedIndirect(Ref<IndirectBuffer> buffer, uint32_t offset, uint32_t drawCount, uint32_t stride)
+			: m_Buffer(buffer), m_Offset(offset), m_DrawCount(drawCount), m_Stride(stride)
+		{}
+		virtual void Execute(CommandBuffer* cmd) override;
+	private:
+		Ref<IndirectBuffer> m_Buffer;
+		uint32_t m_Offset;
+		uint32_t m_DrawCount;
+		uint32_t m_Stride;
 	};
 }

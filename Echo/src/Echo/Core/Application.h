@@ -14,6 +14,7 @@ namespace Echo
 	{
 	public:
 		Application(unsigned int width = 1280, unsigned int height = 720, const char* title = "Echo Engine Game");
+		Application(const char* title = "Echo Engine Game");
 		virtual ~Application() = default;
 
 		void Run();
@@ -25,6 +26,8 @@ namespace Echo
 
 		static Application& Get() { return *s_Instance; }
 		Window& GetWindow() { return *m_Window; }
+
+		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
 
 		void Close();
 	private:

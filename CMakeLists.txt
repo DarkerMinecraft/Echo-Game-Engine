@@ -19,6 +19,8 @@ foreach(CONFIG_TYPE Debug Release Dist)
     endif()
 endforeach()
 
+set(ENABLE_SPIRV_CODEGEN ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Minecraft_Clone)
@@ -36,7 +38,33 @@ set_target_properties(vk-bootstrap PROPERTIES FOLDER "Dependencies")
 add_subdirectory(Echo/vendor/DirectXTK12)
 set_target_properties(DirectXTK12 PROPERTIES FOLDER "Dependencies")
 
+set(SLANG_ENABLE_SLANG_RHI FALSE)
+set(SLANG_USE_SYSTEM_VULKAN_HEADERS TRUE)
+
+set(SLANG_ENABLE_SLANG_GLSLANG FALSE)
+set(SLANG_ENABLE_GFX FALSE)
+set(SLANG_ENABLE_SLANGD FALSE)
+set(SLANG_ENABLE_SLANGC FALSE)
+set(SLANG_ENABLE_SLANGRT FALSE)
+set(SLANG_ENABLE_TESTS FALSE)
+set(SLANG_ENABLE_EXAMPLES FALSE)
+
+add_subdirectory(Echo/vendor/Slang)
+set_target_properties(slang PROPERTIES FOLDER "Dependencies")
+
+add_subdirectory(Echo/vendor/yaml)
+set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies")
+
+add_subdirectory(Echo/vendor/ImGuizmo)
+set_target_properties(ImGuizmo PROPERTIES FOLDER "Dependencies")
+
+set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies")
+set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies")
+set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies")
+set_target_properties(slang-common-objects PROPERTIES FOLDER "Dependencies")
+set_target_properties(core PROPERTIES FOLDER "Dependencies")
+set_target_properties(compiler-core PROPERTIES FOLDER "Dependencies")
+
 add_subdirectory(Echo)
-add_subdirectory(Echo_Editor)
-add_subdirectory(Minecraft_Clone)
+add_subdirectory(Horizon)
 

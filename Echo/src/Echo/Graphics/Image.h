@@ -2,6 +2,8 @@
 
 #include "Echo/Core/Base.h"
 
+#include <glm/glm.hpp>
+
 namespace Echo
 {
 
@@ -23,8 +25,9 @@ namespace Echo
 	struct ImageDescription
 	{
 		uint32_t Width, Height;
-		bool DrawImage;
+		bool DrawImage = false;
 		bool DrawImageExtent = false;
+		bool DrawToImGui = false;
 
 		ImageFormat Format = RGBA16;
 	};
@@ -34,12 +37,14 @@ namespace Echo
 	public:
 		virtual ~Image() = default;
 
+		virtual void* GetColorAttachmentID() = 0;
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
 
-		virtual void Destroy() = 0;
+		virtual void Resize(uint32_t width, uint32_t height) = 0;
+		virtual void Resize(const glm::vec2& size) = 0;
 
-		virtual void* GetImageHandle() = 0;
+		virtual void Destroy() = 0;
 
 		static Ref<Image> Create(const ImageDescription& desc);
 	};

@@ -13,6 +13,7 @@ namespace Echo
 		DepthAttachment,
 		TransferSrc,
 		TransferDst,
+		ShaderReadOnly,
 	};
 
 	struct Extent2D 

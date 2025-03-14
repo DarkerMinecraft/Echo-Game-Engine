@@ -3,10 +3,15 @@
 #include "Base.h"
 #include "Echo/Events/Event.h"
 
-#include "Echo/Graphics/Device.h"
+#ifdef EC_PLATFORM_WINDOWS
+	#define VK_USE_PLATFORM_WIN32_KHR
+	#include <vulkan/vulkan.h>
+#endif
 
 namespace Echo 
 {
+
+	class Device;
 
 	struct WindowProps
 	{
@@ -54,6 +59,9 @@ namespace Echo
 
 		virtual void SetCursor(Cursor cursor) = 0;
 
+#ifdef EC_PLATFORM_WINDOWS
+		virtual VkSurfaceKHR SetWindowSurface(VkInstance instance) = 0;
+#endif
 		virtual void Wait() = 0;
 
 		virtual void SetVSync(bool enabled) = 0;

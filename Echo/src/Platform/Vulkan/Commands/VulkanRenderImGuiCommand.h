@@ -18,9 +18,7 @@ namespace Echo
 		{
 			VulkanCommandBuffer* vulkanCmd = (VulkanCommandBuffer*)cmd;
 			VkCommandBuffer commandBuffer = vulkanCmd->GetCommandBuffer();
-
-			EC_CORE_ASSERT(commandBuffer, "CommandBuffer is null!");
-
+			
 			ImGui::Render();
 			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 		}

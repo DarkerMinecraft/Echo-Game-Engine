@@ -25,6 +25,24 @@ namespace Echo
 		PushOverlay(m_ImGuiLayer);
 	}
 
+	Application::Application(const char* title /*= "Echo Engine Game"*/)
+	{
+		EC_CORE_ASSERT(!s_Instance, "Application already exists!")
+			s_Instance = this;
+
+		WindowProps props{};
+		props.Width = -1;
+		props.Height = -1;
+		props.Title = title;
+
+		m_ImGuiLayer = new ImGuiLayer();
+
+		m_Window = Window::Create(props);
+		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+
+		PushOverlay(m_ImGuiLayer);
+	}
+
 	void Application::Run()
 	{
 		Device* device = GetWindow().GetDevice();
@@ -62,7 +80,7 @@ namespace Echo
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)
 		{
 			(*--it)->OnEvent(e);
-			if (e.IsHandled()) break;
+			if (e.Handled) break;
 		}
 	}
 

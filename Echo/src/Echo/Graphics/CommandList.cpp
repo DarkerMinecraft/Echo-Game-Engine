@@ -21,10 +21,8 @@ namespace Echo
 		m_Commands.push_back(command);
 	}
 
-	void CommandList::Execute() 
+	void CommandList::Execute()
 	{
-		if (!m_CommandBuffer->CanExecuteCommands()) return;
-
 		for (Ref<ICommand> command : m_Commands)
 		{
 			command->Execute(m_CommandBuffer.get());

@@ -1,28 +1,41 @@
 #pragma once
 
 #include "Echo/Graphics/Device.h"
-
-#include <vulkan/vulkan.h>
-
-#define GLFW_INCLUDE_VULKAN
-#include <glfw/glfw3.h>
+#include "Echo/Graphics/Image.h"
 
 #include "vk_mem_alloc.h"
 #include "Utils/VulkanTypes.h"
-#include <Platform/Shader/ShaderCompiler.h>
+#include "Platform/Shader/ShaderCompiler.h"
+
+#ifndef EC_PLATFORM_WINDOWS
+	#define VK_USE_PLATFORM_WIN32_KHR
+	#include <vulkan/vulkan.h>
+#endif
 
 namespace Echo
 {
 
+	struct FrameData
+	{
+		VkSemaphore SwapchainSemaphore, RenderSemaphore;
+		VkFence RenderFence;
+
+		VkCommandPool CommandPool;
+		VkCommandBuffer CommandBuffer;
+	};
+
+
 	class VulkanSwapchain;
+	class VulkanImage;
 
 	class VulkanDevice : public Device
 	{
 	public:
-		VulkanDevice(const void* window, unsigned int width, unsigned int height);
+		VulkanDevice(Window* window, unsigned int width, unsigned int height);
 		~VulkanDevice();
 
 		virtual DeviceType GetDeviceType() const { return DeviceType::Vulkan; };
+		FrameData& GetFrameData() { return m_Frames[m_CurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
 		ShaderLibrary GetShaderLibrary() { return m_ShaderLibrary; }
 
@@ -46,10 +59,14 @@ namespace Echo
 		AllocatedImage GetDrawImage() { return m_DrawImage; }
 
 		VkImage GetSwapchainImage(uint32_t imageIndex);
+		VkImageView GetSwapchainImageView(uint32_t imageIndex);
 
 		AllocatedBuffer CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 		void DestroyBuffer(const AllocatedBuffer& buffer);
 
+		AllocatedImage CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage);
+		AllocatedImage CreateImageNoMSAA(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+		AllocatedImage CreateImageTex(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
 		void DestroyImage(const AllocatedImage& image);
 
 		void ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
@@ -57,6 +74,12 @@ namespace Echo
 		void* GetMappedData(const AllocatedBuffer& buffer);
 		
 		void RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain);
+
+		void AddImage(VulkanImage* image) { m_Images.push_back(image); }
+		virtual void AddImGuiImage(Ref<Image> image) override { m_ImGuiImages.push_back(image); }
+		virtual std::vector<Ref<Image>> GetImGuiImages() override { return m_ImGuiImages; }
+
+		void AddFrame() { m_CurrentFrame++; }
 	private:
 		void InitVulkan();
 		void InitSwapchain();
@@ -64,7 +87,8 @@ namespace Echo
 		void InitCommands();
 		void CreateImGuiDescriptorPool();
 	private:
-		GLFWwindow* m_Window;
+		Window* m_Window;
+		HWND m_WindowHandle;
 		unsigned int m_Width;
 		unsigned int m_Height;
 
@@ -88,7 +112,13 @@ namespace Echo
 		AllocatedImage m_DrawImage;
 		VkExtent2D m_DrawExtent;
 
+		FrameData m_Frames[MAX_FRAMES_IN_FLIGHT];
+
 		ShaderLibrary m_ShaderLibrary;
+		uint32_t m_CurrentFrame = 0;
+
+		std::vector<VulkanImage*> m_Images;
+		std::vector<Ref<Image>> m_ImGuiImages;
 
 		Scope<VulkanSwapchain> m_Swapchain;
 	};

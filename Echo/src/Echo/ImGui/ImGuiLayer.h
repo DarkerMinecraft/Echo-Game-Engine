@@ -17,15 +17,19 @@ namespace Echo
 		virtual void OnUpdate(Timestep ts) override;
 		virtual void OnImGuiRender() override;
 
+		virtual void OnEvent(Event& e) override; 
+
 		void Begin();
 		void End();
 
 		void Destroy();
+
+		void SetBlockEvents(bool block) { m_BlockEvents = block; }
 	private:
 		void DrawImGui();
+		void SetDarkThemeColors();
 	private:
-		Ref<Image> m_DrawImage;
-		Ref<Image> m_ImGuiImage;
+		bool m_BlockEvents = true;
 	};
 	
 

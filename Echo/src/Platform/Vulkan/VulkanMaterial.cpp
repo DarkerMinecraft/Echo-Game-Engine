@@ -30,14 +30,11 @@ namespace Echo
 
 	void VulkanMaterial::LoadShaders(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath)
 	{
-		auto vertexShader = m_Device->GetShaderLibrary().AddSpirvShader(std::string(vertexShaderPath), ShaderType::VertexShader);
-		m_VertexShaderModule = CreateShaderModule(vertexShader);
-		auto fragmentShader = m_Device->GetShaderLibrary().AddSpirvShader(std::string(fragmentShaderPath), ShaderType::FragmentShader);
-		m_FragmentShaderModule = CreateShaderModule(fragmentShader);
+		m_VertexShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(vertexShaderPath);
+		m_FragmentShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(fragmentShaderPath);
 		if (geometryShaderPath != nullptr) 
 		{
-			auto geometryShader = m_Device->GetShaderLibrary().AddSpirvShader(std::string(geometryShaderPath), ShaderType::GeometryShader);
-			m_GeometryShaderModule = CreateShaderModule(geometryShader);
+			m_GeometryShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(geometryShaderPath);
 		}
 
 		CreateShaderStages();
@@ -45,14 +42,11 @@ namespace Echo
 
 	void VulkanMaterial::LoadShadersSource(const char* vertexShaderSource, const char* fragmentShaderSource, const char* shaderName, const char* geometryShaderSource)
 	{
-		auto vertexShader = m_Device->GetShaderLibrary().AddSpirvShader(vertexShaderSource, std::string(shaderName) + "_vertex", ShaderType::VertexShader);
-		m_VertexShaderModule = CreateShaderModule(vertexShader);
-		auto fragmentShader = m_Device->GetShaderLibrary().AddSpirvShader(fragmentShaderSource, std::string(shaderName) + "_fragment", ShaderType::FragmentShader);
-		m_FragmentShaderModule = CreateShaderModule(fragmentShader);
-		if (geometryShaderSource != nullptr) 
+		m_VertexShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(vertexShaderSource, (shaderName + std::string(" Vertex")).c_str());
+		m_FragmentShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(fragmentShaderSource, (shaderName + std::string(" Pixel")).c_str());
+		if (geometryShaderSource != nullptr)
 		{
-			auto geometryShader = m_Device->GetShaderLibrary().AddSpirvShader(geometryShaderSource, std::string(shaderName) + "_geometry", ShaderType::GeometryShader);
-			m_GeometryShaderModule = CreateShaderModule(geometryShader);
+			m_GeometryShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(geometryShaderSource, (shaderName + std::string(" Geom")).c_str());
 		}
 
 		CreateShaderStages();
@@ -87,22 +81,6 @@ namespace Echo
 		{
 			m_ShaderStages.push_back(geometryShaderStageInfo);
 		}
-	}
-
-	VkShaderModule VulkanMaterial::CreateShaderModule(SpirvData data)
-	{
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = data.GetSize();
-		createInfo.pCode = data.GetData();
-		VkShaderModule shaderModule;
-
-		if (vkCreateShaderModule(m_Device->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create shader module!");
-		}
-
-		return shaderModule;
 	}
 
 }
