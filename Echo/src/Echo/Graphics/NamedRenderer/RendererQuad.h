@@ -3,6 +3,7 @@
 #include "Echo/Graphics/CommandList.h"
 
 #include "Echo/Graphics/Camera.h"
+#include "Echo/Graphics/EditorCamera.h"
 #include "Echo/Graphics/Texture.h"
 
 #include <glm/glm.hpp>
@@ -35,9 +36,10 @@ namespace Echo
 	class RendererQuad
 	{
 	public:
-		static void Init(Ref<Image> srcImage);
+		static void Init(Ref<Framebuffer> framebuffer, uint32_t index);
 
 		static void BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform);
+		static void BeginScene(CommandList& cmd, const EditorCamera& camera);
 		static void EndScene();
 
 		static void DrawQuad(const VertexData& data);

@@ -3,12 +3,13 @@
 #include "Echo/Core/Base.h"
 #include "Material.h"
 
-#include "Image.h"
+#include "Framebuffer.h"
 #include "CommandBuffer.h"
 #include "Texture.h"
 #include "Buffer.h"
 
 #include <vector>
+#include <string>
 
 namespace Echo 
 {
@@ -145,7 +146,7 @@ namespace Echo
 		};
 		std::vector<DescriptionSetLayout> DescriptionSetLayouts;
 
-		Ref<Image> RenderTarget;
+		Ref<Framebuffer> RenderTarget;
 	};
 
 	class Pipeline 
@@ -155,10 +156,10 @@ namespace Echo
 
 		virtual void Bind(CommandBuffer* cmd) = 0;
 
-		virtual void WriteDescriptorStorageImage(Ref<Image> image, uint32_t binding = 0) = 0;
+		virtual void WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) = 0;
 
 		virtual void WriteDescriptorCombinedTexture(Ref<Texture> tex, uint32_t binding = 0) = 0;
-		virtual void WriteDescriptorCombinedImage(Ref<Image> img, uint32_t binding = 0) = 0;
+		virtual void WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) = 0;
 
 		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) = 0;
 		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) = 0;

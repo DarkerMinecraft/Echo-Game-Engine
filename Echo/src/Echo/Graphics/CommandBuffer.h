@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "Image.h"
+#include "Framebuffer.h"
 
 namespace Echo 
 {
@@ -15,7 +15,7 @@ namespace Echo
 
 		virtual void Submit() = 0;
 
-		virtual void SetSourceImage(Ref<Image> srcImage) = 0;
+		virtual void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) = 0;
 		virtual void SetShouldPresent(bool shouldPresent) = 0;
 		virtual void SetDrawToSwapchain(bool drawToSwapchain) = 0;
 		

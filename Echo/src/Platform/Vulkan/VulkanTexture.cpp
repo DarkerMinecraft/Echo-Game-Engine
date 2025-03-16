@@ -23,13 +23,18 @@ namespace Echo
 
 	VulkanTexture2D::~VulkanTexture2D()
 	{
-		
+		Destroy();
 	}
 
 	void VulkanTexture2D::Destroy()
 	{
+		if (m_IsDestroyed)
+			return;
+
 		vkDestroySampler(m_Device->GetDevice(), m_Sampler, nullptr);
 		m_Device->DestroyImage(m_Texture);
+
+		m_IsDestroyed = true;
 	}
 
 	void VulkanTexture2D::LoadTexture(const std::string& path)

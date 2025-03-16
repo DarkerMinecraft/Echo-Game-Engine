@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Echo/Graphics/Device.h"
-#include "Echo/Graphics/Image.h"
+#include "Echo/Graphics/Framebuffer.h"
 
 #include "vk_mem_alloc.h"
 #include "Utils/VulkanTypes.h"
@@ -26,7 +26,7 @@ namespace Echo
 
 
 	class VulkanSwapchain;
-	class VulkanImage;
+	class VulkanFramebuffer;
 
 	class VulkanDevice : public Device
 	{
@@ -56,7 +56,6 @@ namespace Echo
 		VmaAllocator GetAllocator() { return m_Allocator; }
 
 		VkExtent2D GetDrawExtent() { return m_DrawExtent; }
-		AllocatedImage GetDrawImage() { return m_DrawImage; }
 
 		VkImage GetSwapchainImage(uint32_t imageIndex);
 		VkImageView GetSwapchainImageView(uint32_t imageIndex);
@@ -75,9 +74,9 @@ namespace Echo
 		
 		void RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain);
 
-		void AddImage(VulkanImage* image) { m_Images.push_back(image); }
-		void AddImGuiImage(VulkanImage* image) { m_ImGuiImages.push_back(image); }
-		std::vector<VulkanImage*> GetImGuiImages() { return m_Images; }
+		void AddFramebuffer(VulkanFramebuffer* framebuffer) { m_Framebuffers.push_back(framebuffer); }
+		void AddImGuiFramebuffer(VulkanFramebuffer* framebuffer) { m_ImGuiFramebuffers.push_back(framebuffer); }
+		std::vector<VulkanFramebuffer*> GetImGuiFramebuffers() { return m_ImGuiFramebuffers; }
 
 		void AddFrame() { m_CurrentFrame++; }
 	private:
@@ -109,7 +108,6 @@ namespace Echo
 		VkDescriptorPool m_ImGuiDescriptorPool;
 		
 		VmaAllocator m_Allocator;
-		AllocatedImage m_DrawImage;
 		VkExtent2D m_DrawExtent;
 
 		FrameData m_Frames[MAX_FRAMES_IN_FLIGHT];
@@ -117,8 +115,8 @@ namespace Echo
 		ShaderLibrary m_ShaderLibrary;
 		uint32_t m_CurrentFrame = 0;
 
-		std::vector<VulkanImage*> m_Images;
-		std::vector<VulkanImage*> m_ImGuiImages;
+		std::vector<VulkanFramebuffer*> m_Framebuffers;
+		std::vector<VulkanFramebuffer*> m_ImGuiFramebuffers;
 
 		Scope<VulkanSwapchain> m_Swapchain;
 	};

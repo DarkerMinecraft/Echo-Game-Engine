@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Echo/Core/Layer.h"
-#include "Echo/Graphics/Image.h"
+#include "Echo/Graphics/Framebuffer.h"
 
 namespace Echo 
 {
@@ -30,6 +30,8 @@ namespace Echo
 		void SetDarkThemeColors();
 	private:
 		bool m_BlockEvents = true;
+
+		Ref<Framebuffer> m_ImGuiFramebuffer;
 	};
 	
 

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "VulkanPipeline.h"
-#include "VulkanImage.h"
+#include "VulkanFramebuffer.h"
 #include "VulkanMaterial.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
@@ -95,12 +95,20 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::WriteDescriptorCombinedImage(Ref<Image> img, uint32_t binding /*= 0*/)
+	void VulkanPipeline::WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding /*= 0*/)
 	{
-		VulkanImage* image = (VulkanImage*)img.get();
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
+
+		if (fb->GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+			{
+				fb->TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			});
+		}
 
 		DescriptorWriter writer;
-		writer.WriteImage(binding, image->GetImage().ImageView, image->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.WriteImage(binding, fb->GetImage(index).ImageView, fb->GetSampler(index), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
@@ -122,12 +130,20 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::WriteDescriptorStorageImage(Ref<Image> image, uint32_t binding)
+	void VulkanPipeline::WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding)
 	{
-		VulkanImage* img = (VulkanImage*)image.get();
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
+		if (fb->GetCurrentLayout(index) != VK_IMAGE_LAYOUT_GENERAL)
+		{
+			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+			{
+				fb->TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_GENERAL);
+			});
+		}
+
 
 		DescriptorWriter writer;
-		writer.WriteImage(binding, img->GetImage().ImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+		writer.WriteImage(binding, fb->GetImage(index).ImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
@@ -275,12 +291,12 @@ namespace Echo
 		viewportState.viewportCount = 1;
 		viewportState.scissorCount = 1;
 
-		VulkanImage* img = (VulkanImage*)desc.RenderTarget.get();
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)desc.RenderTarget.get();
 
 		VkPipelineRenderingCreateInfo renderInfo{};
 		renderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 		renderInfo.colorAttachmentCount = 1;
-		VkFormat format = img->GetImage().ImageFormat;
+		VkFormat format = fb->GetImage(0).ImageFormat;
 		renderInfo.pColorAttachmentFormats = &format;
 
 		VkPipelineMultisampleStateCreateInfo multisampling{};

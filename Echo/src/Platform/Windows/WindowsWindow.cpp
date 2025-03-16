@@ -149,6 +149,11 @@ namespace Echo
 		{
 			return 345;
 		}
+
+		if (vk_code == 164)
+		{
+			return 342;
+		}
 		return -2;
 	}
 

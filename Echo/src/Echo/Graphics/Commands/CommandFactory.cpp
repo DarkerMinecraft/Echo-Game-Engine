@@ -1,44 +1,22 @@
 #include "pch.h"
 #include "CommandFactory.h"
 
-#include "Platform/Vulkan/Commands/VulkanTransitionImageCommand.h"
-#include "Platform/Vulkan/Commands/VulkanClearColorCommand.h"
 #include "Platform/Vulkan/Commands/VulkanBindPipelineCommand.h"
 #include "Platform/Vulkan/Commands/VulkanDispatchCommand.h"
 #include "Platform/Vulkan/Commands/VulkanBindBufferCommand.h"
 #include "Platform/Vulkan/Commands/VulkanRenderingCommand.h"
 #include "Platform/Vulkan/Commands/VulkanDrawCommand.h"
-#include "Platform/Vulkan/Commands/VulkanCopyImageToImageCommand.h"
 #include "Platform/Vulkan/Commands/VulkanRenderImGuiCommand.h"
+#include "Platform/Vulkan/Commands/VulkanClearColorCommand.h"
 
 namespace Echo 
 {
 
-	Ref<ICommand> CommandFactory::TransitionImageCommand(Ref<Image> image, ImageLayout newLayout)
+	Ref<ICommand> CommandFactory::ClearColorCommand(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues)
 	{
 		switch (GetDeviceType())
 		{
-			case DeviceType::Vulkan: return CreateRef<VulkanTransitionImageCommand>(image, newLayout);
-		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
-
-	Ref<ICommand> CommandFactory::CopyImageToImageCommand(Ref<Image> srcImage, Ref<Image> dstImage)
-	{
-		switch (GetDeviceType())
-		{
-			case DeviceType::Vulkan: return CreateRef<VulkanCopyImageToImageCommand>(srcImage, dstImage);
-		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
-
-	Ref<ICommand> CommandFactory::ClearColorCommand(Ref<Image> image, const glm::vec4& clearValues)
-	{
-		switch (GetDeviceType())
-		{
-			case DeviceType::Vulkan: return CreateRef<VulkanClearColorCommand>(image, clearValues);
+			case DeviceType::Vulkan: return CreateRef<VulkanClearColorCommand>(framebuffer, index, clearValues);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -112,11 +90,11 @@ namespace Echo
 		return nullptr;
 	}
 
-	Ref<ICommand> CommandFactory::BeginRenderingCommand(Ref<Image> image)
+	Ref<ICommand> CommandFactory::BeginRenderingCommand(Ref<Framebuffer> framebuffer)
 	{
 		switch (GetDeviceType())
 		{
-			case DeviceType::Vulkan: return CreateRef<VulkanBeginRenderingCommand>(image);
+			case DeviceType::Vulkan: return CreateRef<VulkanBeginRenderingCommand>(framebuffer);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

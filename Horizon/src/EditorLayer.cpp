@@ -4,8 +4,6 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 
-#include <wtypes.h>
-
 #include <Echo/Core/Input.h>
 #include <Echo/Core/KeyCodes.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -19,25 +17,24 @@ namespace Echo
 {
 
 	EditorLayer::EditorLayer()
+		: m_EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f)
 	{
 
 	}
 
 	void EditorLayer::OnAttach()
 	{
-		if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
-		{
-			pRENDERDOC_GetAPI RENDERDOC_GetAPI =
-				(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
-			int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&m_RdocAPI);
-			assert(ret == 1);
-		}
-		m_Image = Image::Create({ .Width = 1280, .Height = 720, .Flags = SampledBit | ColorAttachmentBit | TransferDstBit });
+		FramebufferSpecification framebufferSpec;
+		framebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth32F };
+		framebufferSpec.Width = 1280;
+		framebufferSpec.Height = 720;
+
+		m_Framebuffer = Framebuffer::Create(framebufferSpec);
 
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		RendererQuad::Init(m_Image);
+		RendererQuad::Init(m_Framebuffer, 0);
 	}
 
 	void EditorLayer::OnDetach()
@@ -49,32 +46,34 @@ namespace Echo
 	{
 		RendererQuad::ResetStats();
 
-		if (m_RdocAPI && Input::IsKeyPressed(EC_KEY_F11)) m_RdocAPI->StartFrameCapture(nullptr, nullptr);
+		if (m_ViewportFocused)
+			m_EditorCamera.OnUpdate(ts);
 
 		CommandList cmd;
+		cmd.SetSrcImage(m_Framebuffer);
 
 		cmd.Begin();
-		cmd.ClearColor(m_Image, { 0.3f, 0.3f, 0.3f, 0.3f });
-		cmd.BeginRendering(m_Image);
-		m_ActiveScene->OnUpdateRuntime(cmd, ts);
+		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
+		cmd.BeginRendering(m_Framebuffer);
+		m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
 		cmd.EndRendering();
-		cmd.TransitionImage(m_Image, ShaderReadOnly);
-		cmd.SetSrcImage(m_Image);
 		cmd.Execute();
 
-		if (m_RdocAPI && Input::IsKeyPressed(EC_KEY_F11)) m_RdocAPI->EndFrameCapture(nullptr, nullptr);
-
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
-			&& (m_Image->GetWidth() != m_ViewportSize.x || m_Image->GetHeight() != m_ViewportSize.y))
+			&& (m_Framebuffer->GetWidth() != m_ViewportSize.x || m_Framebuffer->GetHeight() != m_ViewportSize.y))
 		{
-			m_Image->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_EditorCamera.SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
+
 	}
 
 	void EditorLayer::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
+		m_EditorCamera.OnEvent(e);
 
 		dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(EditorLayer::OnKeyPressed));
 	}
@@ -156,7 +155,7 @@ namespace Echo
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 				{
 					std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
-					if (!filePath.empty()) 
+					if (!filePath.empty())
 					{
 						SceneSerializer serializer(m_ActiveScene);
 						serializer.Serialize(filePath);
@@ -190,20 +189,25 @@ namespace Echo
 		{
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
-		ImGui::Image((ImTextureID)m_Image->GetImGuiTexture(), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((ImTextureID)m_Framebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		//Gizmos 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && m_GuizmoType != -1) 
+		if (selectedEntity && m_GuizmoType != -1)
 		{
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_ViewportSize.x, m_ViewportSize.y);
 
+			//Runtime
+			/*
 			auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
 			const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
 			const glm::mat4& projection = camera.GetProjection();
 			glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+			*/
+			const glm::mat4& projection = m_EditorCamera.GetProjection();
+			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
 			auto& tc = selectedEntity.GetComponent<TransformComponent>();
 			glm::mat4 transform = tc.GetTransform();
@@ -218,7 +222,7 @@ namespace Echo
 			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(projection),
 								 (ImGuizmo::OPERATION)m_GuizmoType, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
 
-			if (ImGuizmo::IsUsing()) 
+			if (ImGuizmo::IsUsing())
 			{
 				glm::vec3 translation, rotation, scale;
 				Math::DecomposeTransform(transform, translation, rotation, scale);
@@ -244,65 +248,65 @@ namespace Echo
 		bool controlPressed = Input::IsKeyPressed(EC_KEY_LEFT_CONTROL) || Input::IsKeyPressed(EC_KEY_RIGHT_CONTROL);
 		bool shiftPressed = Input::IsKeyPressed(EC_KEY_LEFT_SHIFT) || Input::IsKeyPressed(EC_KEY_RIGHT_SHIFT);
 
-		switch (e.GetKeyCode()) 
+		switch (e.GetKeyCode())
 		{
-		case EC_KEY_S:
-		{
-			if (controlPressed && shiftPressed)
+			case EC_KEY_S:
 			{
-				std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
-				if (!filePath.empty())
+				if (controlPressed && shiftPressed)
 				{
-					SceneSerializer serializer(m_ActiveScene);
-					serializer.Serialize(filePath);
+					std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
+					if (!filePath.empty())
+					{
+						SceneSerializer serializer(m_ActiveScene);
+						serializer.Serialize(filePath);
+					}
+					return true;
 				}
-				return true;
+				break;
 			}
-			break;
-		}
-		case EC_KEY_N:
-		{
-			if (controlPressed)
+			case EC_KEY_N:
 			{
-				m_ActiveScene = CreateRef<Scene>();
-				m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-				m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-				return true;
-			}
-			break;
-		}
-		case EC_KEY_O:
-		{
-			if (controlPressed)
-			{
-				std::string filePath = FileDialogs::OpenFile("Echo Scene (*.echo)\0*.echo\0");
-				if (!filePath.empty())
+				if (controlPressed)
 				{
 					m_ActiveScene = CreateRef<Scene>();
 					m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 					m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
-					SceneSerializer serializer(m_ActiveScene);
-					serializer.Deserialize(filePath);
+					return true;
 				}
-				return true;
+				break;
 			}
-			break;
-		}
-		case EC_KEY_Q:
-			m_GuizmoType = -1;
-			break;
-		case EC_KEY_W:
-			m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
-			break;
-		case EC_KEY_E:
-			m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
-			break;
-		case EC_KEY_R:
-			m_GuizmoType = ImGuizmo::OPERATION::SCALE;
-			break;
-		default:
-			break;
+			case EC_KEY_O:
+			{
+				if (controlPressed)
+				{
+					std::string filePath = FileDialogs::OpenFile("Echo Scene (*.echo)\0*.echo\0");
+					if (!filePath.empty())
+					{
+						m_ActiveScene = CreateRef<Scene>();
+						m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+						m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+						SceneSerializer serializer(m_ActiveScene);
+						serializer.Deserialize(filePath);
+					}
+					return true;
+				}
+				break;
+			}
+			case EC_KEY_Q:
+				m_GuizmoType = -1;
+				break;
+			case EC_KEY_W:
+				m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				break;
+			case EC_KEY_E:
+				m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
+				break;
+			case EC_KEY_R:
+				m_GuizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
+			default:
+				break;
 		}
 		return false;
 	}

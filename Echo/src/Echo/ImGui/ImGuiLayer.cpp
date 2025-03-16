@@ -6,7 +6,7 @@
 
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanSwapchain.h"
-#include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanFramebuffer.h"
 
 #include <backends/imgui_impl_win32.h>
 #include <vulkan/vulkan.h>
@@ -97,6 +97,8 @@ namespace Echo
 
 		ImGui_ImplVulkan_Init(&initInfo);
 		ImGui_ImplVulkan_CreateFontsTexture();
+
+		m_ImGuiFramebuffer = Framebuffer::Create({ .WindowExtent = true, .Attachments = { BGRA8 } });
 	}
 
 	void ImGuiLayer::OnDetach()
@@ -144,6 +146,7 @@ namespace Echo
 		CommandList cmd;
 		cmd.SetShouldPresent(true);
 		cmd.SetDrawToSwapchain(true);
+		cmd.SetSrcImage(m_ImGuiFramebuffer);
 
 		cmd.Begin();
 		cmd.BeginRendering();
@@ -200,9 +203,9 @@ namespace Echo
 		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
 		vkDeviceWaitIdle(device->GetDevice());
-		for (auto img : device->GetImGuiImages()) 
+		for (auto framebuffer : device->GetImGuiFramebuffers()) 
 		{
-			img->Destroy();
+			framebuffer->Destroy();
 		}
 		ImGui_ImplWin32_Shutdown();
 		ImGui_ImplVulkan_Shutdown();

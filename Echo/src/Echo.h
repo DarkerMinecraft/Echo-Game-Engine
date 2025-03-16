@@ -10,7 +10,7 @@
 #include "Echo/Scene/Components.h"
 
 #include "Echo/Graphics/CommandList.h"
-#include "Echo/Graphics/Image.h"
+#include "Echo/Graphics/Framebuffer.h"
 #include "Echo/Graphics/Texture.h"
 #include "Echo/Graphics/Buffer.h"
 #include "Echo/Graphics/Pipeline.h"

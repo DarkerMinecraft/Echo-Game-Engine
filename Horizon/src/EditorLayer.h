@@ -6,6 +6,7 @@
 #include <renderdoc_app.h>
 
 #include "Panels/SceneHierarchyPanel.h"
+#include "Echo/Graphics/EditorCamera.h"
 
 namespace Echo
 {
@@ -29,7 +30,7 @@ namespace Echo
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
 	private:
-		Ref<Image> m_Image;
+		Ref<Framebuffer> m_Framebuffer;
 		Ref<Scene> m_ActiveScene;
 
 		bool m_PrimaryCamera = false;
@@ -38,11 +39,11 @@ namespace Echo
 		bool m_ViewportFocused = false;
 		bool m_ViewportHovered = false;
 
+		EditorCamera m_EditorCamera;
+
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 
 		int m_GuizmoType = -1;
-
-		RENDERDOC_API_1_1_2* m_RdocAPI = NULL;
 	};
 }
 

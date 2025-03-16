@@ -1,11 +1,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-#include "Echo/Core/Timestep.h"
-#include "Echo/Events/WindowEvents.h"
-#include "Echo/Events/MouseEvents.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace Echo 
 {
@@ -14,13 +11,14 @@ namespace Echo
 	{
 	public:
 		Camera() = default;
-		Camera(const glm::mat4 projection)
-			: m_Projection(projection) {}
+		Camera(const glm::mat4& projectionMatrix)
+			: m_ProjectionMatrix(projectionMatrix)
+		{}
 		virtual ~Camera() = default;
 
-		const glm::mat4& GetProjection() const { return m_Projection; }
+		const glm::mat4& GetProjection() const { return m_ProjectionMatrix; };
 	protected:
-		glm::mat4 m_Projection{1.0f};
+		glm::mat4 m_ProjectionMatrix;
 	};
 
 }

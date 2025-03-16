@@ -8,12 +8,13 @@
 #include "VkBootstrap.h"
 #include "VulkanSwapchain.h"
 
+//#define VMA_DEBUG_LOG(str) EC_CORE_TRACE(str) 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 #include "VulkanCommandBuffer.h"
 
-#include "VulkanImage.h"
+#include "VulkanFramebuffer.h"
 
 #include <glm/glm.hpp>
 #include <array>
@@ -38,11 +39,6 @@ namespace Echo
 	VulkanDevice::~VulkanDevice()
 	{
 		vkDeviceWaitIdle(m_Device);
-		DestroyImage(m_DrawImage);
-
-		m_Images.clear();
-
-		vmaDestroyAllocator(m_Allocator);
 
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -57,6 +53,7 @@ namespace Echo
 		vkDestroyFence(m_Device, m_ImmFence, nullptr);
 		vkDestroyDescriptorPool(m_Device, m_ImGuiDescriptorPool, nullptr);
 
+		vmaDestroyAllocator(m_Allocator);
 		m_Swapchain->DestroySwapchain();
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -113,7 +110,7 @@ namespace Echo
 
 		vmaCreateImage(m_Allocator, &img_info, &allocinfo, &newImage.Image, &newImage.Allocation, nullptr);
 
-		VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+		VkImageAspectFlags aspectFlag;
 		if (format == VK_FORMAT_D32_SFLOAT ||
 			format == VK_FORMAT_D16_UNORM ||
 			format == VK_FORMAT_D24_UNORM_S8_UINT ||
@@ -125,6 +122,10 @@ namespace Echo
 			{
 				aspectFlag |= VK_IMAGE_ASPECT_STENCIL_BIT;
 			}
+		}
+		else
+		{
+			aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
 
 		VkImageViewCreateInfo view_info = VulkanInitializers::ImageViewCreateInfo(format, newImage.Image, aspectFlag);
@@ -288,7 +289,6 @@ namespace Echo
 			.select()
 			.value();
 
-
 		vkb::DeviceBuilder deviceBuilder{ physicalDevice };
 
 		vkb::Device vkbDevice = deviceBuilder.build().value();
@@ -313,49 +313,28 @@ namespace Echo
 	void VulkanDevice::InitSwapchain()
 	{
 		m_Swapchain = CreateScope<VulkanSwapchain>(this, m_Width, m_Height);
-		
-		VkExtent3D drawImageExtent = {
-			m_Width,
-			m_Height,
-			1
-		};
-
-		m_DrawExtent = { m_Width, m_Height };
-		m_DrawImage = CreateImage(drawImageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-
-		ImmediateSubmit([&](VkCommandBuffer cmd)
+		m_DrawExtent =
 		{
-			VulkanImages::TransitionImage(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-		});
+			static_cast<uint32_t>(m_Width),
+			static_cast<uint32_t>(m_Height)
+		};
 	}
 
 	void VulkanDevice::RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain)
 	{
 		vkDeviceWaitIdle(m_Device);
 
-		DestroyImage(m_DrawImage);
-		
-		m_Swapchain = CreateScope<VulkanSwapchain>(this, oldSwapchain, width, height);
-		VkExtent3D drawImageExtent = {
-			width,
-			height,
-			1
+		m_Swapchain = CreateScope<VulkanSwapchain>(this, oldSwapchain, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+		m_DrawExtent = 
+		{
+			static_cast<uint32_t>(width), 
+			static_cast<uint32_t>(height)
 		};
 
-		m_DrawExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-		m_DrawImage = CreateImage(drawImageExtent, VK_FORMAT_R16G16B16A16_SFLOAT,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-		
-		for (auto& image : m_Images)
+		for (auto& fb : m_Framebuffers)
 		{
-			image->UpdateSize();
+			fb->UpdateSize();
 		}
-
-		ImmediateSubmit([&](VkCommandBuffer cmd)
-		{
-			VulkanImages::TransitionImage(cmd, m_DrawImage.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-		});
 
 	}
 

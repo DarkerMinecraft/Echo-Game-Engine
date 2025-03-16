@@ -13,7 +13,12 @@ namespace Echo
 		VmaAllocation Allocation;
 		VkExtent3D ImageExtent;
 		VkFormat ImageFormat;
+		VkImageLayout ImageLayout;
+
 		VkSampleCountFlagBits Samples;
+		VkSampler Sampler;
+		bool DepthTexture = false;
+		bool Destroyed = false;
 	};
 
 	struct AllocatedBuffer

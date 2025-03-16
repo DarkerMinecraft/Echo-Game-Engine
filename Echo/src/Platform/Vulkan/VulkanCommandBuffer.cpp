@@ -4,7 +4,7 @@
 #include "VulkanSwapchain.h"
 #include "Utils/VulkanInitializers.h"
 #include "Utils/VulkanImages.h"
-#include "VulkanImage.h"
+#include "VulkanFramebuffer.h"
 
 #include "Echo/Core/Application.h"
 
@@ -16,7 +16,7 @@ namespace Echo
 	VulkanCommandBuffer::VulkanCommandBuffer(Device* device)
 		: m_Device(static_cast<VulkanDevice*>(device)), m_FrameData(m_Device->GetFrameData())
 	{
-		m_SrcImage = m_Device->GetDrawImage();
+		
 	}
 
 	VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -49,11 +49,11 @@ namespace Echo
 
 		if (m_DrawToSwapchain)
 		{
-			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			m_Framebuffer->TransitionImageLayout(m_FrameData.CommandBuffer, 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-			VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_SrcImage.Image, m_Device->GetSwapchainImage(m_ImageIndex), { m_SrcImage.ImageExtent.width, m_SrcImage.ImageExtent.height }, { m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height });
+			VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_Framebuffer->GetImage(0).Image, m_Device->GetSwapchainImage(m_ImageIndex), {m_Framebuffer->GetImage(0).ImageExtent.width, m_Framebuffer->GetImage(0).ImageExtent.height}, {m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height});
 			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+			m_Framebuffer->TransitionImageLayout(m_FrameData.CommandBuffer, 0, VK_IMAGE_LAYOUT_GENERAL);
 		}
 	}
 
@@ -67,10 +67,10 @@ namespace Echo
 			}
 			else
 			{
-				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				m_Framebuffer->TransitionImageLayout(m_FrameData.CommandBuffer, 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-				VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_SrcImage.Image, m_Device->GetSwapchainImage(m_ImageIndex), { m_SrcImage.ImageExtent.width, m_SrcImage.ImageExtent.height }, { m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height });
-				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_SrcImage.Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+				VulkanImages::CopyImageToImage(m_FrameData.CommandBuffer, m_Framebuffer->GetImage(0).Image, m_Device->GetSwapchainImage(m_ImageIndex), {m_Framebuffer->GetImage(0).ImageExtent.width, m_Framebuffer->GetImage(0).ImageExtent.height}, {m_Device->GetSwapchain().GetExtent().width, m_Device->GetSwapchain().GetExtent().height});
+				m_Framebuffer->TransitionImageLayout(m_FrameData.CommandBuffer, 0, VK_IMAGE_LAYOUT_GENERAL);
 				VulkanImages::TransitionImage(m_FrameData.CommandBuffer, m_Device->GetSwapchainImage(m_ImageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 			}
 		}
@@ -124,9 +124,9 @@ namespace Echo
 	}
 
 
-	void VulkanCommandBuffer::SetSourceImage(Ref<Image> srcImage)
+	void VulkanCommandBuffer::SetSourceFramebuffer(Ref<Framebuffer> framebuffer)
 	{
-		m_SrcImage = static_cast<VulkanImage*>(srcImage.get())->GetImage();
+		m_Framebuffer = static_cast<VulkanFramebuffer*>(framebuffer.get());
 	}
 
 }

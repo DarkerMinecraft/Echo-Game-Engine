@@ -3,7 +3,7 @@
 #include "Echo/Graphics/CommandBuffer.h"
 #include "VulkanDevice.h"
 
-#include "Echo/Graphics/Image.h"
+#include "Echo/Graphics/Framebuffer.h"
 
 namespace Echo 
 {
@@ -18,7 +18,7 @@ namespace Echo
 		virtual void End() override;
 		virtual void Submit() override;
 
-		virtual void SetSourceImage(Ref<Image> srcImage) override;
+		virtual void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) override;
 		virtual void SetDrawToSwapchain(bool drawToSwapchain) override { m_DrawToSwapchain = drawToSwapchain; };
 
 		virtual void SetShouldPresent(bool shouldPresent) override { m_ShouldPresent = shouldPresent; };
@@ -31,7 +31,7 @@ namespace Echo
 		VulkanDevice* m_Device;
 
 		uint32_t m_ImageIndex;
-		AllocatedImage m_SrcImage;
+		VulkanFramebuffer* m_Framebuffer;
 
 		FrameData& m_FrameData;
 

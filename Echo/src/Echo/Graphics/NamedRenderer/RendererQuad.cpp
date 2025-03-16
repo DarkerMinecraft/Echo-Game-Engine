@@ -73,7 +73,7 @@ namespace Echo
 
 	static RendererQuadData s_Data;
 
-	void RendererQuad::Init(Ref<Image> srcImage)
+	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
 	{
 		const char* vertexShader = R"(
 		struct VSInput
@@ -145,7 +145,7 @@ namespace Echo
 		desc.DepthCompareOp = CompareOp::Less;
 		desc.GraphicsTopology = Topology::TriangleList;
 
-		desc.RenderTarget = srcImage;
+		desc.RenderTarget = framebuffer;
 
 		desc.DescriptionSetLayouts =
 		{
@@ -208,6 +208,28 @@ namespace Echo
 		BatchUniformBuffer batchUniformBuffer
 		{
 			.ProjViewMatrix = projView
+		};
+		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
+		s_Data.QuadPipeline->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
+
+		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
+		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
+	}
+
+	void RendererQuad::BeginScene(CommandList& cmd, const EditorCamera& camera)
+	{
+		s_Data.Cmd = &cmd;
+
+		s_Data.QuadIndexCount = 0;
+		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
+		s_Data.TextureSlotIndex = 1;
+
+		s_Data.StartingTime = (float)glfwGetTime();
+		cmd.BindPipeline(s_Data.QuadPipeline);
+
+		BatchUniformBuffer batchUniformBuffer
+		{
+			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix()
 		};
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
 		s_Data.QuadPipeline->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);

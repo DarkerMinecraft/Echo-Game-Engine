@@ -39,5 +39,7 @@ namespace Echo
 
 		uint32_t m_Width, m_Height, m_Channels;
 		bool m_IsError = false;
+
+		bool m_IsDestroyed = false;
 	};
 }

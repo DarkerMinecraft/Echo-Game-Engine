@@ -2,13 +2,12 @@
 #include "VulkanRenderingCommand.h"
 
 #include "Platform/Vulkan/VulkanCommandBuffer.h"
-#include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanFramebuffer.h"
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanSwapchain.h"
 
 #include "Platform/Vulkan/Utils/VulkanInitializers.h"
 #include "Echo/Core/Application.h"
-
 
 namespace Echo
 {
@@ -16,37 +15,52 @@ namespace Echo
 	void VulkanBeginRenderingCommand::Execute(CommandBuffer* cmd)
 	{
 		VulkanCommandBuffer* commandBuffer = ((VulkanCommandBuffer*)cmd);
-		VulkanImage* img = (VulkanImage*)m_Image.get();
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)m_Framebuffer.get();
 		VulkanDevice* device = (VulkanDevice*)Application::Get().GetWindow().GetDevice();
-
-		VkRenderingAttachmentInfo attachment;
-		VkRenderingInfo renderingInfo;
-
+		VkRenderingAttachmentInfo depthAttachmentInfo = {}; 
+		VkRenderingAttachmentInfo* depthAttachment = nullptr;
+		std::vector<VkRenderingAttachmentInfo> colorAttachments;
+		VkRenderingInfo renderingInfo = {};
 		VkExtent2D extent;
-		if (img == nullptr && !((VulkanCommandBuffer*)cmd)->DrawToSwapchain())
+
+		if (fb == nullptr && !((VulkanCommandBuffer*)cmd)->DrawToSwapchain())
 		{
 			EC_CORE_ERROR("No image set for rendering!");
 			return;
 		}
-		else if (img) 
+		else if (fb)
 		{
-			if (!m_IsDepthTexture && img->GetCurrentLayout() != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+			extent = { fb->GetWidth(), fb->GetHeight() };
+			for (int i = 0; i < fb->GetFramebuffersSize(); i++)
 			{
-				img->TransitionImageLayout(commandBuffer->GetCommandBuffer(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				if (fb->IsDepthTexture(i))
+				{
+					if (fb->GetCurrentLayout(i) != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+						fb->TransitionImageLayout(commandBuffer->GetCommandBuffer(), i, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+					depthAttachmentInfo = VulkanInitializers::AttachmentInfo(fb->GetImage(i).ImageView, nullptr, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+					if (fb->GetImage(i).ImageFormat == VK_FORMAT_D24_UNORM_S8_UINT)
+					{
+						
+					}
+
+					depthAttachment = &depthAttachmentInfo;
+				}
+				else
+				{
+					if (fb->GetCurrentLayout(i) != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+						fb->TransitionImageLayout(commandBuffer->GetCommandBuffer(), i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+					colorAttachments.push_back(VulkanInitializers::AttachmentInfo(fb->GetImage(i).ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+				}
 			}
-			else if (m_IsDepthTexture && img->GetCurrentLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
-			{
-				img->TransitionImageLayout(commandBuffer->GetCommandBuffer(), VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-			}
-			extent = { img->GetWidth(), img->GetHeight() };
-			attachment = VulkanInitializers::AttachmentInfo(img->GetImage().ImageView, nullptr, m_IsDepthTexture ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			renderingInfo = VulkanInitializers::RenderingInfo({ img->GetWidth(), img->GetHeight() }, &attachment, nullptr);
+			renderingInfo = VulkanInitializers::RenderingInfo(extent, colorAttachments, depthAttachment);
 		}
 		else
 		{
 			extent = device->GetSwapchain().GetExtent();
-			attachment = VulkanInitializers::AttachmentInfo(device->GetSwapchainImageView(commandBuffer->GetImageIndex()), nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			renderingInfo = VulkanInitializers::RenderingInfo(device->GetSwapchain().GetExtent(), &attachment, nullptr);
+			colorAttachments.push_back(VulkanInitializers::AttachmentInfo(device->GetSwapchainImageView(commandBuffer->GetImageIndex()), nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+			renderingInfo = VulkanInitializers::RenderingInfo(device->GetSwapchain().GetExtent(), colorAttachments, nullptr);
 		}
 
 		vkCmdBeginRendering(commandBuffer->GetCommandBuffer(), &renderingInfo);
@@ -58,7 +72,6 @@ namespace Echo
 		viewport.height = extent.height;
 		viewport.minDepth = 0.f;
 		viewport.maxDepth = 1.f;
-
 		vkCmdSetViewport(commandBuffer->GetCommandBuffer(), 0, 1, &viewport);
 
 		VkRect2D scissor = {};
@@ -66,7 +79,6 @@ namespace Echo
 		scissor.offset.y = 0;
 		scissor.extent.width = extent.width;
 		scissor.extent.height = extent.height;
-
 		vkCmdSetScissor(commandBuffer->GetCommandBuffer(), 0, 1, &scissor);
 	}
 

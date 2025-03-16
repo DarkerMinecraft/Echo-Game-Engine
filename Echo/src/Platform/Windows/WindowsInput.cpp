@@ -67,6 +67,8 @@ namespace Echo
 		if (glfw_key == 341) return 162;   // GLFW_KEY_LEFT_CONTROL -> VK_LCONTROL
 		if (glfw_key == 345) return 163;   // GLFW_KEY_RIGHT_CONTROL -> VK_RCONTROL
 
+		if (glfw_key == 342) return 164;     // GLFW_KEY_LEFT_ALT -> VK_LMENU
+
 		return 0;  // Return 0 for unmapped keys (different from the -2 in original)
 	}
 
@@ -74,6 +76,7 @@ namespace Echo
 	bool Input::IsKeyPressed(int keyCode)
 	{
 		int vkCode = GLFWKeyToVirtualKey(keyCode);
+
 		return (GetAsyncKeyState(vkCode) & 0x8000) != 0;
 	}
 
@@ -108,13 +111,13 @@ namespace Echo
 	float Input::GetMouseX()
 	{
 		auto [x, y] = GetMousePosition();
-		return y;
+		return x;
 	}
 
 	float Input::GetMouseY()
 	{
 		auto [x, y] = GetMousePosition();
-		return x;
+		return y;
 	}
 
 	std::pair<float, float> Input::GetMousePosition()
@@ -122,22 +125,8 @@ namespace Echo
 		HWND hwnd = static_cast<HWND>(Application::Get().GetWindow().GetNativeWindow());
 		POINT p;
 
-		// Get cursor position in screen coordinates
 		GetCursorPos(&p);
 
-		// Convert screen coordinates to client area coordinates
-		ScreenToClient(hwnd, &p);
-
-		// Get client area dimensions
-		RECT clientRect;
-		GetClientRect(hwnd, &clientRect);
-		int width = clientRect.right - clientRect.left;
-		int height = clientRect.bottom - clientRect.top;
-
-		// Center the coordinates as in the original code
-		float centeredX = static_cast<float>(p.x - (width / 2.0));
-		float centeredY = static_cast<float>((height / 2.0) - p.y);
-
-		return { centeredX, centeredY };
+		return { p.x, p.y };
 	}
 }

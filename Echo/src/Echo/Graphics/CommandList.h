@@ -6,7 +6,7 @@
 #include "Commands/CommandFactory.h"
 #include "CommandBuffer.h"
 
-#include "Image.h"
+#include "Framebuffer.h"
 
 #include <vector>
 
@@ -21,9 +21,7 @@ namespace Echo
 		
 		void Begin();
 
-		void TransitionImage(Ref<Image> img, ImageLayout newLayout) { RecordCommand(CommandFactory::TransitionImageCommand(img, newLayout)); }
-		void CopyImageToImage(Ref<Image> srcImage, Ref<Image> dstImage) { RecordCommand(CommandFactory::CopyImageToImageCommand(srcImage, dstImage)); }
-		void ClearColor(Ref<Image> img, const glm::vec4& clearValues) { RecordCommand(CommandFactory::ClearColorCommand(img, clearValues)); }
+		void ClearColor(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues) { RecordCommand(CommandFactory::ClearColorCommand(framebuffer, index, clearValues)); }
 		void Dispatch(float x, float y, float z) { RecordCommand(CommandFactory::DispatchCommand(x, y, z)); }
 
 		void BindPipeline(Ref<Pipeline> pipeline) { RecordCommand(CommandFactory::BindPipelineCommand(pipeline)); }
@@ -34,13 +32,13 @@ namespace Echo
 		void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) { RecordCommand(CommandFactory::DrawIndexedCommand(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance)); }
 		void DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride) { RecordCommand(CommandFactory::DrawIndirectIndexed(indirectBuffer, offset, drawCount, stride)); }
 
-		void BeginRendering(Ref<Image> image) { RecordCommand(CommandFactory::BeginRenderingCommand(image)); }
+		void BeginRendering(Ref<Framebuffer> framebuffer) { RecordCommand(CommandFactory::BeginRenderingCommand(framebuffer)); }
 		void BeginRendering() { RecordCommand(CommandFactory::BeginRenderingCommand()); }
 		void EndRendering() { RecordCommand(CommandFactory::EndRenderingCommand()); }
 
 		void RenderImGui() { RecordCommand(CommandFactory::RenderImGuiCommand()); }
 
-		void SetSrcImage(Ref<Image> srcImage) { m_CommandBuffer->SetSourceImage(srcImage); }
+		void SetSrcImage(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
 		void SetShouldPresent(bool shouldPresent) { m_CommandBuffer->SetShouldPresent(shouldPresent); }
 		void SetDrawToSwapchain(bool drawToSwapchain) { m_CommandBuffer->SetDrawToSwapchain(drawToSwapchain); }
 		

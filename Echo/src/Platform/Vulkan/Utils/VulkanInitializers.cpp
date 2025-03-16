@@ -169,7 +169,7 @@ namespace Echo
 		return colorAttachment;
 	}
 
-	VkRenderingInfo VulkanInitializers::RenderingInfo(VkExtent2D extent, VkRenderingAttachmentInfo* colorAttachment, VkRenderingAttachmentInfo* depthAttachment)
+	VkRenderingInfo VulkanInitializers::RenderingInfo(VkExtent2D extent, const std::vector<VkRenderingAttachmentInfo>& colorAttachments, VkRenderingAttachmentInfo* depthAttachment)
 	{
 		VkRenderingInfo renderInfo{};
 		renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -177,8 +177,8 @@ namespace Echo
 
 		renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, extent };
 		renderInfo.layerCount = 1;
-		renderInfo.colorAttachmentCount = 1;
-		renderInfo.pColorAttachments = colorAttachment;
+		renderInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+		renderInfo.pColorAttachments = colorAttachments.data();
 		renderInfo.pDepthAttachment = depthAttachment;
 		renderInfo.pStencilAttachment = nullptr;
 

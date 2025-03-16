@@ -4,7 +4,7 @@
 
 #include "Echo/Core/Application.h"
 #include "Echo/Graphics/Device.h"
-#include "Echo/Graphics/Image.h"
+#include "Echo/Graphics/Framebuffer.h"
 #include "Echo/Graphics/Pipeline.h"
 #include "Echo/Graphics/Buffer.h"
 
@@ -15,10 +15,7 @@ namespace Echo
 	class CommandFactory
 	{
 	public:
-		static Ref<ICommand> TransitionImageCommand(Ref<Image> image, ImageLayout newLayout);
-		static Ref<ICommand> CopyImageToImageCommand(Ref<Image> srcImage, Ref<Image> dstImage);
-
-		static Ref<ICommand> ClearColorCommand(Ref<Image> image, const glm::vec4& clearValues);
+		static Ref<ICommand> ClearColorCommand(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues);
 		static Ref<ICommand> BindPipelineCommand(Ref<Pipeline> pipeline);
 		static Ref<ICommand> DispatchCommand(float x, float y, float z);
 
@@ -29,7 +26,7 @@ namespace Echo
 		static Ref<ICommand> DrawIndexedCommand(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance);
 		static Ref<ICommand> DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride);
 
-		static Ref<ICommand> BeginRenderingCommand(Ref<Image> image);
+		static Ref<ICommand> BeginRenderingCommand(Ref<Framebuffer> framebuffer);
 		static Ref<ICommand> BeginRenderingCommand();
 		static Ref<ICommand> EndRenderingCommand();
 

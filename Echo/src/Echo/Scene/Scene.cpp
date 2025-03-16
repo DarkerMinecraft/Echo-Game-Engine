@@ -20,12 +20,12 @@ namespace Echo
 
 	}
 
-	Entity Scene::CreateEntity(const std::string& nam)
+	Entity Scene::CreateEntity(const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
-		tag.Tag = nam.empty() ? "Entity" : nam;
+		tag.Tag = name.empty() ? "Unnamed Entity" : name;
 
 		return entity; 
 	}
@@ -50,9 +50,18 @@ namespace Echo
 		m_Registry.destroy(entity);
 	}
 
-	void Scene::OnUpdateEditor(CommandList& cmd, const Camera& camera, Timestep ts)
+	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts)
 	{
+		RendererQuad::BeginScene(cmd, camera);
 
+		auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+		for (auto entity : view)
+		{
+			auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+			RendererQuad::DrawQuad({ .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+		}
+
+		RendererQuad::EndScene();
 	}
 
 	void Scene::OnUpdateRuntime(CommandList& cmd, Timestep ts)
@@ -89,7 +98,7 @@ namespace Echo
 
 		if (mainCamera != nullptr)
 		{
-			RendererQuad::BeginScene(cmd, mainCamera->GetProjection(), cameraTransform);
+			RendererQuad::BeginScene(cmd, *mainCamera, cameraTransform);
 
 			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
 			for (auto entity : view)
