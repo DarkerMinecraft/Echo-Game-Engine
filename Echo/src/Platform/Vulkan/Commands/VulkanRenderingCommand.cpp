@@ -51,6 +51,7 @@ namespace Echo
 				{
 					if (fb->GetCurrentLayout(i) != VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 						fb->TransitionImageLayout(commandBuffer->GetCommandBuffer(), i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 					colorAttachments.push_back(VulkanInitializers::AttachmentInfo(fb->GetImage(i).ImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
 				}
 			}

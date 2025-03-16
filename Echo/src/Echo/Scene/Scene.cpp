@@ -58,7 +58,7 @@ namespace Echo
 		for (auto entity : view)
 		{
 			auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-			RendererQuad::DrawQuad({ .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+			RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
 		}
 
 		RendererQuad::EndScene();
@@ -104,7 +104,7 @@ namespace Echo
 			for (auto entity : view)
 			{
 				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-				RendererQuad::DrawQuad({ .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+				RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
 			}
 
 			RendererQuad::EndScene();

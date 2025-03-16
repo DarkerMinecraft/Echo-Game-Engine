@@ -10,14 +10,10 @@ namespace Echo
 	enum FramebufferTextureFormat
 	{
 		RGBA8 = 1,
-		RGBA16F = 2,
-		RGBA32F = 3,
-		R32F = 4,
-		RG32F = 5,
-		RGB32F = 6,
-		RGBA16 = 7,
-		RGBA8Srgb = 8,
-		BGRA8 = 9,
+		BGRA8 = 2,
+
+		RedInt = 3,
+
 		Depth32F = 10,
 		Depth24Stencil8 = 11
 	};
@@ -54,7 +50,10 @@ namespace Echo
 
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
+
 		virtual void* GetImGuiTexture(uint32_t index) = 0;
+
+		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) = 0;
 
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
 

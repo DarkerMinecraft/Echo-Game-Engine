@@ -166,6 +166,8 @@ namespace Echo
 			colorAttachment.clearValue = *value;
 		}
 
+
+
 		return colorAttachment;
 	}
 

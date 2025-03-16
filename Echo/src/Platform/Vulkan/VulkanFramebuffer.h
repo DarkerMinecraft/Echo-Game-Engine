@@ -17,7 +17,8 @@ namespace Echo
 		virtual uint32_t GetHeight() override;
 		virtual void* GetImGuiTexture(uint32_t index) override;
 
-		virtual void Resize(uint32_t width, uint32_t height);
+		virtual void Resize(uint32_t width, uint32_t height) override;
+		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) override;
 
 		virtual void Destroy() override;
 
@@ -32,6 +33,11 @@ namespace Echo
 		AllocatedImage GetImage(uint32_t index) { return m_Framebuffers[index]; }
 
 		uint32_t GetFramebuffersSize() { return m_Framebuffers.size(); }
+
+		const std::vector<VkFormat> GetColorFormats() const { return m_ColorFormats; }
+
+		AllocatedImage GetDepthImage() { return m_Framebuffers[m_DepthIndex]; }
+		bool HasDepthImage() { return m_DepthIndex != -1; }
 	private:
 		void CreateAllocatedFramebuffers(const FramebufferSpecification& specification);
 		void CreateImage(uint32_t index, uint32_t width, uint32_t height); 
@@ -40,6 +46,10 @@ namespace Echo
 	
 		std::vector<AllocatedImage> m_Framebuffers;
 		std::vector<FramebufferTextureFormat> m_Attachments;
+
+		uint32_t m_DepthIndex = -1;
+
+		std::vector<VkFormat> m_ColorFormats;
 
 		bool m_WindowExtent;
 		uint32_t m_Width, m_Height;

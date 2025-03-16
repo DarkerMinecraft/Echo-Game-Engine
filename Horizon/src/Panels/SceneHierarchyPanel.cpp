@@ -22,6 +22,11 @@ namespace Echo
 		m_EntityComponentPanel.SetContext(scene);
 	}
 
+	void SceneHierarchyPanel::SetSelectedEntity(int entityID)
+	{
+		m_SelectionContext = Entity{ (entt::entity)(uint32_t)entityID, m_Context.get() };
+	}
+
 	void SceneHierarchyPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Scene Hierarchy");

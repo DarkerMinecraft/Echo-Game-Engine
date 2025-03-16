@@ -17,6 +17,7 @@ namespace Echo
 		void SetContext(const Ref<Scene>& scene);
 
 		Entity GetSelectedEntity() const { return m_SelectionContext; }
+		void SetSelectedEntity(int entityID);
 
 		void OnImGuiRender();
 	private:

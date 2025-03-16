@@ -278,6 +278,7 @@ namespace Echo
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.shaderStorageImageMultisample = true;
 		deviceFeatures.sampleRateShading = true;
+		deviceFeatures.independentBlend = true;
 
 		vkb::PhysicalDeviceSelector selector{ vkb_inst };
 		vkb::PhysicalDevice physicalDevice = selector

@@ -69,4 +69,27 @@ namespace Echo
 		vkCmdBlitImage2(cmd, &blitInfo);
 	}
 
+	void VulkanImages::CopyBufferToImage(VkCommandBuffer cmd, VkBuffer buffer, VkImage image, const glm::vec2& size)
+	{
+		VkBufferImageCopy region{};
+		region.bufferOffset = 0;
+		region.bufferRowLength = 0;
+		region.bufferImageHeight = 0;
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageOffset = { static_cast<int32_t>(size.x), static_cast<int32_t>(size.y), 0 };
+		region.imageExtent = { 1, 1, 1 }; // Just one pixel
+
+		vkCmdCopyImageToBuffer(
+			cmd,
+			image,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			buffer,
+			1,
+			&region
+		);
+	}
+
 }

@@ -76,6 +76,29 @@ namespace Echo
 		}
 	}
 
+	int VulkanFramebuffer::ReadPixel(uint32_t index, uint32_t x, uint32_t y)
+	{
+		AllocatedBuffer stagingBuffer = m_Device->CreateBuffer(sizeof(int32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			if (GetCurrentLayout(index) != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+			{
+				TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			}
+
+			VulkanImages::CopyBufferToImage(cmd, stagingBuffer.Buffer, m_Framebuffers[index].Image, { x, y });
+		});
+
+		int32_t pixel;
+		void* data;
+		data = m_Device->GetMappedData(stagingBuffer);
+		memcpy(&pixel, data, sizeof(int32_t));
+		m_Device->DestroyBuffer(stagingBuffer);
+
+		return pixel;
+	}
+
 	void VulkanFramebuffer::TransitionImageLayout(VkCommandBuffer cmd, uint32_t index, VkImageLayout newLayout)
 	{
 		VulkanImages::TransitionImage(cmd, m_Framebuffers[index].Image, m_Framebuffers[index].ImageLayout, newLayout);
@@ -142,24 +165,12 @@ namespace Echo
 			{
 				case RGBA8:
 					return VK_FORMAT_R8G8B8A8_UNORM;
-				case RGBA16F:
-					return VK_FORMAT_R16G16B16A16_SFLOAT;
-				case RGBA32F:
-					return VK_FORMAT_R32G32B32A32_SFLOAT;
-				case R32F:
-					return VK_FORMAT_R32_SFLOAT;
-				case RG32F:
-					return VK_FORMAT_R32G32_SFLOAT;
-				case RGB32F:
-					return VK_FORMAT_R32G32B32_SFLOAT;
-				case RGBA16:
-					return VK_FORMAT_R16G16B16A16_UNORM;
-				case RGBA8Srgb:
-					return VK_FORMAT_R8G8B8A8_SRGB;
-				case BGRA8:
-					return VK_FORMAT_B8G8R8A8_UNORM;
+				case RedInt:
+					return VK_FORMAT_R32_SINT;
 				case Depth32F:
 					return VK_FORMAT_D32_SFLOAT;
+				case BGRA8:
+					return VK_FORMAT_B8G8R8A8_UNORM;
 				case Depth24Stencil8:
 					return VK_FORMAT_D24_UNORM_S8_UINT;
 				default:
@@ -173,7 +184,7 @@ namespace Echo
 			VkImageUsageFlags attachmentUsage;
 			if (attachment.TextureFormat >= 10)
 				attachmentUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-			else
+			else 
 				attachmentUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 			AllocatedImage image = m_Device->CreateImage(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT 
@@ -182,6 +193,11 @@ namespace Echo
 			if (attachment.TextureFormat >= 10)
 			{
 				image.DepthTexture = true;
+				m_DepthIndex = i;
+			}
+			else
+			{
+				m_ColorFormats.push_back(MapFramebufferFormat(attachment.TextureFormat));
 			}
 
 			VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };

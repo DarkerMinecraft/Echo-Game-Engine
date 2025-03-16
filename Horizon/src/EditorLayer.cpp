@@ -4,8 +4,11 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 
+#include <Echo/Core/Application.h>
+
 #include <Echo/Core/Input.h>
 #include <Echo/Core/KeyCodes.h>
+#include <Echo/Core/MouseButtonCodes.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Echo/Utils/PlatformUtils.h>
@@ -25,11 +28,13 @@ namespace Echo
 	void EditorLayer::OnAttach()
 	{
 		FramebufferSpecification framebufferSpec;
-		framebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::Depth32F };
+		framebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
 		framebufferSpec.Width = 1280;
 		framebufferSpec.Height = 720;
 
 		m_Framebuffer = Framebuffer::Create(framebufferSpec);
+
+		m_Window = &Application::Get().GetWindow();
 
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -54,6 +59,7 @@ namespace Echo
 
 		cmd.Begin();
 		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
+		cmd.ClearColor(m_Framebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
 		cmd.BeginRendering(m_Framebuffer);
 		m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
 		cmd.EndRendering();
@@ -66,6 +72,35 @@ namespace Echo
 			m_EditorCamera.SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		}
+
+
+		auto [mx, my] = ImGui::GetMousePos();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+		my = viewportSize.y - my;
+
+		int mouseX = (int)mx;
+		int mouseY = (int)my;
+		if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+		{
+			int texX = (int)((mouseX / viewportSize.x) * m_Framebuffer->GetWidth());
+			int texY = (int)((mouseY / viewportSize.y) * m_Framebuffer->GetHeight());
+
+			int entityID = m_Framebuffer->ReadPixel(1, texX, texY);
+			if (entityID != -1)
+			{
+				m_Window->SetCursor(Cursor::HAND);
+				if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+				{
+					m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+				}
+			}
+			else
+			{
+				m_Window->SetCursor(Cursor::ARROW);
+			}
 		}
 
 	}
@@ -180,6 +215,8 @@ namespace Echo
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 		ImGui::Begin("Viewport");
+		auto viewportOffset = ImGui::GetCursorPos();
+
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
 		Application::Get().GetImGuiLayer()->SetBlockEvents(!m_ViewportFocused && !m_ViewportHovered);
@@ -190,6 +227,15 @@ namespace Echo
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
 		ImGui::Image((ImTextureID)m_Framebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		auto windowSize = ImGui::GetWindowSize();
+		auto minBound = ImGui::GetWindowPos();
+		minBound.x += viewportOffset.x;
+		minBound.y += viewportOffset.y;
+
+		ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
+		m_ViewportBounds[0] = { minBound.x, minBound.y };
+		m_ViewportBounds[1] = { maxBound.x, maxBound.y };
 
 		//Gizmos 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();

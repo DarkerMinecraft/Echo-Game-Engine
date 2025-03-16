@@ -16,6 +16,7 @@ namespace Echo
 		glm::vec3 Position{};
 		glm::vec2 Size{};
 		float Rotation = 0.0f;
+		int InstanceID = 0;
 
 		glm::vec4 Color{1.0f, 1.0f, 1.0f, 1.0f};
 		Ref<Texture2D> Texture = nullptr;

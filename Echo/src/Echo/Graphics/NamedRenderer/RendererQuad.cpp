@@ -19,6 +19,7 @@ namespace Echo
 		glm::vec4 Color;
 		int TexIndex;
 		float TilingFactor;
+		int InstanceID;
 	};
 
 	struct BatchUniformBuffer
@@ -83,6 +84,7 @@ namespace Echo
 			float4 color : ATTRIB2;
 			int texIndex : ATTRIB3;
 			float tilingFactor : ATTRIB4;
+			int instanceID : ATTRIB5;
 		}
 
 		struct VSOuput
@@ -92,6 +94,7 @@ namespace Echo
 			float4 color : COLOR;
 			int texIndex : ATTRIB0;
 			float tilingFactor : ATTRIB1;
+			int instanceID : ATTRIB2;
 		}
 
 		[[vk::binding(0, 0)]] cbuffer Camera : register(b0)
@@ -108,6 +111,8 @@ namespace Echo
 			output.color = input.color;
 			output.texIndex = input.texIndex;
 			output.tilingFactor = input.tilingFactor;
+			output.instanceID = input.instanceID;
+
 			return output;
 		}
 		)";
@@ -120,14 +125,25 @@ namespace Echo
 			float4 color : COLOR;
 			int texIndex : ATTRIB0;
 			float tilingFactor : ATTRIB1;
+			int instanceID : ATTRIB2;
 		}
 
 		[[vk::binding(1, 0)]] Sampler2D texSamplers[] : register(s0, space0);
+		
+		struct PSOutput
+		{
+			float4 color : SV_Target;
+			int instanceID : SV_Target1;
+		}
 
 		[shader("pixel")]
-		float4 main(PSInput input) : SV_Target
+		PSOutput main(PSInput input) : SV_Target
 		{
-			return input.color * texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
+			PSOutput output;
+			output.color = input.color * texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
+			output.instanceID = input.instanceID;
+
+			return output;
 		}
 		)";
 
@@ -159,7 +175,8 @@ namespace Echo
 			{ ShaderDataType::Float2, "TexCoord" },
 			{ ShaderDataType::Float4, "Color" },
 			{ ShaderDataType::Int, "TexIndex" },
-			{ ShaderDataType::Float, "TilingFactor" }
+			{ ShaderDataType::Float, "TilingFactor" },
+			{ ShaderDataType::Int, "InstanceID" }
 		};
 
 		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadMaterial, desc);
@@ -291,6 +308,7 @@ namespace Echo
 			s_Data.QuadVertexBufferPtr->Color = data.Color;
 			s_Data.QuadVertexBufferPtr->TexIndex = (int)textureIndex;
 			s_Data.QuadVertexBufferPtr->TilingFactor = data.TilingFactor;
+			s_Data.QuadVertexBufferPtr->InstanceID = data.InstanceID;
 			s_Data.QuadVertexBufferPtr++;
 		}
 
@@ -335,6 +353,7 @@ namespace Echo
 			s_Data.QuadVertexBufferPtr->Color = data.Color;
 			s_Data.QuadVertexBufferPtr->TexIndex = (int)textureIndex;
 			s_Data.QuadVertexBufferPtr->TilingFactor = data.TilingFactor;
+			s_Data.QuadVertexBufferPtr->InstanceID = data.InstanceID;
 			s_Data.QuadVertexBufferPtr++;
 		}
 

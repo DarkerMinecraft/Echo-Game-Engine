@@ -262,16 +262,6 @@ namespace Echo
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
 		depthStencil.stencilTestEnable = VK_FALSE;
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = desc.EnableBlending ? VK_TRUE : VK_FALSE;
-
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-
 		std::vector<VkDynamicState> dynamicStates = {
 			VK_DYNAMIC_STATE_VIEWPORT,
 			VK_DYNAMIC_STATE_SCISSOR
@@ -295,9 +285,50 @@ namespace Echo
 
 		VkPipelineRenderingCreateInfo renderInfo{};
 		renderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-		renderInfo.colorAttachmentCount = 1;
-		VkFormat format = fb->GetImage(0).ImageFormat;
-		renderInfo.pColorAttachmentFormats = &format;
+		renderInfo.colorAttachmentCount = fb->GetColorFormats().size();
+		std::vector<VkFormat> formats = fb->GetColorFormats();
+		renderInfo.pColorAttachmentFormats = formats.data();
+
+		if (fb->HasDepthImage())
+		{
+			renderInfo.depthAttachmentFormat = fb->GetDepthImage().ImageFormat;
+		}
+
+		std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments(formats.size());
+
+		for (size_t i = 0; i < formats.size(); i++)
+		{
+			if (formats[i] == VK_FORMAT_R32_SINT)
+			{
+				// Integer formats don't support blending
+				colorBlendAttachments[i].blendEnable = VK_FALSE;
+				colorBlendAttachments[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT; // Only R component for R32_SINT
+			}
+			else
+			{
+				// Regular color formats
+				colorBlendAttachments[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+					VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+				colorBlendAttachments[i].blendEnable = desc.EnableBlending ? VK_TRUE : VK_FALSE;
+
+				if (desc.EnableBlending)
+				{
+					// Set up blend factors only if blending is enabled
+					colorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+					colorBlendAttachments[i].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+					colorBlendAttachments[i].colorBlendOp = VK_BLEND_OP_ADD;
+					colorBlendAttachments[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+					colorBlendAttachments[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+					colorBlendAttachments[i].alphaBlendOp = VK_BLEND_OP_ADD;
+				}
+			}
+		}
+
+		VkPipelineColorBlendStateCreateInfo colorBlending{};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.attachmentCount = colorBlendAttachments.size();
+		colorBlending.pAttachments = colorBlendAttachments.data();
 
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
