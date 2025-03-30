@@ -7,6 +7,7 @@
 #include "CommandBuffer.h"
 #include "Texture.h"
 #include "Buffer.h"
+#include "Shader.h"
 
 #include <vector>
 #include <string>
@@ -165,7 +166,7 @@ namespace Echo
 		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) = 0;
 
 		static Ref<Pipeline> Create(Ref<Material> material, PipelineDesc& desc);
-		static Ref<Pipeline> Create(const char* computeFilePath, PipelineDesc& desc);
+		static Ref<Pipeline> Create(Ref<Shader> computeShader, PipelineDesc& desc);
 	};
 
 }

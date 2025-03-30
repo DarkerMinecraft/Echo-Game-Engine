@@ -5,28 +5,29 @@
 
 #include "VulkanDevice.h"
 
+#include "VulkanShader.h"
+#include "VulkanTexture.h"
+
 namespace Echo 
 {
 
 	class VulkanMaterial : public Material 
 	{
 	public:
-		VulkanMaterial(Device* device, const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath);
-		VulkanMaterial(Device* device, const char* vertexShaderSource, const char* fragmentShaderSource, const char* shaderName, const char* geometryShaderPath);
+		VulkanMaterial(Device* device, Ref<Shader> shader, Ref<Texture2D> texture);
+		VulkanMaterial(Device* device, Ref<Shader> shader, glm::vec3 color);
+
+		virtual Shader* GetShader() override { return m_Shader; }
+		virtual Texture2D* GetTexture() override { return m_Texture; }
 
 		virtual void Destroy() override;
-
-		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() { return m_ShaderStages; }
-	private:
-		void LoadShaders(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath);
-		void LoadShadersSource(const char* vertexShaderSource, const char* fragmentShaderSource, const char* shaderName, const char* geometryShaderSource);
-
-		void CreateShaderStages();
 	private:
 		VulkanDevice* m_Device;
 
-		VkShaderModule m_VertexShaderModule, m_FragmentShaderModule, m_GeometryShaderModule = nullptr;
-		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
+		VulkanShader* m_Shader;
+		VulkanTexture2D* m_Texture = nullptr;
+
+		glm::vec3 m_Color;
 	};
 
 

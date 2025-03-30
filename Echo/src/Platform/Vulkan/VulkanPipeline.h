@@ -12,7 +12,7 @@ namespace Echo
 	{
 	public:
 		VulkanPipeline(Device* device, Ref<Material> material, PipelineDesc& desc);
-		VulkanPipeline(Device* device, const char* computeFilePath, PipelineDesc& desc);
+		VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineDesc& desc);
 		virtual ~VulkanPipeline();
 
 		virtual void Bind(CommandBuffer* cmd) override;
@@ -32,7 +32,7 @@ namespace Echo
 		VkPipeline GetPipeline() { return m_Pipeline; }
 		VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
 	private:
-		void CreateComputePipeline(const char* computeFilePath, PipelineDesc& desc);
+		void CreateComputePipeline(Ref<Shader> computeShader, PipelineDesc& desc);
 		void CreateGraphicsPipeline(Ref<Material> material, PipelineDesc& desc);
 
 		void CreatePipelineLayout(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout);
@@ -44,6 +44,7 @@ namespace Echo
 		PipelineType m_PipelineType;
 		
 		Ref<Material> m_Material;
+		Ref<Shader> m_ComputeShader;
 
 		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;
@@ -52,8 +53,6 @@ namespace Echo
 		VkDescriptorPool m_DescriptorPool;
 
 		DescriptorAllocatorGrowable m_DescriptorAllocator;
-
-		VkShaderModule m_ComputeShaderModule;
 	};
 
 }

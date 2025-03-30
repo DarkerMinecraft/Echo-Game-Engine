@@ -19,13 +19,13 @@ namespace Echo
 		return nullptr;
 	}
 
-	Ref<Pipeline> Pipeline::Create(const char* computeFilePath, PipelineDesc& desc)
+	Ref<Pipeline> Pipeline::Create(Ref<Shader> computeShader, PipelineDesc& desc)
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan: return CreateScope<VulkanPipeline>(device, computeFilePath, desc);
+			case DeviceType::Vulkan: return CreateScope<VulkanPipeline>(device, computeShader, desc);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

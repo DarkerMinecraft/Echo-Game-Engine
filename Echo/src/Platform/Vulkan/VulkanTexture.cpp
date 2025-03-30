@@ -5,8 +5,9 @@
 #include <stb_image.h>
 
 #include <glm/glm.hpp>
+#include <backends/imgui_impl_vulkan.h>
 
-namespace Echo 
+namespace Echo
 {
 
 	VulkanTexture2D::VulkanTexture2D(Device* device, const std::string& path)
@@ -26,12 +27,30 @@ namespace Echo
 		Destroy();
 	}
 
+	void* VulkanTexture2D::GetResourceID()
+	{
+		if (m_DescriptorSet == nullptr)
+		{
+			m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Texture.Sampler, m_Texture.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+			m_Device->AddImGuiTexture(this);
+		}
+
+		return m_DescriptorSet;
+	}
+
 	void VulkanTexture2D::Destroy()
 	{
 		if (m_IsDestroyed)
 			return;
 
-		vkDestroySampler(m_Device->GetDevice(), m_Sampler, nullptr);
+		if (m_DescriptorSet)
+		{
+			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+			m_DescriptorSet = nullptr;
+		}
+
+		vkDestroySampler(m_Device->GetDevice(), m_Texture.Sampler, nullptr);
 		m_Device->DestroyImage(m_Texture);
 
 		m_IsDestroyed = true;
@@ -78,7 +97,7 @@ namespace Echo
 		sampl.magFilter = VK_FILTER_NEAREST;
 		sampl.minFilter = VK_FILTER_NEAREST;
 
-		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Sampler);
+		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Texture.Sampler);
 	}
 
 	void VulkanTexture2D::LoadTexture(void* pixels)
@@ -90,7 +109,7 @@ namespace Echo
 		sampl.magFilter = VK_FILTER_NEAREST;
 		sampl.minFilter = VK_FILTER_NEAREST;
 
-		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Sampler);
+		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Texture.Sampler);
 	}
 
 }

@@ -17,14 +17,14 @@ namespace Echo
 	void SceneHierarchyPanel::SetContext(const Ref<Scene>& scene)
 	{
 		m_Context = scene;
-		m_SelectionContext = {};
+		m_SelectionContext = { entt::null, m_Context.get() };
 
 		m_EntityComponentPanel.SetContext(scene);
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(int entityID)
 	{
-		m_SelectionContext = Entity{ (entt::entity)(uint32_t)entityID, m_Context.get() };
+		m_SelectionContext = { (entt::entity)(uint32_t)entityID, m_Context.get() };
 	}
 
 	void SceneHierarchyPanel::OnImGuiRender()
@@ -79,7 +79,7 @@ namespace Echo
 
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 		{
-			m_SelectionContext = {};
+			m_SelectionContext = { entt::null, m_Context.get() };
 		}
 
 		if (opened)
@@ -91,7 +91,7 @@ namespace Echo
 		{
 			if (m_SelectionContext == entity)
 			{
-				m_SelectionContext = {};
+				m_SelectionContext = {entt::null, m_Context.get()};
 			}
 			m_Context->DestroyEntity(entity);
 		}

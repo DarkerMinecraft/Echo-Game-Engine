@@ -8,8 +8,12 @@
 #include "Echo/Scene/Components.h"
 #include "Echo/Scene/Entity.h"
 
+#include <filesystem>
+
 namespace Echo
 {
+
+	extern const std::filesystem::path g_AssetPath;
 
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValues = 0.0f, float colWidth = 100)
 	{
@@ -116,6 +120,8 @@ namespace Echo
 
 	void EntityComponentPanel::OnImGuiRenderEntityNode(Entity entity)
 	{
+		if (entity.GetHandle() == entt::null) return;
+
 		if (entity.HasComponent<TagComponent>())
 		{
 			auto& tag = entity.GetComponent<TagComponent>().Tag;
@@ -172,6 +178,21 @@ namespace Echo
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
 		{
 			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
+			ImGui::Button("Texture", ImVec2(100.0f, 0));
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				{
+					const wchar_t* path = (const wchar_t*)payload->Data;
+					std::filesystem::path texturePath = std::filesystem::path(g_AssetPath) / path;
+
+					component.Texture = Texture2D::Create(texturePath.string());
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
 		});
 
 		DrawComponent<CameraComponent>("Camera", entity, [](auto& component)

@@ -6,6 +6,8 @@
 #include <renderdoc_app.h>
 
 #include "Panels/SceneHierarchyPanel.h"
+#include "Panels/ContentBrowserPanel.h"
+
 #include "Echo/Graphics/EditorCamera.h"
 
 namespace Echo
@@ -29,6 +31,11 @@ namespace Echo
 		virtual void Destroy() override;
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
+
+		void NewScene();
+		void OpenScene();
+		void OpenScene(const std::filesystem::path& path);
+		void SaveSceneAs();
 	private:
 		Ref<Framebuffer> m_Framebuffer;
 		Ref<Scene> m_ActiveScene;
@@ -45,6 +52,7 @@ namespace Echo
 		EditorCamera m_EditorCamera;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
+		ContentBrowserPanel m_ContentBrowserPanel;
 
 		int m_GuizmoType = -1;
 	};

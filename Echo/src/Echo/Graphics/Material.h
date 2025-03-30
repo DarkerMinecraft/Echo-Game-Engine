@@ -2,6 +2,11 @@
 
 #include "Echo/Core/Base.h"
 
+#include "Shader.h"
+#include "Texture.h"
+
+#include <glm/glm.hpp>
+
 namespace Echo 
 {
 
@@ -12,8 +17,11 @@ namespace Echo
 
 		virtual void Destroy() = 0; 
 
-		static Ref<Material> Create(const char* vertexShaderPath, const char* fragmentShaderPath, const char* geometryShaderPath = nullptr);
-		static Ref<Material> Create(const char* vertexShaderSource, const char* fragmentShaderSource, const char* shaderName, const char* geometryShaderSource = nullptr);
+		virtual Shader* GetShader() = 0;
+		virtual Texture2D* GetTexture() = 0;
+
+		static Ref<Material> Create(Ref<Shader> shader, Ref<Texture2D> texture);
+		static Ref<Material> Create(Ref<Shader> shader, glm::vec3 color);
 	};
 
 }

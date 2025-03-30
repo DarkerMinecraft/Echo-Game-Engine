@@ -36,18 +36,18 @@ namespace Echo
 		CreateGraphicsPipeline(material, desc);
 	}
 
-	VulkanPipeline::VulkanPipeline(Device* device, const char* computeFilePath, PipelineDesc& desc)
-		: m_Device((VulkanDevice*)device)
+	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineDesc& desc)
+		: m_Device((VulkanDevice*)device), m_ComputeShader(computeShader)
 	{
 		m_PipelineType = Compute;
-		CreateComputePipeline(computeFilePath, desc);
+		CreateComputePipeline(computeShader, desc);
 	}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
 		if (m_PipelineType == Compute)
 		{
-			vkDestroyShaderModule(m_Device->GetDevice(), m_ComputeShaderModule, nullptr);
+			m_ComputeShader->Destroy();
 		}
 		else if (m_PipelineType == Graphics)
 		{
@@ -147,10 +147,8 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::CreateComputePipeline(const char* computeFilePath, PipelineDesc& desc)
+	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, PipelineDesc& desc)
 	{
-		m_ComputeShaderModule = m_Device->GetShaderLibrary().AddSpirvShader(computeFilePath);
-
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
 		CreateDescriptorSet(desc.DescriptionSetLayouts);
 
@@ -163,7 +161,7 @@ namespace Echo
 		shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStageCreateInfo.pNext = nullptr;
 		shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStageCreateInfo.module = m_ComputeShaderModule;
+		shaderStageCreateInfo.module = ((VulkanShader*)computeShader.get())->GetComputeShaderModule();
 		shaderStageCreateInfo.pName = "main";
 
 		pipelineCreateInfo.stage = shaderStageCreateInfo;
@@ -272,7 +270,7 @@ namespace Echo
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		auto shaderStages = ((VulkanMaterial*)material.get())->GetShaderStages();
+		auto shaderStages = ((VulkanShader*) (material->GetShader()))->GetShaderStages();
 
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;

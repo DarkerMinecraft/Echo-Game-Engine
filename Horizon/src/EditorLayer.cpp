@@ -19,6 +19,8 @@
 namespace Echo
 {
 
+	extern const std::filesystem::path g_AssetPath;
+
 	EditorLayer::EditorLayer()
 		: m_EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f)
 	{
@@ -212,6 +214,7 @@ namespace Echo
 		ImGui::End();
 
 		m_SceneHierarchyPanel.OnImGuiRender();
+		m_ContentBrowserPanel.OnImGuiRender();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 		ImGui::Begin("Viewport");
@@ -227,6 +230,16 @@ namespace Echo
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
 		ImGui::Image((ImTextureID)m_Framebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+
+		if (ImGui::BeginDragDropTarget()) 
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t* path = (const wchar_t*)payload->Data;
+				OpenScene(std::filesystem::path(g_AssetPath) / path);
+			}
+			ImGui::EndDragDropTarget();
+		}
 
 		auto windowSize = ImGui::GetWindowSize();
 		auto minBound = ImGui::GetWindowPos();
@@ -300,12 +313,8 @@ namespace Echo
 			{
 				if (controlPressed && shiftPressed)
 				{
-					std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
-					if (!filePath.empty())
-					{
-						SceneSerializer serializer(m_ActiveScene);
-						serializer.Serialize(filePath);
-					}
+					SaveSceneAs();
+
 					return true;
 				}
 				break;
@@ -314,9 +323,8 @@ namespace Echo
 			{
 				if (controlPressed)
 				{
-					m_ActiveScene = CreateRef<Scene>();
-					m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-					m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+					NewScene();
+
 					return true;
 				}
 				break;
@@ -325,16 +333,8 @@ namespace Echo
 			{
 				if (controlPressed)
 				{
-					std::string filePath = FileDialogs::OpenFile("Echo Scene (*.echo)\0*.echo\0");
-					if (!filePath.empty())
-					{
-						m_ActiveScene = CreateRef<Scene>();
-						m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-						m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+					OpenScene();
 
-						SceneSerializer serializer(m_ActiveScene);
-						serializer.Deserialize(filePath);
-					}
 					return true;
 				}
 				break;
@@ -355,6 +355,42 @@ namespace Echo
 				break;
 		}
 		return false;
+	}
+
+	void EditorLayer::NewScene()
+	{
+		m_ActiveScene = CreateRef<Scene>();
+		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+	}
+
+	void EditorLayer::OpenScene()
+	{
+		std::string filePath = FileDialogs::OpenFile("Echo Scene (*.echo)\0*.echo\0");
+		if (!filePath.empty())
+		{
+			OpenScene(filePath);
+		}
+	}
+
+	void EditorLayer::OpenScene(const std::filesystem::path& path)
+	{
+		m_ActiveScene = CreateRef<Scene>();
+		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		SceneSerializer serializer(m_ActiveScene);
+		serializer.Deserialize(path.string());
+	}
+
+	void EditorLayer::SaveSceneAs()
+	{
+		std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
+		if (!filePath.empty())
+		{
+			SceneSerializer serializer(m_ActiveScene);
+			serializer.Serialize(filePath);
+		}
 	}
 
 }

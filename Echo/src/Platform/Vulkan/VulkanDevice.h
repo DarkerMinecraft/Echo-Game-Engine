@@ -27,6 +27,7 @@ namespace Echo
 
 	class VulkanSwapchain;
 	class VulkanFramebuffer;
+	class VulkanTexture2D;
 
 	class VulkanDevice : public Device
 	{
@@ -78,6 +79,9 @@ namespace Echo
 		void AddImGuiFramebuffer(VulkanFramebuffer* framebuffer) { m_ImGuiFramebuffers.push_back(framebuffer); }
 		std::vector<VulkanFramebuffer*> GetImGuiFramebuffers() { return m_ImGuiFramebuffers; }
 
+		void AddImGuiTexture(VulkanTexture2D* texture) { m_ImGuiTextures.push_back(texture); }
+		std::vector<VulkanTexture2D*> GetImGuiTextures() { return m_ImGuiTextures; }
+
 		void AddFrame() { m_CurrentFrame++; }
 	private:
 		void InitVulkan();
@@ -117,6 +121,8 @@ namespace Echo
 
 		std::vector<VulkanFramebuffer*> m_Framebuffers;
 		std::vector<VulkanFramebuffer*> m_ImGuiFramebuffers;
+
+		std::vector<VulkanTexture2D*> m_ImGuiTextures;
 
 		Scope<VulkanSwapchain> m_Swapchain;
 	};

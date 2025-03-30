@@ -7,6 +7,7 @@
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Platform/Vulkan/VulkanSwapchain.h"
 #include "Platform/Vulkan/VulkanFramebuffer.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 
 #include <backends/imgui_impl_win32.h>
 #include <vulkan/vulkan.h>
@@ -206,6 +207,10 @@ namespace Echo
 		for (auto framebuffer : device->GetImGuiFramebuffers()) 
 		{
 			framebuffer->Destroy();
+		}
+		for (auto texture : device->GetImGuiTextures())
+		{
+			texture->Destroy();
 		}
 		ImGui_ImplWin32_Shutdown();
 		ImGui_ImplVulkan_Shutdown();

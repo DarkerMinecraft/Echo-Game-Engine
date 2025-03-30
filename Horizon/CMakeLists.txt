@@ -3,6 +3,7 @@ project(Horizon)
 set(CMAKE_CXX_STANDARD 20)
 
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/Horizon/assets)
+set(RESOURCE_DIR ${CMAKE_SOURCE_DIR}/Horizon/Resources)
 set(TARGET_DIR $<TARGET_FILE_DIR:Horizon>)
 
 add_executable(Horizon)
@@ -30,11 +31,14 @@ target_sources(Horizon PRIVATE ${SRC_FILES})
 target_link_libraries(Horizon PRIVATE Echo)
 
 file(GLOB_RECURSE ASSET_FILES "${ASSETS_DIR}/**/*")
+file(GLOB_RECURSE RESOURCE_FILES "${RESOURCE_DIR}/**/*")
 
 source_group(TREE "${CMAKE_SOURCE_DIR}/Horizon/assets" FILES ${ASSET_FILES})
+source_group(TREE "${CMAKE_SOURCE_DIR}/Horizon/Resources" FILES ${RESOURCE_FILES})
 
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_DIR} ${TARGET_DIR}/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR} ${TARGET_DIR}/Resources
 )
 
 target_sources(Horizon PRIVATE ${ASSET_FILES})

@@ -5,10 +5,9 @@
 #include "Echo/Graphics/Pipeline.h"
 #include "Echo/Graphics/Texture.h"
 #include "Echo/Graphics/Material.h"
+#include "Echo/Graphics/Shader.h"
 
 #include <glm/glm.hpp>
-
-#include <GLFW/glfw3.h>
 
 namespace Echo
 {
@@ -40,6 +39,7 @@ namespace Echo
 
 		Ref<Material> QuadMaterial;
 		Ref<Pipeline> QuadPipeline;
+		Ref<Shader> QuadShader;
 
 		Ref<UniformBuffer> QuadUniformBuffer;
 
@@ -66,10 +66,6 @@ namespace Echo
 
 		Statistics Stats;
 		CommandList* Cmd;
-
-		float DeltaTime = 0.0f;
-		float StartingTime = 0.0f;
-		bool DisableTime = false;
 	};
 
 	static RendererQuadData s_Data;
@@ -147,11 +143,16 @@ namespace Echo
 		}
 		)";
 
-		s_Data.QuadMaterial = Material::Create(vertexShader, fragmentShader, "Vertex Batch Renderer", nullptr);
+
+		ShaderSpecification shaderSpecs{};
+		shaderSpecs.VertexShaderSource = vertexShader;
+		shaderSpecs.FragmentShaderSource = fragmentShader;
+		shaderSpecs.ShaderName = "Vertex Batch Renderer";
+
+		s_Data.QuadShader = Shader::Create(shaderSpecs);
+		s_Data.QuadMaterial = Material::Create(s_Data.QuadShader, {1, 1, 1});
 
 		PipelineDesc desc{};
-
-		PipelineDesc batchPipelineDesc{};
 		desc.EnableBlending = false;
 		desc.EnableDepthTest = false;
 		desc.EnableDepthWrite = false;
@@ -217,7 +218,6 @@ namespace Echo
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
-		s_Data.StartingTime = (float)glfwGetTime();
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
 		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
@@ -241,7 +241,6 @@ namespace Echo
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
-		s_Data.StartingTime = (float)glfwGetTime();
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
 		BatchUniformBuffer batchUniformBuffer
@@ -370,16 +369,10 @@ namespace Echo
 
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
 		s_Data.Stats.DrawCalls++;
-
-		if (!s_Data.DisableTime)
-			s_Data.Stats.DeltaTime = (float)glfwGetTime() - s_Data.StartingTime;
-		else s_Data.DisableTime = false;
 	}
 
 	void RendererQuad::FlushAndReset() 
 	{
-		s_Data.DisableTime = true;
-
 		EndScene();
 
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
@@ -405,6 +398,7 @@ namespace Echo
 		s_Data.QuadMaterial.reset();
 		s_Data.QuadPipeline.reset();
 		s_Data.QuadUniformBuffer.reset();
+		s_Data.QuadShader.reset();
 		s_Data.TextureSlots[0]->Destroy();
 
 		delete[] s_Data.QuadVertexBufferBase;

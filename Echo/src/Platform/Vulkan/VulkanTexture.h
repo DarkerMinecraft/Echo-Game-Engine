@@ -20,9 +20,11 @@ namespace Echo
 		virtual uint32_t GetWidth() override { return m_Width; }
 		virtual uint32_t GetHeight() override { return m_Height; }
 
+		virtual void* GetResourceID() override;
+
 		virtual void Destroy() override;
 
-		VkSampler GetSampler() { return m_Sampler; }
+		VkSampler GetSampler() { return m_Texture.Sampler; }
 		AllocatedImage GetTexture() { return m_Texture; }
 
 		virtual bool operator==(const Texture& other) const override { return m_UUID == ((VulkanTexture2D&)other).m_UUID; }
@@ -35,7 +37,7 @@ namespace Echo
 
 		UUID m_UUID;
 
-		VkSampler m_Sampler;
+		VkDescriptorSet m_DescriptorSet = nullptr;
 
 		uint32_t m_Width, m_Height, m_Channels;
 		bool m_IsError = false;
