@@ -14,7 +14,7 @@ cmakeInstalled = CMakeRequirements.Validate()
 VulkanRequirements.Validate()
 
 print("\nUpdating submodules...")
-subprocess.call(["git", "submodule", "update", "--remote", "--merge", "--init", "--recursive"])
+subprocess.call(["git", "submodule", "update", "--init", "--recursive"])
 
 if (cmakeInstalled):
     print("\nRunning Cmake")
