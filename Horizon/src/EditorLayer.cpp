@@ -41,6 +41,9 @@ namespace Echo
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
+		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
+		m_StopButton = Texture2D::Create("Resources/StopButton.png");
+
 		RendererQuad::Init(m_Framebuffer, 0);
 	}
 
@@ -63,7 +66,14 @@ namespace Echo
 		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
 		cmd.ClearColor(m_Framebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
 		cmd.BeginRendering(m_Framebuffer);
-		m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+		if (m_SceneState == Edit)
+		{
+			m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+		}
+		else if (m_SceneState == Play)
+		{
+			m_ActiveScene->OnUpdateRuntime(cmd, ts);
+		}
 		cmd.EndRendering();
 		cmd.Execute();
 
@@ -76,32 +86,34 @@ namespace Echo
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
 
-
-		auto [mx, my] = ImGui::GetMousePos();
-		mx -= m_ViewportBounds[0].x;
-		my -= m_ViewportBounds[0].y;
-		glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-		my = viewportSize.y - my;
-
-		int mouseX = (int)mx;
-		int mouseY = (int)my;
-		if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
+		if (m_SceneState == Edit)
 		{
-			int texX = (int)((mouseX / viewportSize.x) * m_Framebuffer->GetWidth());
-			int texY = (int)((mouseY / viewportSize.y) * m_Framebuffer->GetHeight());
+			auto [mx, my] = ImGui::GetMousePos();
+			mx -= m_ViewportBounds[0].x;
+			my -= m_ViewportBounds[0].y;
+			glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+			my = viewportSize.y - my;
 
-			int entityID = m_Framebuffer->ReadPixel(1, texX, texY);
-			if (entityID != -1)
+			int mouseX = (int)mx;
+			int mouseY = (int)my;
+			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				m_Window->SetCursor(Cursor::HAND);
-				if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+				int texX = (int)((mouseX / viewportSize.x) * m_Framebuffer->GetWidth());
+				int texY = (int)((mouseY / viewportSize.y) * m_Framebuffer->GetHeight());
+
+				int entityID = m_Framebuffer->ReadPixel(1, texX, texY);
+				if (entityID != -1)
 				{
-					m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+					m_Window->SetCursor(Cursor::HAND);
+					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+					{
+						m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+					}
 				}
-			}
-			else
-			{
-				m_Window->SetCursor(Cursor::ARROW);
+				else
+				{
+					m_Window->SetCursor(Cursor::ARROW);
+				}
 			}
 		}
 
@@ -216,6 +228,43 @@ namespace Echo
 		m_SceneHierarchyPanel.OnImGuiRender();
 		m_ContentBrowserPanel.OnImGuiRender();
 
+		ViewportUI();
+		ToolbarUI();
+	}
+
+	void EditorLayer::ToolbarUI()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+
+		auto& colors = ImGui::GetStyle().Colors;
+		auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
+		auto& buttonActive = colors[ImGuiCol_ButtonActive];
+
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		ImTextureID icon = m_SceneState == Edit ? (ImTextureID)m_PlayButton->GetResourceID() : (ImTextureID)m_StopButton->GetResourceID();
+
+		float size = ImGui::GetWindowHeight() - 4.0f;
+		ImGui::SameLine((ImGui::GetWindowWidth() - size) * 0.5f);
+		if (ImGui::ImageButton("##type", icon, ImVec2(size, size))
+		{
+			if (m_SceneState == SceneState::Edit)
+				m_SceneState = SceneState::Play;
+			else
+				m_SceneState = SceneState::Edit;
+		}
+
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(3);
+		ImGui::End();
+	}
+
+	void EditorLayer::ViewportUI()
+	{
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 		ImGui::Begin("Viewport");
 		auto viewportOffset = ImGui::GetCursorPos();
@@ -231,7 +280,7 @@ namespace Echo
 		}
 		ImGui::Image((ImTextureID)m_Framebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
-		if (ImGui::BeginDragDropTarget()) 
+		if (ImGui::BeginDragDropTarget())
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
@@ -292,9 +341,8 @@ namespace Echo
 				tc.Scale = scale;
 			}
 		}
-
-		ImGui::End();
 		ImGui::PopStyleVar();
+		ImGui::End();
 	}
 
 	void EditorLayer::Destroy()

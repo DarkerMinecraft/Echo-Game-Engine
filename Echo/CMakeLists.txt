@@ -11,7 +11,7 @@ file(GLOB_RECURSE SRC_FILES
     "src/**.cpp"
 )
 
-source_group(TREE "${CMAKE_SOURCE_DIR}/Echo/src" FILES ${SRC_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SRC_FILES})
 
 target_include_directories(Echo PRIVATE
     src

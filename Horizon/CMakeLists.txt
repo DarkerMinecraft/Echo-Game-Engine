@@ -25,7 +25,7 @@ file(GLOB_RECURSE SRC_FILES
     "src/**.cpp"
 )
 
-source_group(TREE "${CMAKE_SOURCE_DIR}/Horizon/src" FILES ${SRC_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SRC_FILES})
 target_sources(Horizon PRIVATE ${SRC_FILES})
 
 target_link_libraries(Horizon PRIVATE Echo)
@@ -33,8 +33,8 @@ target_link_libraries(Horizon PRIVATE Echo)
 file(GLOB_RECURSE ASSET_FILES "${ASSETS_DIR}/**/*")
 file(GLOB_RECURSE RESOURCE_FILES "${RESOURCE_DIR}/**/*")
 
-source_group(TREE "${CMAKE_SOURCE_DIR}/Horizon/assets" FILES ${ASSET_FILES})
-source_group(TREE "${CMAKE_SOURCE_DIR}/Horizon/Resources" FILES ${RESOURCE_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/assets" FILES ${ASSET_FILES})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Resources" FILES ${RESOURCE_FILES})
 
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_DIR} ${TARGET_DIR}/assets

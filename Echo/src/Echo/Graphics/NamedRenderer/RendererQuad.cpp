@@ -88,9 +88,9 @@ namespace Echo
 			float4 position : SV_POSITION;
 			float2 uv : TEXCOORD0;
 			float4 color : COLOR;
-			int texIndex : ATTRIB0;
+			nointerpolation int texIndex : ATTRIB0;
 			float tilingFactor : ATTRIB1;
-			int instanceID : ATTRIB2;
+			nointerpolation int instanceID : ATTRIB2;
 		}
 
 		[[vk::binding(0, 0)]] cbuffer Camera : register(b0)

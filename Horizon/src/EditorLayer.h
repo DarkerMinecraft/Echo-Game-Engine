@@ -36,6 +36,10 @@ namespace Echo
 		void OpenScene();
 		void OpenScene(const std::filesystem::path& path);
 		void SaveSceneAs();
+
+		//UI 
+		void ToolbarUI();
+		void ViewportUI();
 	private:
 		Ref<Framebuffer> m_Framebuffer;
 		Ref<Scene> m_ActiveScene;
@@ -53,6 +57,16 @@ namespace Echo
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
+
+		enum SceneState 
+		{
+			Edit = 0, Play = 1
+		};
+
+		SceneState m_SceneState = SceneState::Edit;
+
+		Ref<Texture2D> m_PlayButton;
+		Ref<Texture2D> m_StopButton; 
 
 		int m_GuizmoType = -1;
 	};
