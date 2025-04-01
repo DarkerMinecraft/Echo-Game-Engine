@@ -23,11 +23,8 @@ set(ENABLE_SPIRV_CODEGEN ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Minecraft_Clone)
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Horizon)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-add_subdirectory(Echo/vendor/GLFW)
-set_target_properties(glfw PROPERTIES FOLDER "Dependencies")
 
 add_subdirectory(Echo/vendor/imgui)
 set_target_properties(ImGui PROPERTIES FOLDER "Dependencies")
