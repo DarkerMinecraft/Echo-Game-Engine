@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.31.3)
 project(Horizon)
 set(CMAKE_CXX_STANDARD 20)
 
-set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/Horizon/assets)
-set(RESOURCE_DIR ${CMAKE_SOURCE_DIR}/Horizon/Resources)
+set(ASSETS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+set(RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Resources)
 set(TARGET_DIR $<TARGET_FILE_DIR:Horizon>)
 
 add_executable(Horizon)
