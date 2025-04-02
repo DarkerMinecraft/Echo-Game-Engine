@@ -16,10 +16,6 @@
 [submodule "Echo/vendor/stb"]
 	path = Echo/vendor/stb
 	url = https://github.com/nothings/stb.git
-[submodule "Echo/vendor/imgui"]
-	path = Echo/vendor/imgui
-	url = https://github.com/DarkerMinecraft/imgui.git
-	branch = docking
 [submodule "Echo/vendor/DirectXTK12"]
 	path = Echo/vendor/DirectXTK12
 	url = https://github.com/microsoft/DirectXTK12.git
