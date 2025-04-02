@@ -34,7 +34,7 @@ target_include_directories(Echo PRIVATE
 
 link_directories(${VULKAN_SDK}/Lib)
 
-target_link_libraries(Echo PRIVATE
+target_link_libraries(Echo PUBLIC
     ImGui
     $ENV{VULKAN_SDK}/Lib/vulkan-1.lib
     $ENV{VULKAN_SDK}/Lib/dxcompiler.lib
@@ -45,7 +45,7 @@ target_link_libraries(Echo PRIVATE
     ImGuizmo
 )
 
-target_sources(Echo PRIVATE 
+target_sources(Echo PUBLIC 
     ${SRC_FILES} 
     src/pch.cpp
 )
