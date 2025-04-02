@@ -34,3 +34,7 @@
 [submodule "Echo/vendor/ImGuizmo"]
 	path = Echo/vendor/ImGuizmo
 	url = https://github.com/DarkerMinecraft/ImGuizmo.git
+[submodule "Echo/vendor/imgui"]
+	path = Echo/vendor/imgui
+	url = https://github.com/DarkerMinecraft/imgui.git
+	branch = docking
