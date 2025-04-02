@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Application.h"
 
-#include <GLFW/glfw3.h>
-
 namespace Echo
 {
 	Application* Application::s_Instance = nullptr;
@@ -49,9 +47,11 @@ namespace Echo
 
 		while(m_Running)
 		{
-			float time = (float)glfwGetTime();
-			Timestep ts = time - m_LastFrameTime;
-			m_LastFrameTime = time;
+			float time = std::chrono::duration<float>(
+				std::chrono::steady_clock::now() - m_LastFrameTime
+			).count();
+			Timestep ts = time;
+			m_LastFrameTime = std::chrono::steady_clock::now();
 
 			if(!m_Minimized)
 			{

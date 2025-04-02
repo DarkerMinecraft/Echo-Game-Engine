@@ -7,14 +7,9 @@
 #include <windows.h>
 #include <Shlobj.h>
 #include <propkey.h>
-#include <atlbase.h> // For CComPtr to simplify COM management
+#include <atlbase.h>
 #include <vector>
 #include <memory>
-
-// GLFW headers
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
 
 namespace Echo
 {
@@ -110,7 +105,7 @@ namespace Echo
 			filterData->ParseFilter(filter);
 
 			// Get parent window handle
-			HWND hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
+			HWND hwndOwner = (HWND)Application::Get().GetWindow().GetNativeWindow();
 
 			// Set up shell COM object
 			CComPtr<IFileOpenDialog> pFileOpen;
@@ -172,7 +167,7 @@ namespace Echo
 			filterData->ParseFilter(filter);
 
 			// Get parent window handle
-			HWND hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
+			HWND hwndOwner = (HWND)Application::Get().GetWindow().GetNativeWindow();
 
 			// Set up shell COM object
 			CComPtr<IFileSaveDialog> pFileSave;

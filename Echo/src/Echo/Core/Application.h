@@ -7,6 +7,8 @@
 
 #include "Echo/ImGui/ImGuiLayer.h"
 
+#include <chrono>
+
 namespace Echo
 {
 
@@ -43,7 +45,7 @@ namespace Echo
 
 		LayerStack m_LayerStack;
 
-		float m_LastFrameTime;
+		std::chrono::steady_clock::time_point m_LastFrameTime;
 	private:
 		static Application* s_Instance;
 	};

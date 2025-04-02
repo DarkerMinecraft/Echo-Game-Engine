@@ -250,7 +250,7 @@ namespace Echo
 
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		ImGui::SameLine((ImGui::GetWindowWidth() - size) * 0.5f);
-		if (ImGui::ImageButton("##type", icon, ImVec2(size, size))
+		if (ImGui::ImageButton("##type", icon, ImVec2(size, size)))
 		{
 			if (m_SceneState == SceneState::Edit)
 				m_SceneState = SceneState::Play;

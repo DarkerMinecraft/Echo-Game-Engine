@@ -18,7 +18,6 @@ target_include_directories(Echo PRIVATE
     ${CMAKE_SOURCE_DIR}/Echo/vendor/spdlog/include
     ${CMAKE_SOURCE_DIR}/Echo/vendor/DirectX/include
     ${CMAKE_SOURCE_DIR}/Echo/vendor/glm
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/GLFW/include
     $ENV{VULKAN_SDK}
     ${CMAKE_SOURCE_DIR}/Echo/vendor/entt/include
     ${CMAKE_SOURCE_DIR}/Echo/vendor/imgui
@@ -36,7 +35,6 @@ target_include_directories(Echo PRIVATE
 link_directories(${VULKAN_SDK}/Lib)
 
 target_link_libraries(Echo PRIVATE
-    glfw
     ImGui
     $ENV{VULKAN_SDK}/Lib/vulkan-1.lib
     $ENV{VULKAN_SDK}/Lib/dxcompiler.lib
