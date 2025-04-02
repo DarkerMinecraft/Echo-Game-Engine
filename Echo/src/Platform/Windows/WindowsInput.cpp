@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "Echo/Core/Input.h"
-#include "Echo/Core/Application.h"
+#include "Core/Input.h"
+#include "Core/Application.h"
 #include <windows.h>
 
 namespace Echo

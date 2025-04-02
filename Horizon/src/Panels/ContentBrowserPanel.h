@@ -1,7 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <Echo/Graphics/Texture.h>
+#include <Graphics/Texture.h>
 
 namespace Echo 
 {

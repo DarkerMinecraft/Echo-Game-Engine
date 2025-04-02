@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Echo/Graphics/Material.h"
-#include "Echo/Graphics/Device.h"
+#include "Graphics/Material.h"
+#include "Graphics/Device.h"
 
 #include "VulkanDevice.h"
 

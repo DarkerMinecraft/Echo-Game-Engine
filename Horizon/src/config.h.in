@@ -1,0 +1,73 @@
+#pragma once
+
+#include <string>
+#include <filesystem>
+#include <array>
+
+namespace Horizon
+{
+    inline std::string GetExecutablePath()
+    {
+#ifdef _WIN32
+        char path[MAX_PATH] = {0};
+        GetModuleFileNameA(NULL, path, MAX_PATH);
+        return std::string(path);
+#else
+        char result[PATH_MAX];
+        ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+        return std::string(result, (count > 0) ? count : 0);
+#endif
+    }
+
+    inline std::string GetExecutableDir()
+    {
+        auto path = GetExecutablePath();
+        return std::filesystem::path(path).parent_path().string();
+    }
+
+    // Multiple possible asset locations to try
+    inline std::string FindAssetPath(const std::string &assetName)
+    {
+        // List of possible relative paths to try
+        const std::array<std::string, 3> possiblePaths = {
+            // Executable directory path (where the exe runs from)
+            GetExecutableDir() + "/assets/" + assetName,
+
+            // Current working directory path
+            std::filesystem::current_path().string() + "/assets/" + assetName,
+
+            // Absolute path based on build configuration
+            "${TARGET_DIR}/assets/" + assetName};
+
+        // Try each path
+        for (const auto &path : possiblePaths)
+        {
+            if (std::filesystem::exists(path))
+            {
+                return path;
+            }
+        }
+
+        // If not found, return the first path and let the application handle the error
+        return possiblePaths[0];
+    }
+
+    // Same for resources
+    inline std::string FindResourcePath(const std::string &resourceName)
+    {
+        const std::array<std::string, 3> possiblePaths = {
+            GetExecutableDir() + "/Resources/" + resourceName,
+            std::filesystem::current_path().string() + "/Resources/" + resourceName,
+            "${TARGET_DIR}/Resources/" + resourceName};
+
+        for (const auto &path : possiblePaths)
+        {
+            if (std::filesystem::exists(path))
+            {
+                return path;
+            }
+        }
+
+        return possiblePaths[0];
+    }
+}

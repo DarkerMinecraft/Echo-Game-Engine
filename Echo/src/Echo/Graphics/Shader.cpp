@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "Shader.h"
 
-#include "Echo/Core/Application.h"
-#include "Platform/Vulkan/VulkanShader.h"
+#include "Core/Application.h"
+#include "Vulkan/VulkanShader.h"
 
 namespace Echo 
 {

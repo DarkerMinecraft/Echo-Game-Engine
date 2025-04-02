@@ -2,34 +2,39 @@ cmake_minimum_required(VERSION 3.31.3)
 project(Echo)
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(Echo STATIC)
+set(ECHO_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-target_precompile_headers(Echo PRIVATE src/pch.h)
+add_library(Echo STATIC)
+target_precompile_headers(Echo PRIVATE ${ECHO_DIR}/src/Echo/pch.h)
 
 file(GLOB_RECURSE SRC_FILES
-    "src/**.h"
-    "src/**.cpp"
+    "${ECHO_DIR}/src/**.h"
+    "${ECHO_DIR}/src/**.cpp"
 )
 
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" FILES ${SRC_FILES})
+source_group(TREE "${ECHO_DIR}/src" FILES ${SRC_FILES})
 
-target_include_directories(Echo PRIVATE
-    src
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/spdlog/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/DirectX/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/glm
+target_include_directories(Echo 
+    PUBLIC
+    ${ECHO_DIR}/src/Echo
+    ${ECHO_DIR}/vendor/spdlog/include
+    ${ECHO_DIR}/vendor/glm
+    ${ECHO_DIR}/vendor/entt/include
+    ${ECHO_DIR}/vendor/imgui
+    ${ECHO_DIR}/vendor/ImGuizmo
+    ${ECHO_DIR}/vendor/uuidv4
+    PRIVATE
+    ${ECHO_DIR}/src/Platform
+    ${ECHO_DIR}/vendor/DirectX/include
     $ENV{VULKAN_SDK}
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/entt/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/imgui
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/vk-bootstrap/src
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/VulkanMemoryAllocator/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/tinyobjloader
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/stb
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/DirectXTK12/Inc
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/Slang/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/uuidv4
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/yaml/include
-    ${CMAKE_SOURCE_DIR}/Echo/vendor/ImGuizmo
+    ${ECHO_DIR}/vendor/vk-bootstrap/src
+    ${ECHO_DIR}/vendor/VulkanMemoryAllocator/include
+    ${ECHO_DIR}/vendor/tinyobjloader
+    ${ECHO_DIR}/vendor/stb
+    ${ECHO_DIR}/vendor/DirectXTK12/Inc
+    ${ECHO_DIR}/vendor/Slang/include
+    ${ECHO_DIR}/vendor/yaml/include
 )
 
 link_directories(${VULKAN_SDK}/Lib)
@@ -45,9 +50,8 @@ target_link_libraries(Echo PUBLIC
     ImGuizmo
 )
 
-target_sources(Echo PUBLIC 
+target_sources(Echo PRIVATE 
     ${SRC_FILES} 
-    src/pch.cpp
 )
 
 if(WIN32)

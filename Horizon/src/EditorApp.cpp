@@ -1,7 +1,7 @@
 #include "EditorLayer.h"
 
-#include <Echo/Core/EntryPoint.h>
-#include <Echo/Core/Application.h>
+#include <Core/EntryPoint.h>
+#include <Core/Application.h>
 
 namespace Echo
 {

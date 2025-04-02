@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "VulkanClearColorCommand.h"
 
-#include "Platform/Vulkan/VulkanCommandBuffer.h"
-#include "Platform/Vulkan/Utils/VulkanInitializers.h"
+#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/Utils/VulkanInitializers.h"
 
-#include "Platform/Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/VulkanFramebuffer.h"
 
 namespace Echo
 {

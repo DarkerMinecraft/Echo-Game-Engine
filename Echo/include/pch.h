@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Echo/Core/Base.h"
-#include "Echo/Core/Log.h"
+#include "Core/Base.h"
+#include "Core/Log.h"
 
 #include <algorithm>
 #include <cmath>

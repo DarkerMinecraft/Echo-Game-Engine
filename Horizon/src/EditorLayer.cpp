@@ -4,17 +4,19 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 
-#include <Echo/Core/Application.h>
+#include <Core/Application.h>
 
-#include <Echo/Core/Input.h>
-#include <Echo/Core/KeyCodes.h>
-#include <Echo/Core/MouseButtonCodes.h>
+#include <Core/Input.h>
+#include <Core/MouseButtonCodes.h>
+#include <Core/KeyCodes.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <Echo/Utils/PlatformUtils.h>
-#include <Echo/Scene/SceneSerializer.h>
+#include <Utils/PlatformUtils.h>
+#include <Scene/SceneSerializer.h>
 
-#include <Echo/Math/Math.h>
+#include <Math/Math.h>
+
+#include "Config.h"
 
 namespace Echo
 {
@@ -41,8 +43,8 @@ namespace Echo
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
-		m_StopButton = Texture2D::Create("Resources/StopButton.png");
+		m_PlayButton = Texture2D::Create(Horizon::FindResourcePath("PlayButton.png"));
+		m_StopButton = Texture2D::Create(Horizon::FindResourcePath("StopButton.png"));
 
 		RendererQuad::Init(m_Framebuffer, 0);
 	}
@@ -271,7 +273,7 @@ namespace Echo
 
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
-		Application::Get().GetImGuiLayer()->SetBlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+		Application::Get().SetImGuiBlockEvents(!m_ViewportFocused && !m_ViewportHovered);
 
 		auto viewportSize = ImGui::GetContentRegionAvail();
 		if (m_ViewportSize != *(glm::vec2*)&viewportSize)

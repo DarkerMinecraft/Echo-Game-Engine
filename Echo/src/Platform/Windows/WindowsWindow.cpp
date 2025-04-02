@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "WindowsWindow.h"
-#include "Echo/Events/WindowEvents.h"
-#include "Echo/Events/KeyEvents.h"
-#include "Echo/Events/MouseEvents.h"
-#include "Echo/Core/Application.h"
-#include "Echo/Graphics/Device.h"
+
+#include "Events/WindowEvents.h"
+#include "Events/KeyEvents.h"
+#include "Events/MouseEvents.h"
 
 #include <cassert>
 #include <chrono>

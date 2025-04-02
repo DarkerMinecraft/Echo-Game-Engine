@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "Pipeline.h"
-#include "Echo/Core/Application.h"
+#include "Core/Application.h"
 
-#include "Platform/Vulkan/VulkanPipeline.h" 
+#include "Vulkan/VulkanPipeline.h" 
 
 namespace Echo 
 {

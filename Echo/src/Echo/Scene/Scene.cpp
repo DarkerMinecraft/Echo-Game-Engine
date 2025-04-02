@@ -3,7 +3,7 @@
 
 #include "Components.h"
 
-#include "Echo/Graphics/NamedRenderer/RendererQuad.h"
+#include "Graphics/NamedRenderer/RendererQuad.h"
 
 #include "Entity.h"
 

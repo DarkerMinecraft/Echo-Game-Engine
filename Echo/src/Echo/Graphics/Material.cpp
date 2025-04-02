@@ -1,10 +1,8 @@
 #include "pch.h"
 #include "Material.h"
+#include "Core/Application.h"
 
-#include "Device.h"
-#include "Echo/Core/Application.h"
-
-#include "Platform/Vulkan/VulkanMaterial.h"
+#include "Vulkan/VulkanMaterial.h"
 
 namespace Echo 
 {

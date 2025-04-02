@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Echo/Graphics/Pipeline.h"
+#include "Graphics/Pipeline.h"
 
 #include "VulkanDevice.h"
 #include "Utils/VulkanDescriptors.h"

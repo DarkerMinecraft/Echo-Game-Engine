@@ -1,20 +1,21 @@
 #include "pch.h"
 #include "ImGuiLayer.h"
 
-#include "Echo/Graphics/CommandList.h"
-#include "Echo/Core/Application.h"
+#include "Graphics/CommandList.h"
+#include "Core/Application.h"
 
-#include "Platform/Vulkan/VulkanDevice.h"
-#include "Platform/Vulkan/VulkanSwapchain.h"
-#include "Platform/Vulkan/VulkanFramebuffer.h"
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanSwapchain.h"
+#include "Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/VulkanTexture.h"
 
 #include <backends/imgui_impl_win32.h>
-#include <vulkan/vulkan.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 
 #include <ImGuizmo.h>
+
+#include <filesystem>
 
 namespace Echo
 {
@@ -40,8 +41,10 @@ namespace Echo
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/static/OpenSans-Bold.ttf", 18.0f);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/static/OpenSans-Regular.ttf", 18.0f);
+		std::filesystem::path currentPath = std::filesystem::current_path();
+
+		io.Fonts->AddFontFromFileTTF("../../assets/fonts/opensans/static/OpenSans-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("../../assets/fonts/opensans/static/OpenSans-Regular.ttf", 18.0f);
 
 		ImGui::StyleColorsDark();
 

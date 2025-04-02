@@ -2,13 +2,12 @@
 
 #include <Echo.h>
 
-#include <Echo/Events/WindowEvents.h>
-#include <renderdoc_app.h>
+#include <Events/WindowEvents.h>
 
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 
-#include "Echo/Graphics/EditorCamera.h"
+#include "Graphics/EditorCamera.h"
 
 namespace Echo
 {

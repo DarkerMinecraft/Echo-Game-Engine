@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "Device.h"
 
-#include "Platform/Vulkan/VulkanDevice.h"
+#include "Core/Window.h"
+
+#include "Vulkan/VulkanDevice.h"
 
 namespace Echo 
 {

@@ -6,7 +6,7 @@
 #include "Utils/VulkanImages.h"
 #include "VulkanFramebuffer.h"
 
-#include "Echo/Core/Application.h"
+#include "Core/Application.h"
 
 #include <backends/imgui_impl_vulkan.h>
 

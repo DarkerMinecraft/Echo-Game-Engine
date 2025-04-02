@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Application.h"
 
+#include "ImGui/ImGuiLayer.h"
+
 namespace Echo
 {
 	Application* Application::s_Instance = nullptr;
@@ -94,6 +96,11 @@ namespace Echo
 	{
 		m_LayerStack.PushOverlay(overlay);
 		overlay->OnAttach();
+	}
+
+	void Application::SetImGuiBlockEvents(bool blockEvents)
+	{
+		m_ImGuiLayer->SetBlockEvents(blockEvents);
 	}
 
 	void Application::Close()

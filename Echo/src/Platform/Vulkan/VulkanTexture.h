@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Echo/Graphics/Texture.h"
+#include "Graphics/Texture.h"
 
-#include "Echo/Core/UUID.h"
+#include "Core/UUID.h"
 
 #include "VulkanDevice.h"
 #include "Utils/VulkanTypes.h"

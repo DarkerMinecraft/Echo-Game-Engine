@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Echo/Graphics/Device.h"
-#include "Echo/Graphics/Framebuffer.h"
+#include "Core/Window.h"
+#include "Graphics/Device.h"
+#include "Graphics/Framebuffer.h"
 
 #include "vk_mem_alloc.h"
 #include "Utils/VulkanTypes.h"
-#include "Platform/Shader/ShaderCompiler.h"
+#include "Shader/ShaderCompiler.h"
 
-#ifndef EC_PLATFORM_WINDOWS
+#ifdef EC_PLATFORM_WINDOWS
 	#define VK_USE_PLATFORM_WIN32_KHR
 	#include <vulkan/vulkan.h>
 #endif

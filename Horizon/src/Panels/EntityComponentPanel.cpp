@@ -5,8 +5,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 
-#include "Echo/Scene/Components.h"
-#include "Echo/Scene/Entity.h"
+#include "Scene/Components.h"
+#include "Scene/Entity.h"
 
 #include <filesystem>
 

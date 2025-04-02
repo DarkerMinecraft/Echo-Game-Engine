@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "VulkanDrawCommand.h"
 
-#include "Platform/Vulkan/VulkanCommandBuffer.h"
-#include <Platform/Vulkan/VulkanBuffer.h>
+#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/VulkanBuffer.h"
 
 namespace Echo 
 {

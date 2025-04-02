@@ -1,9 +1,8 @@
 #include "pch.h"
 #include "Texture.h"
+#include "Core/Application.h"
 
-#include "Echo/Core/Application.h"
-
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "Vulkan/VulkanTexture.h"
 
 namespace Echo 
 {

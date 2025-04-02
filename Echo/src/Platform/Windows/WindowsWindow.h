@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-#include "Echo/Core/Window.h"
+#include "Core/Window.h"
 
 namespace Echo 
 {

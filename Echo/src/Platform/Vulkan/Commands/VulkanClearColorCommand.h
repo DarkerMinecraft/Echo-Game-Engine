@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Echo/Graphics/Commands/ICommand.h"
-#include "Echo/Graphics/Framebuffer.h"
+#include "Graphics/Commands/ICommand.h"
+#include "Graphics/Framebuffer.h"
 
 #include <glm/glm.hpp>
 

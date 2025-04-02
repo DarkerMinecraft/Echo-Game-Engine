@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "VulkanRenderingCommand.h"
 
-#include "Platform/Vulkan/VulkanCommandBuffer.h"
-#include "Platform/Vulkan/VulkanFramebuffer.h"
-#include "Platform/Vulkan/VulkanDevice.h"
-#include "Platform/Vulkan/VulkanSwapchain.h"
+#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanSwapchain.h"
 
-#include "Platform/Vulkan/Utils/VulkanInitializers.h"
-#include "Echo/Core/Application.h"
+#include "Vulkan/Utils/VulkanInitializers.h"
+#include "Core/Application.h"
 
 namespace Echo
 {

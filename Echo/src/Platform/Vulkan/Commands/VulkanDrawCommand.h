@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Echo/Graphics/CommandBuffer.h"
-#include "Echo/Graphics/Commands/ICommand.h"
+#include "Graphics/CommandBuffer.h"
+#include "Graphics/Commands/ICommand.h"
 
-#include "Echo/Graphics/Buffer.h"
+#include "Graphics/Buffer.h"
 
 namespace Echo 
 {

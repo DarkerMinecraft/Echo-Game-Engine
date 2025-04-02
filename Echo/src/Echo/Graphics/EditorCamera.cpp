@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "EditorCamera.h"
 
-#include "Echo/Core/Input.h"
-#include "Echo/Core/KeyCodes.h"
-#include "Echo/Core/MouseButtonCodes.h"
+#include "Core/Input.h"
+#include "Core/KeyCodes.h"
+#include "Core/MouseButtonCodes.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>

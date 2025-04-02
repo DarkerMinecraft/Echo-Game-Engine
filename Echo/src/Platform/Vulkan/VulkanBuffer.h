@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Echo/Graphics/Buffer.h"
+#include "Graphics/Buffer.h"
 
 #include "VulkanDevice.h"
 #include "Utils/VulkanTypes.h"

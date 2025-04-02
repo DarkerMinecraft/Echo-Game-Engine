@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Echo/Scene/Scene.h"
-#include "Echo/Scene/Entity.h"
-#include "Echo/Core/Base.h"
+#include "Scene/Scene.h"
+#include "Scene/Entity.h"
+#include "Core/Base.h"
 
 #include "EntityComponentPanel.h"
 

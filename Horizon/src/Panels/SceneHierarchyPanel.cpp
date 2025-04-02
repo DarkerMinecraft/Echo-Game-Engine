@@ -1,5 +1,5 @@
 #include "SceneHierarchyPanel.h"
-#include "Echo/Scene/Components.h"
+#include "Scene/Components.h"
 
 #include <glm/gtc/type_ptr.hpp>
 

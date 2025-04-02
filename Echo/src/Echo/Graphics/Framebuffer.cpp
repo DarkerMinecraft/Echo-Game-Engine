@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "Framebuffer.h"
-#include "Echo/Core/Application.h"
-#include "Platform/Vulkan/VulkanFramebuffer.h"
+#include "Core/Application.h"
+
+#include "Vulkan/VulkanFramebuffer.h"
 
 namespace Echo 
 {

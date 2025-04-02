@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "RendererQuad.h"
 
-#include "Echo/Graphics/Buffer.h"
-#include "Echo/Graphics/Pipeline.h"
-#include "Echo/Graphics/Texture.h"
-#include "Echo/Graphics/Material.h"
-#include "Echo/Graphics/Shader.h"
+#include "Graphics/Buffer.h"
+#include "Graphics/Pipeline.h"
+#include "Graphics/Texture.h"
+#include "Graphics/Material.h"
+#include "Graphics/Shader.h"
 
 #include <glm/glm.hpp>
 

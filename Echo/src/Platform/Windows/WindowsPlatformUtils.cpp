@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "Echo/Utils/PlatformUtils.h"
-#include "Echo/Core/Application.h"
+#include "Utils/PlatformUtils.h"
+#include "Core/Application.h"
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

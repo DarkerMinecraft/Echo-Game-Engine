@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Echo/Graphics/Shader.h"
+#include "Graphics/Shader.h"
 
 #include "VulkanDevice.h"
 

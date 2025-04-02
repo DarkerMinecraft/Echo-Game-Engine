@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "CommandFactory.h"
 
-#include "Platform/Vulkan/Commands/VulkanBindPipelineCommand.h"
-#include "Platform/Vulkan/Commands/VulkanDispatchCommand.h"
-#include "Platform/Vulkan/Commands/VulkanBindBufferCommand.h"
-#include "Platform/Vulkan/Commands/VulkanRenderingCommand.h"
-#include "Platform/Vulkan/Commands/VulkanDrawCommand.h"
-#include "Platform/Vulkan/Commands/VulkanRenderImGuiCommand.h"
-#include "Platform/Vulkan/Commands/VulkanClearColorCommand.h"
+#include "Vulkan/Commands/VulkanBindPipelineCommand.h"
+#include "Vulkan/Commands/VulkanDispatchCommand.h"
+#include "Vulkan/Commands/VulkanBindBufferCommand.h"
+#include "Vulkan/Commands/VulkanRenderingCommand.h"
+#include "Vulkan/Commands/VulkanDrawCommand.h"
+#include "Vulkan/Commands/VulkanRenderImGuiCommand.h"
+#include "Vulkan/Commands/VulkanClearColorCommand.h"
 
 namespace Echo 
 {

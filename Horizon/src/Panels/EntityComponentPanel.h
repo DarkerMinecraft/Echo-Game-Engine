@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Echo/Scene/Scene.h"
+#include "Scene/Scene.h"
 
 namespace Echo 
 {

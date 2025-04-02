@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Echo/Graphics/CommandBuffer.h"
-#include "Echo/Graphics/Commands/ICommand.h"
+#include "Graphics/CommandBuffer.h"
+#include "Graphics/Commands/ICommand.h"
 
-#include "Platform/Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/VulkanCommandBuffer.h"
 
 namespace Echo 
 {
