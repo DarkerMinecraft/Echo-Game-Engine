@@ -100,14 +100,27 @@ namespace Echo
 		{
 			RendererQuad::BeginScene(cmd, *mainCamera, cameraTransform);
 
-			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
-			for (auto entity : view)
 			{
-				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-				RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+				auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+				for (auto entity : view)
+				{
+					auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+					RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+				}
 			}
 
 			RendererQuad::EndScene();
+
+			Renderer3D::StartScene(cmd, *mainCamera, cameraTransform);
+			{
+				auto view = m_Registry.view<TransformComponent, MeshComponent>();
+				for (auto entity : view) 
+				{
+					auto [transform, mesh] = view.get<TransformComponent, MeshComponent>(entity);
+					
+				}
+			}
+			Renderer3D::EndScene();
 		}
 	}
 

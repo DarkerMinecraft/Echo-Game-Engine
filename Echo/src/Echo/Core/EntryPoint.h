@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Base.h"
+#include <Core/Application.h>
 
 #ifdef ECHO_PLATFORM_WIN
-
-#include <windows.h>
 
 extern Echo::Application* Echo::CreateApplication();
 

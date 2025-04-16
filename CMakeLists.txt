@@ -23,7 +23,7 @@ set(ENABLE_SPIRV_CODEGEN ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Horizon)
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT Bloomwood)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 add_subdirectory(Echo/vendor/imgui)
@@ -64,4 +64,4 @@ set_target_properties(compiler-core PROPERTIES FOLDER "Dependencies")
 
 add_subdirectory(Echo)
 add_subdirectory(Horizon)
-
+add_subdirectory(Bloomwood)

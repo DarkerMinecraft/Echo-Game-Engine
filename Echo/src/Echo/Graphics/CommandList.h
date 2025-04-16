@@ -25,6 +25,8 @@ namespace Echo
 		void Dispatch(float x, float y, float z) { RecordCommand(CommandFactory::DispatchCommand(x, y, z)); }
 
 		void BindPipeline(Ref<Pipeline> pipeline) { RecordCommand(CommandFactory::BindPipelineCommand(pipeline)); }
+		void BindPipeline(Pipeline* pipeline) { RecordCommand(CommandFactory::BindPipelineCommand(pipeline)); }
+
 		void BindVertexBuffer(Ref<VertexBuffer> vertexBuffer) { RecordCommand(CommandFactory::BindVertexBufferCommand(vertexBuffer)); }
 		void BindIndicesBuffer(Ref<IndexBuffer> indexBuffer) { RecordCommand(CommandFactory::BindIndicesBufferCommand(indexBuffer)); }
 
@@ -38,11 +40,11 @@ namespace Echo
 
 		void RenderImGui() { RecordCommand(CommandFactory::RenderImGuiCommand()); }
 
-		void SetSrcImage(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
+		void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
 		void SetShouldPresent(bool shouldPresent) { m_CommandBuffer->SetShouldPresent(shouldPresent); }
 		void SetDrawToSwapchain(bool drawToSwapchain) { m_CommandBuffer->SetDrawToSwapchain(drawToSwapchain); }
-		
-		void Execute();
+
+		void Execute(bool isLastPass = false);
 	private:
 		void RecordCommand(Ref<ICommand> command);
 	private:

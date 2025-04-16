@@ -5,6 +5,7 @@
 
 #include "Events/Event.h"
 #include "Events/WindowEvents.h"
+#include "Log.h"
 
 #include <chrono>
 

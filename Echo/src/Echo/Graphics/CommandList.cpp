@@ -21,7 +21,7 @@ namespace Echo
 		m_Commands.push_back(command);
 	}
 
-	void CommandList::Execute()
+	void CommandList::Execute(bool isLastPass)
 	{
 		for (Ref<ICommand> command : m_Commands)
 		{
@@ -29,7 +29,7 @@ namespace Echo
 		}
 
 		m_CommandBuffer->End();
-		m_CommandBuffer->Submit();
+		m_CommandBuffer->Submit(isLastPass);
 	}
 
 }

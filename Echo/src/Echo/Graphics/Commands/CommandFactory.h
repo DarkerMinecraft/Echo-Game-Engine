@@ -17,6 +17,8 @@ namespace Echo
 	public:
 		static Ref<ICommand> ClearColorCommand(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues);
 		static Ref<ICommand> BindPipelineCommand(Ref<Pipeline> pipeline);
+		static Ref<ICommand> BindPipelineCommand(Pipeline* pipeline);
+
 		static Ref<ICommand> DispatchCommand(float x, float y, float z);
 
 		static Ref<ICommand> BindVertexBufferCommand(Ref<VertexBuffer> vertexBuffer);

@@ -23,6 +23,9 @@ namespace Echo
 
 		VkCommandPool CommandPool;
 		VkCommandBuffer CommandBuffer;
+
+		uint32_t ImageIndex;
+		bool IsFirstPass = true;
 	};
 
 
@@ -122,7 +125,6 @@ namespace Echo
 
 		std::vector<VulkanFramebuffer*> m_Framebuffers;
 		std::vector<VulkanFramebuffer*> m_ImGuiFramebuffers;
-
 		std::vector<VulkanTexture2D*> m_ImGuiTextures;
 
 		Scope<VulkanSwapchain> m_Swapchain;

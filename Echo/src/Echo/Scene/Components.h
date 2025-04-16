@@ -5,6 +5,8 @@
 #include "SceneCamera.h"
 #include "ScriptableEntity.h"
 #include "Graphics/Texture.h"
+#include "Graphics/Material.h"
+#include "Graphics/Mesh.h"
 
 #include "Core/Timestep.h"
 
@@ -76,6 +78,25 @@ namespace Echo
 
 		CameraComponent() = default;
 		CameraComponent(const CameraComponent&) = default;
+	};
+
+	struct MeshComponent 
+	{
+		Ref<Material> Material;
+		Ref<Mesh> Mesh;
+
+		MeshComponent() = default;
+		MeshComponent(const MeshComponent&) = default;
+
+		MeshComponent(Ref<Mesh> mesh, Ref<Material> material)
+			: Mesh(mesh), Material(material)
+		{}
+
+		operator Ref<Mesh>& () { return Mesh; }
+		operator const Ref<Mesh>& () const { return Mesh; }
+
+		operator Ref<Material>& () { return Material; }
+		operator const Ref<Material>& () const { return Material; }
 	};
 
 	struct NativeScriptComponent

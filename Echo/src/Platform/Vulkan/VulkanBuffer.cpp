@@ -108,10 +108,10 @@ namespace Echo
 		CreateBuffer(indices);
 	}
 
-	VulkanIndexBuffer::VulkanIndexBuffer(Device* device, uint32_t* indices, uint32_t size)
+	VulkanIndexBuffer::VulkanIndexBuffer(Device* device, uint32_t* indices, uint32_t count)
 		: m_Device((VulkanDevice*)device)
 	{
-		CreateBuffer(indices, size);
+		CreateBuffer(indices, count);
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
@@ -124,6 +124,16 @@ namespace Echo
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 
 		vkCmdBindIndexBuffer(commandBuffer, m_Buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+	}
+
+	void VulkanIndexBuffer::SetIndices(std::vector<uint32_t> indices)
+	{
+
+	}
+
+	void VulkanIndexBuffer::SetIndices(uint32_t* indices, uint32_t count)
+	{
+
 	}
 
 	void VulkanIndexBuffer::CreateBuffer(std::vector<uint32_t> indices)
@@ -149,6 +159,7 @@ namespace Echo
 		});
 
 		m_Device->DestroyBuffer(staging);
+		m_IndicesCount = indices.size();
 	}
 
 	void VulkanIndexBuffer::CreateBuffer(uint32_t* indices, uint32_t count)
@@ -174,6 +185,7 @@ namespace Echo
 		});
 
 		m_Device->DestroyBuffer(staging);
+		m_IndicesCount = count;
 	}
 
 	VulkanIndirectBuffer::VulkanIndirectBuffer(Device* device)

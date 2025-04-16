@@ -16,8 +16,6 @@
 
 #include <Math/Math.h>
 
-#include "Config.h"
-
 namespace Echo
 {
 
@@ -43,8 +41,8 @@ namespace Echo
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		m_PlayButton = Texture2D::Create(Horizon::FindResourcePath("PlayButton.png"));
-		m_StopButton = Texture2D::Create(Horizon::FindResourcePath("StopButton.png"));
+		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
+		m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
 		RendererQuad::Init(m_Framebuffer, 0);
 	}
@@ -62,7 +60,7 @@ namespace Echo
 			m_EditorCamera.OnUpdate(ts);
 
 		CommandList cmd;
-		cmd.SetSrcImage(m_Framebuffer);
+		cmd.SetSourceFramebuffer(m_Framebuffer);
 
 		cmd.Begin();
 		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });

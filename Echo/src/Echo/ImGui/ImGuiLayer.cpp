@@ -43,8 +43,8 @@ namespace Echo
 
 		std::filesystem::path currentPath = std::filesystem::current_path();
 
-		io.Fonts->AddFontFromFileTTF("../../assets/fonts/opensans/static/OpenSans-Bold.ttf", 18.0f);
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("../../assets/fonts/opensans/static/OpenSans-Regular.ttf", 18.0f);
+		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/static/OpenSans-Bold.ttf", 18.0f);
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/static/OpenSans-Regular.ttf", 18.0f);
 
 		ImGui::StyleColorsDark();
 
@@ -150,13 +150,13 @@ namespace Echo
 		CommandList cmd;
 		cmd.SetShouldPresent(true);
 		cmd.SetDrawToSwapchain(true);
-		cmd.SetSrcImage(m_ImGuiFramebuffer);
+		cmd.SetSourceFramebuffer(m_ImGuiFramebuffer);
 
 		cmd.Begin();
 		cmd.BeginRendering();
 		cmd.RenderImGui();
 		cmd.EndRendering();
-		cmd.Execute();
+		cmd.Execute(true);
 
 		ImGuiIO& io = ImGui::GetIO();
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)

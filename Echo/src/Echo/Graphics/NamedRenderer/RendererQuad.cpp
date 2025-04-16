@@ -38,7 +38,6 @@ namespace Echo
 		Ref<IndexBuffer> QuadIndexBuffer;
 
 		Ref<Material> QuadMaterial;
-		Ref<Pipeline> QuadPipeline;
 		Ref<Shader> QuadShader;
 
 		Ref<UniformBuffer> QuadUniformBuffer;
@@ -149,28 +148,25 @@ namespace Echo
 		shaderSpecs.FragmentShaderSource = fragmentShader;
 		shaderSpecs.ShaderName = "Vertex Batch Renderer";
 
-		s_Data.QuadShader = Shader::Create(shaderSpecs);
-		s_Data.QuadMaterial = Material::Create(s_Data.QuadShader, {1, 1, 1});
+		PipelineSpecification pipelineSpec{};
+		pipelineSpec.EnableBlending = false;
+		pipelineSpec.EnableDepthTest = false;
+		pipelineSpec.EnableDepthWrite = false;
+		pipelineSpec.EnableCulling = false;
+		pipelineSpec.CullMode = Cull::None;
+		pipelineSpec.FillMode = Fill::Solid;
+		pipelineSpec.DepthCompareOp = CompareOp::Less;
+		pipelineSpec.GraphicsTopology = Topology::TriangleList;
 
-		PipelineDesc desc{};
-		desc.EnableBlending = false;
-		desc.EnableDepthTest = false;
-		desc.EnableDepthWrite = false;
-		desc.EnableCulling = false;
-		desc.CullMode = Cull::None;
-		desc.FillMode = Fill::Solid;
-		desc.DepthCompareOp = CompareOp::Less;
-		desc.GraphicsTopology = Topology::TriangleList;
+		pipelineSpec.RenderTarget = framebuffer;
 
-		desc.RenderTarget = framebuffer;
-
-		desc.DescriptionSetLayouts =
+		pipelineSpec.DescriptionSetLayouts =
 		{
 			{0, DescriptorType::UniformBuffer, 1, ShaderStage::Vertex},
 			{1, DescriptorType::SampledImage, s_Data.MaxTextureSlots, ShaderStage::Fragment }
 		};
 
-		desc.VertexLayout =
+		pipelineSpec.VertexLayout =
 		{
 			{ ShaderDataType::Float3, "Position" },
 			{ ShaderDataType::Float2, "TexCoord" },
@@ -180,7 +176,9 @@ namespace Echo
 			{ ShaderDataType::Int, "InstanceID" }
 		};
 
-		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadMaterial, desc);
+		s_Data.QuadShader = Shader::Create(shaderSpecs);
+		s_Data.QuadMaterial = Material::Create(s_Data.QuadShader, {1, 1, 1}, pipelineSpec);
+
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 
 		s_Data.TextureSlots[0] = Texture2D::Create(1, 1, new uint32_t(0xffffffff));
@@ -218,7 +216,7 @@ namespace Echo
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
-		cmd.BindPipeline(s_Data.QuadPipeline);
+		cmd.BindPipeline(s_Data.QuadMaterial->GetPipeline());
 
 		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
 
@@ -227,7 +225,7 @@ namespace Echo
 			.ProjViewMatrix = projView
 		};
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
+		s_Data.QuadMaterial->GetPipeline()->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
@@ -241,14 +239,14 @@ namespace Echo
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
-		cmd.BindPipeline(s_Data.QuadPipeline);
+		cmd.BindPipeline(s_Data.QuadMaterial->GetPipeline());
 
 		BatchUniformBuffer batchUniformBuffer
 		{
 			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix()
 		};
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
+		s_Data.QuadMaterial->GetPipeline()->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
@@ -364,7 +362,7 @@ namespace Echo
 	{
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
-			s_Data.QuadPipeline->WriteDescriptorCombinedTextureArray(s_Data.TextureSlots[i], i, 1);
+			s_Data.QuadMaterial->GetPipeline()->WriteDescriptorCombinedTextureArray(s_Data.TextureSlots[i], i, 1);
 		}
 
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
@@ -396,7 +394,6 @@ namespace Echo
 		s_Data.QuadVertexBuffer.reset();
 		s_Data.QuadIndexBuffer.reset();
 		s_Data.QuadMaterial.reset();
-		s_Data.QuadPipeline.reset();
 		s_Data.QuadUniformBuffer.reset();
 		s_Data.QuadShader.reset();
 		s_Data.TextureSlots[0]->Destroy();

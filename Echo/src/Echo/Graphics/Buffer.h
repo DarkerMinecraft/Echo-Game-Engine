@@ -28,6 +28,11 @@ namespace Echo
 
 		virtual void Bind(CommandBuffer* cmd) = 0;
 
+		virtual void SetIndices(std::vector<uint32_t> indices) = 0;
+		virtual void SetIndices(uint32_t* indices, uint32_t count) = 0;
+
+		virtual uint32_t GetIndicesCount() = 0;
+
 		static Ref<IndexBuffer> Create(std::vector<uint32_t> indices);
 		static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
 	};

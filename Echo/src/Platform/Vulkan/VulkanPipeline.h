@@ -11,8 +11,8 @@ namespace Echo
 	class VulkanPipeline : public Pipeline 
 	{
 	public:
-		VulkanPipeline(Device* device, Ref<Material> material, PipelineDesc& desc);
-		VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineDesc& desc);
+		VulkanPipeline(Device* device, Material* material);
+		VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineSpecification& spec);
 		virtual ~VulkanPipeline();
 
 		virtual void Bind(CommandBuffer* cmd) override;
@@ -25,6 +25,8 @@ namespace Echo
 		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) override;
 		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) override;
 
+		virtual void Destroy() override;
+
 		PipelineType GetType()  { return m_PipelineType; }
 		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
 
@@ -32,18 +34,18 @@ namespace Echo
 		VkPipeline GetPipeline() { return m_Pipeline; }
 		VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
 	private:
-		void CreateComputePipeline(Ref<Shader> computeShader, PipelineDesc& desc);
-		void CreateGraphicsPipeline(Ref<Material> material, PipelineDesc& desc);
+		void CreateComputePipeline(Ref<Shader> computeShader, PipelineSpecification& specs);
+		void CreateGraphicsPipeline(Material* material);
 
-		void CreatePipelineLayout(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout);
-		void CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout);
+		void CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
+		void CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
 	private:
 		static ShaderLibrary s_ShaderLibrary;
 	private:
 		VulkanDevice* m_Device;
 		PipelineType m_PipelineType;
 		
-		Ref<Material> m_Material;
+		Material* m_Material;
 		Ref<Shader> m_ComputeShader;
 
 		VkPipeline m_Pipeline;
@@ -51,6 +53,8 @@ namespace Echo
 		VkDescriptorSetLayout m_DescriptorSetLayout;
 		VkDescriptorSet m_DescriptorSet = nullptr;
 		VkDescriptorPool m_DescriptorPool;
+
+		bool m_Destroyed = false;
 
 		DescriptorAllocatorGrowable m_DescriptorAllocator;
 	};

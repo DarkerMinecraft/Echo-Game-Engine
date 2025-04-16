@@ -24,6 +24,11 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::BindPipelineCommand(Ref<Pipeline> pipeline)
 	{
+		return BindPipelineCommand(pipeline.get());
+	}
+
+	Ref<ICommand> CommandFactory::BindPipelineCommand(Pipeline* pipeline)
+	{
 		switch (GetDeviceType())
 		{
 			case DeviceType::Vulkan: return CreateRef<VulkanBindPipelineCommand>(pipeline);

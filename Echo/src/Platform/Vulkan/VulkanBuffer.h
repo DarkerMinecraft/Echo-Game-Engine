@@ -34,10 +34,15 @@ namespace Echo
 	{
 	public:
 		VulkanIndexBuffer(Device* device, std::vector<uint32_t> indices);
-		VulkanIndexBuffer(Device* device, uint32_t* indices, uint32_t size);
+		VulkanIndexBuffer(Device* device, uint32_t* indices, uint32_t count);
 		virtual ~VulkanIndexBuffer();
 
 		virtual void Bind(CommandBuffer* cmd) override;
+
+		virtual void SetIndices(std::vector<uint32_t> indices) override;
+		virtual void SetIndices(uint32_t* indices, uint32_t count) override;
+
+		virtual uint32_t GetIndicesCount() override { return m_IndicesCount; };
 	private:
 		void CreateBuffer(std::vector<uint32_t> indices);
 		void CreateBuffer(uint32_t* indices, uint32_t count);
@@ -45,6 +50,7 @@ namespace Echo
 		VulkanDevice* m_Device;
 
 		AllocatedBuffer m_Buffer;
+		uint32_t m_IndicesCount;
 	};
 
 	class VulkanIndirectBuffer : public IndirectBuffer

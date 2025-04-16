@@ -13,7 +13,7 @@ namespace Echo
 		virtual void Start() = 0;
 		virtual void End() = 0;
 
-		virtual void Submit() = 0;
+		virtual void Submit(bool isLastPass) = 0;
 
 		virtual void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) = 0;
 		virtual void SetShouldPresent(bool shouldPresent) = 0;

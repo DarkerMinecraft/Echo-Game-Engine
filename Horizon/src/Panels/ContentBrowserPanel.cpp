@@ -2,8 +2,6 @@
 
 #include <imgui.h>
 
-#include "Config.h"
-
 namespace Echo 
 {
 	
@@ -12,8 +10,8 @@ namespace Echo
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_CurrentDirectory(g_AssetPath)
 	{
-		m_DirectoryIcon = Texture2D::Create(Horizon::FindResourcePath("Icons/ContentBrowser/DirectoryIcon.png"));
-		m_FileIcon = Texture2D::Create(Horizon::FindResourcePath("Icons/ContentBrowser/FileIcon.png"));
+		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()

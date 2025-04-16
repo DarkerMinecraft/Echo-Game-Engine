@@ -29,39 +29,23 @@ namespace Echo
 		}
 	}
 
-	VulkanPipeline::VulkanPipeline(Device* device, Ref<Material> material, PipelineDesc& desc)
+	VulkanPipeline::VulkanPipeline(Device* device, Material* material)
 		: m_Device((VulkanDevice*)device), m_Material(material)
 	{
 		m_PipelineType = Graphics;
-		CreateGraphicsPipeline(material, desc);
+		CreateGraphicsPipeline(material);
 	}
 
-	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineDesc& desc)
+	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineSpecification& spec)
 		: m_Device((VulkanDevice*)device), m_ComputeShader(computeShader)
 	{
 		m_PipelineType = Compute;
-		CreateComputePipeline(computeShader, desc);
+		CreateComputePipeline(computeShader, spec);
 	}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
-		if (m_PipelineType == Compute)
-		{
-			m_ComputeShader->Destroy();
-		}
-		else if (m_PipelineType == Graphics)
-		{
-			m_Material->Destroy();
-		}
-
-		if (m_DescriptorSet != nullptr)
-		{
-			vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
-			m_DescriptorAllocator.DestroyPools(m_Device->GetDevice());
-		}
-
-		vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
-		vkDestroyPipeline(m_Device->GetDevice(), m_Pipeline, nullptr);
+		Destroy();
 	}
 
 	void VulkanPipeline::Bind(CommandBuffer* cmd)
@@ -130,6 +114,31 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
+	void VulkanPipeline::Destroy()
+	{
+		if (m_Destroyed) return;
+
+		if (m_PipelineType == Compute)
+		{
+			m_ComputeShader->Destroy();
+		}
+		else if (m_PipelineType == Graphics)
+		{
+			m_Material->Destroy();
+		}
+
+		if (m_DescriptorSet != nullptr)
+		{
+			vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
+			m_DescriptorAllocator.DestroyPools(m_Device->GetDevice());
+		}
+
+		vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
+		vkDestroyPipeline(m_Device->GetDevice(), m_Pipeline, nullptr);
+
+		m_Destroyed = true;
+	}
+
 	void VulkanPipeline::WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding)
 	{
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
@@ -147,7 +156,7 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, PipelineDesc& desc)
+	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, PipelineSpecification& desc)
 	{
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
 		CreateDescriptorSet(desc.DescriptionSetLayouts);
@@ -169,8 +178,10 @@ namespace Echo
 		vkCreateComputePipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(Ref<Material> material, PipelineDesc& desc)
+	void VulkanPipeline::CreateGraphicsPipeline(Material* material)
 	{
+		PipelineSpecification& desc = material->GetPipelineSpecification();
+
 		CreatePipelineLayout(desc.DescriptionSetLayouts);
 		CreateDescriptorSet(desc.DescriptionSetLayouts);
 
@@ -357,7 +368,7 @@ namespace Echo
 		vkCreateGraphicsPipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreatePipelineLayout(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout)
+	void VulkanPipeline::CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout)
 	{
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
 		{
@@ -421,7 +432,7 @@ namespace Echo
 		}
 	}
 
-	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineDesc::DescriptionSetLayout> descriptorSetLayout)
+	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout)
 	{
 		if (descriptorSetLayout.empty()) return;
 		int maxSets = descriptorSetLayout.size();
