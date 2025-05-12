@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Scene.h"
+#include "Core/UUID.h"
+#include "Components.h"
 
 namespace Echo 
 {
@@ -37,6 +39,8 @@ namespace Echo
 		bool operator!=(const Entity& other) const { return !(*this == other); }
 
 		entt::entity GetHandle() const { return m_EntityHandle; }
+
+		UUID GetUUID() { return GetComponent<IDComponent>().ID; }
 	private:
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;

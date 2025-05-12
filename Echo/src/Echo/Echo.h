@@ -21,3 +21,4 @@
 #include "Events/Event.h"
 
 #include "Graphics/NamedRenderer/RendererQuad.h"
+#include "Graphics/NamedRenderer/Renderer3D.h"

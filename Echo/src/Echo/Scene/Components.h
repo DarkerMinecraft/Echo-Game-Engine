@@ -3,17 +3,26 @@
 #include <glm/glm.hpp>
 
 #include "SceneCamera.h"
-#include "ScriptableEntity.h"
 #include "Graphics/Texture.h"
+
 #include "Graphics/Material.h"
 #include "Graphics/Mesh.h"
 
 #include "Core/Timestep.h"
+#include "Core/UUID.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Echo 
 {
+
+	struct IDComponent 
+	{
+		UUID ID;
+
+		IDComponent() = default;
+		IDComponent(const IDComponent&) = default;
+	};
 
 	struct TagComponent
 	{
@@ -82,23 +91,24 @@ namespace Echo
 
 	struct MeshComponent 
 	{
-		Ref<Material> Material;
-		Ref<Mesh> Mesh;
+		Ref<Material> Mat;
+		Ref<Mesh> Mes;
 
 		MeshComponent() = default;
 		MeshComponent(const MeshComponent&) = default;
 
 		MeshComponent(Ref<Mesh> mesh, Ref<Material> material)
-			: Mesh(mesh), Material(material)
+			: Mes(mesh), Mat(material)
 		{}
 
-		operator Ref<Mesh>& () { return Mesh; }
-		operator const Ref<Mesh>& () const { return Mesh; }
+		operator Ref<Mesh>& () { return Mes; }
+		operator const Ref<Mesh>& () const { return Mes; }
 
-		operator Ref<Material>& () { return Material; }
-		operator const Ref<Material>& () const { return Material; }
+		operator Ref<Material>& () { return Mat; }
+		operator const Ref<Material>& () const { return Mat; }
 	};
 
+	class ScriptableEntity;
 	struct NativeScriptComponent
 	{
 		ScriptableEntity* Instance = nullptr;

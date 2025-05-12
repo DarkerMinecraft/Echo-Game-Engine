@@ -79,6 +79,15 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
+	void VulkanPipeline::WriteDescriptorCombinedTexture(Texture* texture, uint32_t binding /*= 0*/)
+	{
+		VulkanTexture2D* tex = (VulkanTexture2D*)texture;
+
+		DescriptorWriter writer;
+		writer.WriteImage(binding, tex->GetTexture().ImageView, tex->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+	}
+
 	void VulkanPipeline::WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding /*= 0*/)
 	{
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();

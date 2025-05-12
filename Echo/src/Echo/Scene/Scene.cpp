@@ -4,8 +4,10 @@
 #include "Components.h"
 
 #include "Graphics/NamedRenderer/RendererQuad.h"
+#include "Graphics/NamedRenderer/Renderer3D.h"
 
 #include "Entity.h"
+#include "ScriptableEntity.h"
 
 namespace Echo 
 {
@@ -23,6 +25,7 @@ namespace Echo
 	Entity Scene::CreateEntity(const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<IDComponent>();
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Unnamed Entity" : name;
@@ -111,13 +114,13 @@ namespace Echo
 
 			RendererQuad::EndScene();
 
-			Renderer3D::StartScene(cmd, *mainCamera, cameraTransform);
+			Renderer3D::BeginScene(cmd, *mainCamera, cameraTransform);
 			{
 				auto view = m_Registry.view<TransformComponent, MeshComponent>();
 				for (auto entity : view) 
 				{
 					auto [transform, mesh] = view.get<TransformComponent, MeshComponent>(entity);
-					
+					Renderer3D::SubmitMesh(mesh, mesh, transform.GetTransform());
 				}
 			}
 			Renderer3D::EndScene();
@@ -143,8 +146,15 @@ namespace Echo
 	template<typename T>
 	void Scene::OnComponentAdd(Entity entity, T& component)
 	{
-		static_assert(false);
+		//static_assert(false);
 	}
+
+	template<>
+	void Scene::OnComponentAdd<IDComponent>(Entity entity, IDComponent& component)
+	{
+
+	}
+
 
 	template<>
 	void Scene::OnComponentAdd<TransformComponent>(Entity entity, TransformComponent& component)
@@ -172,6 +182,13 @@ namespace Echo
 
 	template<>
 	void Scene::OnComponentAdd<TagComponent>(Entity entity, TagComponent& component)
+	{
+
+	}
+
+
+	template<>
+	void Scene::OnComponentAdd<MeshComponent>(Entity entity, MeshComponent& component)
 	{
 
 	}

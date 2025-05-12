@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "Mesh.h"
+#include "Core/Application.h"
+
+#include "Vulkan/VulkanMesh.h"
 
 namespace Echo 
 {
@@ -10,7 +13,7 @@ namespace Echo
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanMesh>(device, shader, texture);
+			case DeviceType::Vulkan:  return CreateScope<VulkanMesh>(device, path);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -22,7 +25,7 @@ namespace Echo
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanMesh>(device, shader, texture);
+			case DeviceType::Vulkan:  return CreateScope<VulkanMesh>(device, vertices, indices);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

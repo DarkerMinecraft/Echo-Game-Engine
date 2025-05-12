@@ -34,7 +34,7 @@ namespace Echo
 
 		FrameData& m_FrameData;
 
-		bool m_ShouldPresent = false;
+		bool m_ShouldPresent = true;
 		bool m_DrawToSwapchain = false;		
 	};
 

@@ -1,23 +1,33 @@
 #pragma once 
 
-#include <uuid_v4.h>
-#include <endianness.h>
+#include <xhash>
 
 namespace Echo 
 {
 
-	class UUID
+	class UUID 
 	{
 	public:
-		UUID() : m_UUID(s_UUIDGenerator.getUUID()) {}
-
-		bool operator==(const UUID& other) const
-		{
-			return m_UUID == other.m_UUID;
-		}
+		UUID();
+		UUID(uint64_t uuid);
+		UUID(const UUID&) = default;
+		
+		operator uint64_t() const { return m_UUID; }
+		bool operator==(const UUID& other) const { return m_UUID == other.m_UUID; }
 	private:
-		UUIDv4::UUID m_UUID;
+		uint64_t m_UUID;
+	};
 
-		static UUIDv4::UUIDGenerator<std::mt19937_64> s_UUIDGenerator;
+}
+
+namespace std 
+{
+	template<>
+	struct hash<Echo::UUID> 
+	{
+		std::size_t operator()(const Echo::UUID& uuid) const
+		{
+			return hash<uint64_t>()((uint64_t)uuid);
+		}
 	};
 }

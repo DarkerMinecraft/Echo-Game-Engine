@@ -13,7 +13,7 @@ namespace Echo
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan: return CreateScope<VulkanPipeline>(device, computeShader);
+			case DeviceType::Vulkan: return CreateScope<VulkanPipeline>(device, computeShader, spec);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

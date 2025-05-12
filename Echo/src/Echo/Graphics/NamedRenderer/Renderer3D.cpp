@@ -8,12 +8,25 @@
 #include "Graphics/Camera.h"
 #include "Graphics/EditorCamera.h"
 
-namespace Echo 
+namespace Echo
 {
 
-	struct Renderer3DData 
+	struct CameraData
 	{
-		std::unordered_map<Ref<Material>, Ref<Mesh>> Meshes;
+		glm::mat4 ProjViewMatrix;
+	};
+
+	struct RenderQueue 
+	{
+		std::unordered_map<Ref<Material>, Ref<Mesh>> Model;
+		glm::mat4 Transform;
+	};
+
+	struct Renderer3DData
+	{
+		std::vector<RenderQueue> Meshes;
+
+		Ref<UniformBuffer> CameraBuffer;
 
 		CommandList* Cmd;
 	};
@@ -23,30 +36,54 @@ namespace Echo
 	void Renderer3D::BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform)
 	{
 		s_Data.Cmd = &cmd;
+
+		CameraData camData = 
+		{
+			.ProjViewMatrix = camera.GetProjection() * transform
+		};
+		s_Data.CameraBuffer = UniformBuffer::Create(&camData, sizeof(CameraData));
 	}
 
 	void Renderer3D::BeginScene(CommandList& cmd, const EditorCamera& camera)
 	{
 		s_Data.Cmd = &cmd;
+
+		CameraData camData
+		{
+			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix()
+		};
+		s_Data.CameraBuffer = UniformBuffer::Create(&camData, sizeof(CameraData));
 	}
 
 	void Renderer3D::EndScene()
 	{
-		for (auto& [material, mesh] : s_Data.Meshes)
+		for (auto& queue : s_Data.Meshes)
 		{
-			mesh->GetVertexBuffer()->Bind(s_Data.Cmd);
-			mesh->GetIndexBuffer()->Bind(s_Data.Cmd);
-			
-			s_Data.Cmd->BindPipeline(pipeline);
-			material.SetShaderUniforms();
-			
-			s_Data.Cmd->DrawIndexed(mesh->GetIndexBuffer()->GetCount());
+			Ref<UniformBuffer> modelTransformBuffer = UniformBuffer::Create(&queue.Transform, sizeof(glm::mat4));
+			for (auto& [material, mesh] : queue.Model)
+			{
+				Pipeline* pipeline = material->GetPipeline();
+				s_Data.Cmd->BindPipeline(pipeline);
+				s_Data.Cmd->BindVertexBuffer(mesh->GetVertexBuffer());
+				s_Data.Cmd->BindIndicesBuffer(mesh->GetIndexBuffer());
+				pipeline->WriteDescriptorUniformBuffer(s_Data.CameraBuffer, 0);
+				pipeline->WriteDescriptorUniformBuffer(modelTransformBuffer, 1);
+				if (material->GetTexture() != nullptr)
+				{
+					pipeline->WriteDescriptorCombinedTexture(material->GetTexture(), 0);
+				}
+
+				s_Data.Cmd->DrawIndexed(mesh->GetIndexBuffer()->GetIndicesCount(), 0, 0, 0, 0);
+			}
 		}
+
+		s_Data.Meshes.clear();
+		s_Data.CameraBuffer.reset();
 	}
 
 	void Renderer3D::SubmitMesh(Ref<Mesh> mesh, Ref<Material> material, const glm::mat4& transform)
 	{
-
+		s_Data.Meshes.push_back({ {{ material, mesh }}, transform });
 	}
 
 	void Renderer3D::Shutdown()

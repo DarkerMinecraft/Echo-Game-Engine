@@ -78,7 +78,7 @@ namespace Echo
 		initInfo.PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
 		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 
-		static VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
+		VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
 
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -150,7 +150,6 @@ namespace Echo
 		CommandList cmd;
 		cmd.SetShouldPresent(true);
 		cmd.SetDrawToSwapchain(true);
-		cmd.SetSourceFramebuffer(m_ImGuiFramebuffer);
 
 		cmd.Begin();
 		cmd.BeginRendering();

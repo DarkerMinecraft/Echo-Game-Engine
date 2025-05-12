@@ -1,5 +1,12 @@
 #pragma once
 
+#include "Graphics/CommandList.h"
+#include "Graphics/Camera.h"
+#include "Graphics/EditorCamera.h"
+
+#include "Graphics/Mesh.h"
+#include "Graphics/Material.h"
+
 namespace Echo 
 {
 

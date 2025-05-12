@@ -17,6 +17,11 @@ namespace Bloomwood
 		virtual void OnEvent(Echo::Event& event) override;
 	private:
 		Echo::Ref<Echo::Framebuffer> m_Framebuffer;
+
+		Echo::EditorCamera m_EditorCamera; 
+
+		Echo::Ref<Echo::Scene> m_ActiveScene;
+		Echo::Entity m_Entity;
 	};
 
 }
