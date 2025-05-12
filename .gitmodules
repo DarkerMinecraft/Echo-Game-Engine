@@ -25,9 +25,6 @@
 [submodule "Echo/vendor/Slang"]
 	path = Echo/vendor/Slang
 	url = https://github.com/shader-slang/slang
-[submodule "Echo/vendor/uuidv4"]
-	path = Echo/vendor/uuidv4
-	url = https://github.com/crashoz/uuid_v4.git
 [submodule "Echo/vendor/yaml"]
 	path = Echo/vendor/yaml
 	url = https://github.com/jbeder/yaml-cpp.git
