@@ -1,0 +1,20 @@
+Scene: Scene Name
+Entities:
+  - Entity: 3279103266475523483
+    TagComponent:
+      Tag: Entity B
+    TransformComponent:
+      Translation: [0.07570577, -2.4041824, 0]
+      Rotation: [0, 0, 0]
+      Scale: [18.467184, 1, 1]
+    SpriteRendererComponent:
+      Color: [1, 1, 1, 1]
+  - Entity: 7068855637695402820
+    TagComponent:
+      Tag: Entity A
+    TransformComponent:
+      Translation: [1.067127, 0.28231624, 0]
+      Rotation: [0, 0, -0.9512049]
+      Scale: [1.0859811, 2.2792664, 1]
+    SpriteRendererComponent:
+      Color: [0.88030887, 0.5268258, 0.5268258, 1]

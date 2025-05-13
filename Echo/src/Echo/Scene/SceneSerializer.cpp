@@ -193,7 +193,7 @@ namespace Echo
 					name = tagComponent["Tag"].as<std::string>();	
 				}
 
-				Entity deserializedEntity = m_Scene->CreateEntity(name);
+				Entity deserializedEntity = m_Scene->CreateEntity(name, id);
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
 				{

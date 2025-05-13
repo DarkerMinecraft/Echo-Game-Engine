@@ -3,11 +3,10 @@
 #include <Echo.h>
 
 #include <Events/WindowEvents.h>
+#include <Graphics/EditorCamera.h>
 
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
-
-#include "Graphics/EditorCamera.h"
 
 namespace Echo
 {
@@ -41,6 +40,10 @@ namespace Echo
 		void ViewportUI();
 	private:
 		Ref<Framebuffer> m_Framebuffer;
+		Ref<Framebuffer> m_FinalFramebuffer;
+
+		Ref<OutlineEffect> m_OutlineEffect;
+
 		Ref<Scene> m_ActiveScene;
 
 		bool m_PrimaryCamera = false;

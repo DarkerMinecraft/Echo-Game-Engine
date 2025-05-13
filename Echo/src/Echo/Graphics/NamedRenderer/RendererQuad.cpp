@@ -41,6 +41,7 @@ namespace Echo
 		Ref<Shader> QuadShader;
 
 		Ref<UniformBuffer> QuadUniformBuffer;
+		Ref<UniformBuffer> QuadHighlightBuffer;
 
 		uint32_t QuadIndexCount = 0;
 		QuadVertex* QuadVertexBufferBase = nullptr;
@@ -63,6 +64,9 @@ namespace Echo
 			{ -0.5f, 0.5f, 0.0f, 1.0f }
 		};
 
+		int SelectedEntity = -1; 
+		glm::vec4 HighlightColor = { 1.0f, 0.5f, 0.0f, 0.7f };
+
 		Statistics Stats;
 		CommandList* Cmd;
 	};
@@ -71,82 +75,9 @@ namespace Echo
 
 	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
 	{
-		const char* vertexShader = R"(
-		struct VSInput
-		{
-			float3 position : ATTRIB0;
-			float2 uv : ATTRIB1;
-			float4 color : ATTRIB2;
-			int texIndex : ATTRIB3;
-			float tilingFactor : ATTRIB4;
-			int instanceID : ATTRIB5;
-		}
-
-		struct VSOuput
-		{
-			float4 position : SV_POSITION;
-			float2 uv : TEXCOORD0;
-			float4 color : COLOR;
-			nointerpolation int texIndex : ATTRIB0;
-			float tilingFactor : ATTRIB1;
-			nointerpolation int instanceID : ATTRIB2;
-		}
-
-		[[vk::binding(0, 0)]] cbuffer Camera : register(b0)
-		{
-			float4x4 projViewMatrix;
-		}
-
-		[shader("vertex")]
-		VSOuput main(VSInput input)
-		{
-			VSOuput output;
-			output.position = mul(float4(input.position, 1.0), projViewMatrix);
-			output.uv = input.uv;
-			output.color = input.color;
-			output.texIndex = input.texIndex;
-			output.tilingFactor = input.tilingFactor;
-			output.instanceID = input.instanceID;
-
-			return output;
-		}
-		)";
-
-		const char* fragmentShader = R"(
-		struct PSInput 
-		{
-			float4 position : SV_Position;
-			float2 uv : TEXCOORD0;
-			float4 color : COLOR;
-			int texIndex : ATTRIB0;
-			float tilingFactor : ATTRIB1;
-			int instanceID : ATTRIB2;
-		}
-
-		[[vk::binding(1, 0)]] Sampler2D texSamplers[] : register(s0, space0);
-		
-		struct PSOutput
-		{
-			float4 color : SV_Target;
-			int instanceID : SV_Target1;
-		}
-
-		[shader("pixel")]
-		PSOutput main(PSInput input) : SV_Target
-		{
-			PSOutput output;
-			output.color = input.color * texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
-			output.instanceID = input.instanceID;
-
-			return output;
-		}
-		)";
-
-
 		ShaderSpecification shaderSpecs{};
-		shaderSpecs.VertexShaderSource = vertexShader;
-		shaderSpecs.FragmentShaderSource = fragmentShader;
-		shaderSpecs.ShaderName = "Vertex Batch Renderer";
+		shaderSpecs.VertexShaderPath = "assets/shaders/quadVertex.slang";
+		shaderSpecs.FragmentShaderPath = "assets/shaders/quadFragment.slang";
 
 		PipelineSpecification pipelineSpec{};
 		pipelineSpec.EnableBlending = false;
@@ -173,7 +104,7 @@ namespace Echo
 			{ ShaderDataType::Float4, "Color" },
 			{ ShaderDataType::Int, "TexIndex" },
 			{ ShaderDataType::Float, "TilingFactor" },
-			{ ShaderDataType::Int, "InstanceID" }
+			{ ShaderDataType::Int, "InstanceID" },
 		};
 
 		s_Data.QuadShader = Shader::Create(shaderSpecs);
@@ -222,8 +153,9 @@ namespace Echo
 
 		BatchUniformBuffer batchUniformBuffer
 		{
-			.ProjViewMatrix = projView
+			.ProjViewMatrix = projView,
 		};
+
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
 		s_Data.QuadMaterial->GetPipeline()->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
 
@@ -243,7 +175,7 @@ namespace Echo
 
 		BatchUniformBuffer batchUniformBuffer
 		{
-			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix()
+			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix(),
 		};
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
 		s_Data.QuadMaterial->GetPipeline()->WriteDescriptorUniformBuffer(s_Data.QuadUniformBuffer, 0);
@@ -358,6 +290,21 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
+	void RendererQuad::SetSelectedEntity(int entityID)
+	{
+		s_Data.SelectedEntity = entityID;
+	}
+
+	void RendererQuad::ClearSelection()
+	{
+		s_Data.SelectedEntity = -1;
+	}
+
+	uint32_t RendererQuad::GetSelectedEntity()
+	{
+		return s_Data.SelectedEntity;
+	}
+
 	void RendererQuad::Flush()
 	{
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
@@ -395,6 +342,7 @@ namespace Echo
 		s_Data.QuadIndexBuffer.reset();
 		s_Data.QuadMaterial.reset();
 		s_Data.QuadUniformBuffer.reset();
+		s_Data.QuadHighlightBuffer.reset();
 		s_Data.QuadShader.reset();
 		s_Data.TextureSlots[0]->Destroy();
 

@@ -17,6 +17,7 @@ namespace Echo
 		~Scene();
 
 		Entity CreateEntity(const std::string& name = std::string());
+		Entity CreateEntity(const std::string& name, uint64_t uuid);
 		Entity GetPrimaryCameraEntity();
 
 		void DestroyEntity(Entity entity);

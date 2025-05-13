@@ -36,6 +36,13 @@ namespace Echo
 
 		m_Framebuffer = Framebuffer::Create(framebufferSpec);
 
+		FramebufferSpecification finalFbSpec;
+		finalFbSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+		finalFbSpec.Width = 1280;
+		finalFbSpec.Height = 720;
+
+		m_FinalFramebuffer = Framebuffer::Create(finalFbSpec);
+
 		m_Window = &Application::Get().GetWindow();
 
 		m_ActiveScene = CreateRef<Scene>();
@@ -45,6 +52,10 @@ namespace Echo
 		m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
 		RendererQuad::Init(m_Framebuffer, 0);
+		PostProcessingSystem::Init();
+
+		m_OutlineEffect = CreateRef<OutlineEffect>();
+		PostProcessingSystem::AddEffect(m_OutlineEffect);
 	}
 
 	void EditorLayer::OnDetach()
@@ -60,7 +71,7 @@ namespace Echo
 			m_EditorCamera.OnUpdate(ts);
 
 		CommandList cmd;
-		cmd.SetSourceFramebuffer(m_Framebuffer);
+		cmd.SetSourceFramebuffer(m_FinalFramebuffer);
 
 		cmd.Begin();
 		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
@@ -75,6 +86,7 @@ namespace Echo
 			m_ActiveScene->OnUpdateRuntime(cmd, ts);
 		}
 		cmd.EndRendering();
+		PostProcessingSystem::ApplyEffects(cmd, m_Framebuffer, m_FinalFramebuffer);
 		cmd.Execute();
 
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
@@ -108,11 +120,13 @@ namespace Echo
 					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
 					{
 						m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+						m_OutlineEffect->SetSelectedEntityID(entityID);
 					}
 				}
 				else
 				{
 					m_Window->SetCursor(Cursor::ARROW);
+					m_OutlineEffect->SetSelectedEntityID(-1);
 				}
 			}
 		}
@@ -347,6 +361,7 @@ namespace Echo
 
 	void EditorLayer::Destroy()
 	{
+		PostProcessingSystem::Shutdown();
 		RendererQuad::Destroy();
 	}
 

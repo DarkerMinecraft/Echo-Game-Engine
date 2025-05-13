@@ -33,6 +33,17 @@ namespace Echo
 		return entity; 
 	}
 
+	Entity Scene::CreateEntity(const std::string& name, uint64_t uuid)
+	{
+		Entity entity = { m_Registry.create(), this };
+		entity.AddComponent<IDComponent>(UUID(uuid));
+		entity.AddComponent<TransformComponent>();
+		auto& tag = entity.AddComponent<TagComponent>();
+		tag.Tag = name.empty() ? "Unnamed Entity" : name;
+
+		return entity;
+	}
+
 	Entity Scene::GetPrimaryCameraEntity()
 	{
 		auto view = m_Registry.view<CameraComponent>();

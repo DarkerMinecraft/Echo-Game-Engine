@@ -150,6 +150,7 @@ namespace Echo
 		CommandList cmd;
 		cmd.SetShouldPresent(true);
 		cmd.SetDrawToSwapchain(true);
+		cmd.SetSourceFramebuffer(m_ImGuiFramebuffer);
 
 		cmd.Begin();
 		cmd.BeginRendering();

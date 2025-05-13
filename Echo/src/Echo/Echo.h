@@ -16,6 +16,9 @@
 #include "Graphics/Pipeline.h"
 #include "Graphics/Material.h"
 
+#include "Graphics/PostProcessing/PostProcessingSystem.h"
+#include "Graphics/PostProcessing/OutlineEffect.h"
+
 #include "Events/KeyEvents.h"
 #include "Events/MouseEvents.h"
 #include "Events/Event.h"
