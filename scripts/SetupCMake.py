@@ -8,8 +8,8 @@ import tarfile
 import platform
 
 class CMakeConfiguration:
-    requiredCMakeVersion = "3.31.3"
-    installCMakeVersion = "3.31.3"
+    requiredCMakeVersion = "4.0.2"
+    installCMakeVersion = "4.0.2"
     
     @classmethod
     def Validate(cls):

@@ -83,7 +83,7 @@ namespace Echo
 		bool m_Enabled;
 
 		Ref<Shader> m_Shader;
-		Ref<Pipeline> m_Pipeline;
+		Pipeline* m_Pipeline;
 		Ref<UniformBuffer> m_UniformBuffer;
 	};
 }

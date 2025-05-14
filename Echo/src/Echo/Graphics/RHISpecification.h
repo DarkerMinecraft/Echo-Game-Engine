@@ -138,4 +138,18 @@ namespace Echo
 		Ref<Framebuffer> RenderTarget;
 	};
 
+	struct ShaderSpecification
+	{
+		const char* VertexShaderPath = nullptr;
+		const char* FragmentShaderPath = nullptr;
+		const char* GeometryShaderPath = nullptr;
+		const char* ComputeShaderPath = nullptr;
+
+		const char* VertexShaderSource = nullptr;
+		const char* FragmentShaderSource = nullptr;
+		const char* GeometryShaderSource = nullptr;
+		const char* ComputeShaderSource = nullptr;
+		const char* ShaderName = nullptr;
+	};
+
 }

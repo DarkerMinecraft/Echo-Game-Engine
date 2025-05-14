@@ -1,41 +1,50 @@
 #pragma once
 
+#include "Asset/Asset.h"
 #include "RHISpecification.h"
-
-#include "Framebuffer.h"
-#include "CommandBuffer.h"
-#include "Texture.h"
-#include "Buffer.h"
 #include "Shader.h"
 
-#include <vector>
-#include <string>
-
-namespace Echo 
+namespace Echo
 {
+	enum class PipelineType
+	{
+		Graphics,
+		Compute
+	};
 
-	enum PipelineType { Graphics, Compute };
-
-	class Pipeline 
+	class Pipeline : public Asset
 	{
 	public:
+		Pipeline(const std::string& name, PipelineType type);
 		virtual ~Pipeline() = default;
+
+		virtual void Reload() override;
+		virtual void Unload() override;
+		virtual void Destroy() override;
 
 		virtual void Bind(CommandBuffer* cmd) = 0;
 
-		virtual void WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) = 0;
+		PipelineType GetPipelineType() const { return m_Type; }
+		const PipelineSpecification& GetSpecification() const { return m_Specification; }
+		Ref<Shader> GetShader() const { return m_Shader; }
 
-		virtual void WriteDescriptorCombinedTexture(Ref<Texture> tex, uint32_t binding = 0) = 0;
-		virtual void WriteDescriptorCombinedTexture(Texture* tex, uint32_t binding = 0) = 0;
-		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) = 0;
+		void SetShader(Ref<Shader> shader) { m_Shader = shader; }
 
-		virtual void WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) = 0;
+		// Resource binding
+		virtual void BindResource(uint32_t binding, Ref<Texture2D> texture) = 0;
+		virtual void BindResource(uint32_t binding, Ref<UniformBuffer> buffer) = 0;
+		virtual void BindResource(uint32_t binding, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) = 0;
 
-		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) = 0;
+		// Factory methods
+		static Ref<Pipeline> Create(Ref<Shader> shader, const PipelineSpecification& spec, PipelineType type);
+		static Ref<Pipeline> Create(const std::filesystem::path& yamlPath);
 
-		virtual void Destroy() = 0;
-
-		static Ref<Pipeline> Create(Ref<Shader> computeShader, PipelineSpecification& desc);
+		// YAML serialization/deserialization
+		bool SerializeToYAML(const std::filesystem::path& filepath);
+		static std::pair<PipelineSpecification, UUID> DeserializeFromYAML(const std::filesystem::path& filepath);
+	protected:
+		Ref<Shader> m_Shader;
+		PipelineSpecification m_Specification;
+		PipelineType m_Type;
 	};
-
 }

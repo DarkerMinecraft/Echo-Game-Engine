@@ -14,14 +14,10 @@ Makefile
 *.workspace
 *.mk
 *.project
-Echo Editor/imgui.ini
-build/CMakeFiles/3.31.3/CompilerIdC/Debug/CompilerIdC.tlog/link.secondary.1.tlog
 /build
 /build
 /scripts/__pycache__
-/Echo/vendor/Vulkan
-/out
-/scripts/__pycache__
-/scripts/__pycache__
-/scripts/__pycache__
-*.pyc
+/CMakeFiles
+
+/Echo/CMakeFiles
+/Horizon/CMakeFiles

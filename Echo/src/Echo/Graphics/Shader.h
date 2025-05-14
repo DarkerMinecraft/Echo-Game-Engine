@@ -1,20 +1,31 @@
-#pragma once 
+#pragma once
 
-namespace Echo 
+#include "RHISpecification.h"
+#include "Reflections/ShaderReflection.h"
+
+#include <unordered_map>
+
+namespace Echo
 {
-
-	struct ShaderSpecification
+	// Add shader reflection data structure
+	struct ShaderResourceLayout
 	{
-		const char* VertexShaderPath = nullptr;
-		const char* FragmentShaderPath = nullptr;
-		const char* GeometryShaderPath = nullptr;
-		const char* ComputeShaderPath = nullptr;
+		struct UniformBuffer
+		{
+			uint32_t Binding;
+			uint32_t Size;
+			std::string Name;
+		};
 
-		const char* VertexShaderSource = nullptr;
-		const char* FragmentShaderSource = nullptr;
-		const char* GeometryShaderSource = nullptr;
-		const char* ComputeShaderSource = nullptr;
-		const char* ShaderName = nullptr;
+		struct ShaderResource
+		{
+			uint32_t Binding;
+			std::string Name;
+			std::string Type;
+		};
+
+		std::vector<UniformBuffer> UniformBuffers;
+		std::vector<ShaderResource> Resources;
 	};
 
 	class Shader 
@@ -22,9 +33,20 @@ namespace Echo
 	public:
 		virtual ~Shader() = default;
 
+		virtual void Reload() = 0;
+		virtual void Unload() = 0;
 		virtual void Destroy() = 0;
 
-		static Ref<Shader> Create(const ShaderSpecification& specification);
-	};
+		virtual const std::string& GetName() const = 0;
+		virtual ShaderResourceLayout& GetResourceLayout() = 0;
+		virtual bool IsCompute() = 0;
 
+		virtual const ShaderReflection& GetReflection() const = 0;
+
+		static Ref<Shader> Create(const ShaderSpecification& spec);
+		static Ref<Shader> Create(const std::filesystem::path& yamlPath);
+
+		bool SerializeToYAML(const std::filesystem::path& filepath);
+		static ShaderSpecification DeserializeFromYAML(const std::filesystem::path& filepath);
+	};
 }

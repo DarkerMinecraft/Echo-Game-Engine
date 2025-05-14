@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "SceneSerializer.h"
 
-#include "Entity.h"
-#include "Components.h"
+#include "Scene/Entity.h"
+#include "Scene/Components.h"
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>

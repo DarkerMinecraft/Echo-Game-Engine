@@ -3,52 +3,68 @@
 
 #include "Utils/VulkanInitializers.h"
 
-namespace Echo 
+namespace Echo
 {
-
-
+	static long long GetFileTimestamp(const std::string& filepath)
+	{
+		std::filesystem::file_time_type timestamp = std::filesystem::last_write_time(filepath);
+		auto systemTime = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+			timestamp - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+		return systemTime.time_since_epoch().count();
+	}
 
 	VulkanShader::VulkanShader(Device* device, const ShaderSpecification& specification)
-		: m_Device(static_cast<VulkanDevice*>(device))
+		: m_Device(static_cast<VulkanDevice*>(device)), m_Specification(specification)
 	{
-		if (specification.ShaderName != nullptr) 
-		{
-			if (specification.ComputeShaderSource)
-			{
-				m_ComputeShaderModule = CreateShaderModule(specification.ComputeShaderSource, specification.ShaderName);
-			}
-			else 
-			{
-				m_VertexShaderModule = CreateShaderModule(specification.VertexShaderSource, specification.ShaderName);
-				m_FragmentShaderModule = CreateShaderModule(specification.FragmentShaderSource, specification.ShaderName);
-				if (specification.GeometryShaderSource != nullptr)
-					m_GeometryShaderModule = CreateShaderModule(specification.GeometryShaderSource, specification.ShaderName);
-
-				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, m_VertexShaderModule));
-				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, m_FragmentShaderModule));
-				if (m_GeometryShaderModule != nullptr)
-					m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, m_GeometryShaderModule));
-			}
-		}
+		// Set shader name
+		if (specification.ShaderName)
+			m_Name = specification.ShaderName;
+		else if (specification.VertexShaderPath)
+			m_Name = std::filesystem::path(specification.VertexShaderPath).stem().string();
+		else if (specification.ComputeShaderPath)
+			m_Name = std::filesystem::path(specification.ComputeShaderPath).stem().string();
 		else
-		{
-			if (specification.ComputeShaderPath)
-			{
-				m_ComputeShaderModule = CreateShaderModule(specification.ComputeShaderPath);
-			}
-			else
-			{
-				m_VertexShaderModule = CreateShaderModule(specification.VertexShaderPath);
-				m_FragmentShaderModule = CreateShaderModule(specification.FragmentShaderPath);
-				if (specification.GeometryShaderPath != nullptr)
-					m_GeometryShaderModule = CreateShaderModule(specification.GeometryShaderPath);
+			m_Name = "UnnamedShader";
 
-				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, m_VertexShaderModule));
-				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, m_FragmentShaderModule));
-				if (m_GeometryShaderModule != nullptr)
-					m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, m_GeometryShaderModule));
-			}
-		}
+		// Check if it's a compute shader
+		m_IsCompute = specification.ComputeShaderPath != nullptr || specification.ComputeShaderSource != nullptr;
+
+		// Process shader files or source code
+		CompileOrGetVulkanBinary();
+		CreateShaderModule();
+		RebuildShaderStages();
+		ExtractResourceLayout();
+
+		m_IsLoaded = true;
+	}
+
+	VulkanShader::VulkanShader(Device* device, std::filesystem::path& filePath)
+		: m_Device((VulkanDevice*)device)
+	{
+		ShaderSpecification specification = Shader::DeserializeFromYAML(filePath);
+
+		// Set shader name
+		if (specification.ShaderName)
+			m_Name = specification.ShaderName;
+		else if (specification.VertexShaderPath)
+			m_Name = std::filesystem::path(specification.VertexShaderPath).stem().string();
+		else if (specification.ComputeShaderPath)
+			m_Name = std::filesystem::path(specification.ComputeShaderPath).stem().string();
+		else
+			m_Name = "UnnamedShader";
+
+		// Check if it's a compute shader
+		m_IsCompute = specification.ComputeShaderPath != nullptr || specification.ComputeShaderSource != nullptr;
+
+		// Process shader files or source code
+		CompileOrGetVulkanBinary();
+		CreateShaderModule();
+		RebuildShaderStages();
+		ExtractResourceLayout();
+
+		m_IsLoaded = true;
+
+		m_Specification = specification;
 	}
 
 	VulkanShader::~VulkanShader()
@@ -56,21 +72,253 @@ namespace Echo
 		Destroy();
 	}
 
+	void VulkanShader::Reload()
+	{
+		if (m_Destroyed)
+		{
+			EC_CORE_WARN("Trying to reload a destroyed shader: {0}", m_Name);
+			return;
+		}
+
+		bool needsReload = false;
+
+		// Check if any shader files have been modified
+		if (m_Specification.VertexShaderPath)
+		{
+			long long currentTimestamp = GetFileTimestamp(m_Specification.VertexShaderPath);
+			if (m_FileTimestamps.find(m_Specification.VertexShaderPath) == m_FileTimestamps.end() ||
+				m_FileTimestamps[m_Specification.VertexShaderPath] != currentTimestamp)
+			{
+				m_FileTimestamps[m_Specification.VertexShaderPath] = currentTimestamp;
+				needsReload = true;
+			}
+		}
+
+		if (m_Specification.FragmentShaderPath)
+		{
+			long long currentTimestamp = GetFileTimestamp(m_Specification.FragmentShaderPath);
+			if (m_FileTimestamps.find(m_Specification.FragmentShaderPath) == m_FileTimestamps.end() ||
+				m_FileTimestamps[m_Specification.FragmentShaderPath] != currentTimestamp)
+			{
+				m_FileTimestamps[m_Specification.FragmentShaderPath] = currentTimestamp;
+				needsReload = true;
+			}
+		}
+
+		if (m_Specification.GeometryShaderPath)
+		{
+			long long currentTimestamp = GetFileTimestamp(m_Specification.GeometryShaderPath);
+			if (m_FileTimestamps.find(m_Specification.GeometryShaderPath) == m_FileTimestamps.end() ||
+				m_FileTimestamps[m_Specification.GeometryShaderPath] != currentTimestamp)
+			{
+				m_FileTimestamps[m_Specification.GeometryShaderPath] = currentTimestamp;
+				needsReload = true;
+			}
+		}
+
+		if (m_Specification.ComputeShaderPath)
+		{
+			long long currentTimestamp = GetFileTimestamp(m_Specification.ComputeShaderPath);
+			if (m_FileTimestamps.find(m_Specification.ComputeShaderPath) == m_FileTimestamps.end() ||
+				m_FileTimestamps[m_Specification.ComputeShaderPath] != currentTimestamp)
+			{
+				m_FileTimestamps[m_Specification.ComputeShaderPath] = currentTimestamp;
+				needsReload = true;
+			}
+		}
+
+		if (!needsReload)
+			return;
+
+		EC_CORE_INFO("Reloading shader: {0}", m_Name);
+
+		// Unload current resources
+		Unload();
+
+		// Recompile the shader
+		CompileOrGetVulkanBinary();
+		CreateShaderModule();
+		RebuildShaderStages();
+		ExtractResourceLayout();
+
+		m_IsLoaded = true;
+	}
+
+	void VulkanShader::Unload()
+	{
+		if (!m_IsLoaded)
+			return;
+
+		// Destroy shader modules
+		if (m_VertexShaderModule != VK_NULL_HANDLE)
+		{
+			vkDestroyShaderModule(m_Device->GetDevice(), m_VertexShaderModule, nullptr);
+			m_VertexShaderModule = VK_NULL_HANDLE;
+		}
+
+		if (m_FragmentShaderModule != VK_NULL_HANDLE)
+		{
+			vkDestroyShaderModule(m_Device->GetDevice(), m_FragmentShaderModule, nullptr);
+			m_FragmentShaderModule = VK_NULL_HANDLE;
+		}
+
+		if (m_GeometryShaderModule != VK_NULL_HANDLE)
+		{
+			vkDestroyShaderModule(m_Device->GetDevice(), m_GeometryShaderModule, nullptr);
+			m_GeometryShaderModule = VK_NULL_HANDLE;
+		}
+
+		if (m_ComputeShaderModule != VK_NULL_HANDLE)
+		{
+			vkDestroyShaderModule(m_Device->GetDevice(), m_ComputeShaderModule, nullptr);
+			m_ComputeShaderModule = VK_NULL_HANDLE;
+		}
+
+		// Clear shader stages
+		m_ShaderStages.clear();
+
+		m_IsLoaded = false;
+	}
+
 	void VulkanShader::Destroy()
 	{
 		if (m_Destroyed)
 			return;
 
-		if (m_VertexShaderModule)
-			vkDestroyShaderModule(m_Device->GetDevice(), m_VertexShaderModule, nullptr);
-		if (m_FragmentShaderModule)
-			vkDestroyShaderModule(m_Device->GetDevice(), m_FragmentShaderModule, nullptr);
-		if (m_GeometryShaderModule)
-			vkDestroyShaderModule(m_Device->GetDevice(), m_GeometryShaderModule, nullptr);
-		if (m_ComputeShaderModule)
-			vkDestroyShaderModule(m_Device->GetDevice(), m_ComputeShaderModule, nullptr);
-
+		Unload();
 		m_Destroyed = true;
+	}
+
+	void VulkanShader::CompileOrGetVulkanBinary()
+	{
+		// Cache file timestamps for hot reloading
+		if (m_Specification.VertexShaderPath)
+			m_FileTimestamps[m_Specification.VertexShaderPath] = GetFileTimestamp(m_Specification.VertexShaderPath);
+		if (m_Specification.FragmentShaderPath)
+			m_FileTimestamps[m_Specification.FragmentShaderPath] = GetFileTimestamp(m_Specification.FragmentShaderPath);
+		if (m_Specification.GeometryShaderPath)
+			m_FileTimestamps[m_Specification.GeometryShaderPath] = GetFileTimestamp(m_Specification.GeometryShaderPath);
+		if (m_Specification.ComputeShaderPath)
+			m_FileTimestamps[m_Specification.ComputeShaderPath] = GetFileTimestamp(m_Specification.ComputeShaderPath);
+	}
+
+	void VulkanShader::CreateShaderModule()
+	{
+		if (m_Specification.ShaderName != nullptr)
+		{
+			if (m_Specification.ComputeShaderSource)
+			{
+				m_ComputeShaderModule = CreateShaderModule(m_Specification.ComputeShaderSource, m_Specification.ShaderName);
+			}
+			else
+			{
+				m_VertexShaderModule = CreateShaderModule(m_Specification.VertexShaderSource, m_Specification.ShaderName);
+				m_FragmentShaderModule = CreateShaderModule(m_Specification.FragmentShaderSource, m_Specification.ShaderName);
+				if (m_Specification.GeometryShaderSource != nullptr)
+					m_GeometryShaderModule = CreateShaderModule(m_Specification.GeometryShaderSource, m_Specification.ShaderName);
+			}
+		}
+		else
+		{
+			if (m_Specification.ComputeShaderPath)
+			{
+				m_ComputeShaderModule = CreateShaderModule(m_Specification.ComputeShaderPath);
+			}
+			else
+			{
+				m_VertexShaderModule = CreateShaderModule(m_Specification.VertexShaderPath);
+				m_FragmentShaderModule = CreateShaderModule(m_Specification.FragmentShaderPath);
+				if (m_Specification.GeometryShaderPath != nullptr)
+					m_GeometryShaderModule = CreateShaderModule(m_Specification.GeometryShaderPath);
+			}
+		}
+	}
+
+	void VulkanShader::RebuildShaderStages()
+	{
+		m_ShaderStages.clear();
+
+		if (m_IsCompute)
+		{
+			if (m_ComputeShaderModule != VK_NULL_HANDLE)
+				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, m_ComputeShaderModule));
+		}
+		else
+		{
+			if (m_VertexShaderModule != VK_NULL_HANDLE)
+				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, m_VertexShaderModule));
+			if (m_FragmentShaderModule != VK_NULL_HANDLE)
+				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, m_FragmentShaderModule));
+			if (m_GeometryShaderModule != VK_NULL_HANDLE)
+				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, m_GeometryShaderModule));
+		}
+	}
+
+	void VulkanShader::ExtractResourceLayout()
+	{
+		// Clear previous resource layout
+		m_ResourceLayout.Clear();
+
+		// Reflect each shader stage
+		if (m_VertexShaderModule != VK_NULL_HANDLE)
+			ReflectShader(m_VertexShaderModule, ShaderStage::Vertex);
+		if (m_FragmentShaderModule != VK_NULL_HANDLE)
+			ReflectShader(m_FragmentShaderModule, ShaderStage::Fragment);
+		if (m_GeometryShaderModule != VK_NULL_HANDLE)
+			ReflectShader(m_GeometryShaderModule, ShaderStage::All); // Custom stages
+		if (m_ComputeShaderModule != VK_NULL_HANDLE)
+			ReflectShader(m_ComputeShaderModule, ShaderStage::Compute);
+	}
+
+	void VulkanShader::ReflectShader(VkShaderModule shader, ShaderStage stage)
+	{
+		// Here you would use the shader reflection from ShaderLibrary, either by:
+		// 1. Using the existing Slang reflection code you wrote earlier
+		// 2. Or using SpirV-Cross or other reflection libraries
+
+		// For simplicity, let's assume we're using the ShaderLibrary reflection:
+		ShaderResourceLayout stageLayout;
+
+		if (m_Specification.ShaderName != nullptr)
+		{
+			// For source-based shaders
+			if (stage == ShaderStage::Vertex && m_Specification.VertexShaderSource)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.VertexShaderSource, m_Specification.ShaderName);
+			else if (stage == ShaderStage::Fragment && m_Specification.FragmentShaderSource)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.FragmentShaderSource, m_Specification.ShaderName);
+			else if (stage == ShaderStage::Compute && m_Specification.ComputeShaderSource)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.ComputeShaderSource, m_Specification.ShaderName);
+		}
+		else
+		{
+			// For file-based shaders
+			if (stage == ShaderStage::Vertex && m_Specification.VertexShaderPath)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.VertexShaderPath);
+			else if (stage == ShaderStage::Fragment && m_Specification.FragmentShaderPath)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.FragmentShaderPath);
+			else if (stage == ShaderStage::Compute && m_Specification.ComputeShaderPath)
+				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.ComputeShaderPath);
+		}
+
+		// Merge the stage-specific layout into the overall resource layout
+		for (const auto& binding : stageLayout.GetResourceBindings())
+		{
+			m_ResourceLayout.AddResourceBinding(binding);
+		}
+
+		for (const auto& ubo : stageLayout.GetUniformBuffers())
+		{
+			m_ResourceLayout.AddUniformBuffer(ubo);
+		}
+
+		// Only add vertex attributes from the vertex shader
+		if (stage == ShaderStage::Vertex)
+		{
+			for (const auto& attribute : stageLayout.GetAttributes())
+			{
+				m_ResourceLayout.AddAttribute(attribute);
+			}
+		}
 	}
 
 	VkShaderModule VulkanShader::CreateShaderModule(const char* shaderPath)
@@ -82,5 +330,4 @@ namespace Echo
 	{
 		return m_Device->GetShaderLibrary().AddSpirvShader(shaderSource, shaderName);
 	}
-
 }

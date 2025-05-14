@@ -10,38 +10,27 @@ set(TARGET_DIR $<TARGET_FILE_DIR:Horizon>)
 add_executable(Horizon)
 set_target_properties(Horizon PROPERTIES OUTPUT_NAME "Horizon")
 
-# Include directories
-target_include_directories(Horizon PRIVATE src)
-
-# Source files
+# Find all source files
 file(GLOB_RECURSE SRC_FILES "src/**.h" "src/**.cpp")
-target_sources(Horizon PRIVATE ${SRC_FILES})
-
-# Link Echo library
-target_link_libraries(Horizon PRIVATE Echo)
-
-# Enable solution folders
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-# Find all asset and resource files
 file(GLOB_RECURSE ASSET_FILES "${ASSETS_DIR}/**/*")
 file(GLOB_RECURSE RESOURCE_FILES "${RESOURCE_DIR}/**/*")
 
-# Preserve exact source folder structure
+# Preserve exact source folder structure in the IDE
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source" FILES ${SRC_FILES})
-
-# Create proper virtual folder structure for assets and resources
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/assets" PREFIX "Assets" FILES ${ASSET_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Resources" PREFIX "Resources" FILES ${RESOURCE_FILES})
 
-# Add assets and resources to the project
-target_sources(Horizon PRIVATE ${ASSET_FILES} ${RESOURCE_FILES})
-
-# Copy assets and resources to output directory
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_DIR} ${TARGET_DIR}/assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR} ${TARGET_DIR}/Resources
+# Include directories
+target_include_directories(Horizon PRIVATE 
+    src
+    ${CMAKE_SOURCE_DIR}/Echo/src/Echo
 )
+
+# Source files
+target_sources(Horizon PRIVATE ${SRC_FILES} ${ASSET_FILES} ${RESOURCE_FILES})
+
+# Link Echo library
+target_link_libraries(Horizon PRIVATE Echo)
 
 # Add compile definitions based on build type
 foreach(CONFIG Debug Release Dist)
@@ -51,7 +40,12 @@ endforeach()
 # Set output directories
 set_target_properties(Horizon PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}/Horizon
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin-int/${CMAKE_BUILD_TYPE}/Horizon
+)
+
+# Copy assets and resources to output directory
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_DIR} ${TARGET_DIR}/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR} ${TARGET_DIR}/Resources
 )
 
 # Copy slang after build

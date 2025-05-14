@@ -1,12 +1,13 @@
 #include "pch.h"
 #include "OutlineEffect.h"
+#include <Graphics/Material.h>
 
 namespace Echo
 {
 	void OutlineEffect::Init()
 	{
 		// Create shader for outline post-processing
-		ShaderSpecification outlineShaderSpec;
+        ShaderSpecification outlineShaderSpec{};
 		outlineShaderSpec.ShaderName = "Outline Post-Process";
 
 		// Vertex shader for fullscreen quad
@@ -66,7 +67,7 @@ namespace Echo
                     return color;
                 
                 // Get the entity ID at this pixel
-                int entityID = idBuffer.Load(int3(input.position.xy, 0));
+                int entityID = idBuffer.Load(int3(int2(input.position.xy), 0));
                 
                 // If this pixel belongs to the selected entity, no outline needed
                 if (entityID == selectedEntityID)
@@ -133,7 +134,9 @@ namespace Echo
 			{ 3, DescriptorType::UniformBuffer, 1, ShaderStage::Fragment } // Outline params
 		};
 
-		m_Pipeline = Pipeline::Create(m_Shader, pipelineSpec);
+        Ref<Material> material = Material::Create(m_Shader, { 1.0f, 1.0f, 1.0f }, pipelineSpec);
+
+        m_Pipeline = material->GetPipeline();
 
 		// Create uniform buffer for outline parameters
 		struct OutlineParams
@@ -151,7 +154,7 @@ namespace Echo
 	void OutlineEffect::Cleanup()
 	{
 		m_Shader.reset();
-		m_Pipeline.reset();
+        delete m_Pipeline;
 		m_UniformBuffer.reset();
 	}
 

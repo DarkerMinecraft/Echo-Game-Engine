@@ -8,11 +8,13 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 add_library(Echo STATIC)
 target_precompile_headers(Echo PRIVATE ${ECHO_DIR}/src/Echo/pch.h)
 
+# Find all source files
 file(GLOB_RECURSE SRC_FILES
     "${ECHO_DIR}/src/**.h"
     "${ECHO_DIR}/src/**.cpp"
 )
 
+# Preserve exact source folder structure in the IDE
 source_group(TREE "${ECHO_DIR}/src" FILES ${SRC_FILES})
 
 target_include_directories(Echo 
@@ -37,8 +39,7 @@ target_include_directories(Echo
     ${ECHO_DIR}/vendor/yaml/include
 )
 
-link_directories(${VULKAN_SDK}/Lib)
-
+# Link with dependencies
 target_link_libraries(Echo PUBLIC
     ImGui
     $ENV{VULKAN_SDK}/Lib/vulkan-1.lib
@@ -54,16 +55,19 @@ target_sources(Echo PRIVATE
     ${SRC_FILES} 
 )
 
+# Platform-specific definitions
 if(WIN32)
     target_compile_definitions(Echo PRIVATE USING_DIRECTX_HEADERS)
     target_compile_definitions(Echo PRIVATE EC_PLATFORM_WINDOWS)
 endif()
 
+# Build type definitions
 foreach(CONFIG Debug Release Dist)
     target_compile_definitions(Echo PRIVATE $<$<CONFIG:${CONFIG}>:ECHO_${CONFIG}>)
 endforeach()
 
+# Output directories
 set_target_properties(Echo PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}/Echo
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin-int/${CMAKE_BUILD_TYPE}/Echo
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}/Echo
 )
