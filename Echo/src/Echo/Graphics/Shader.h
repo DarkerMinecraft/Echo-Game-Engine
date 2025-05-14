@@ -44,9 +44,5 @@ namespace Echo
 		virtual const ShaderReflection& GetReflection() const = 0;
 
 		static Ref<Shader> Create(const ShaderSpecification& spec);
-		static Ref<Shader> Create(const std::filesystem::path& yamlPath);
-
-		bool SerializeToYAML(const std::filesystem::path& filepath);
-		static ShaderSpecification DeserializeFromYAML(const std::filesystem::path& filepath);
 	};
 }

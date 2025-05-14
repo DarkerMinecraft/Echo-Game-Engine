@@ -12,14 +12,12 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Utils/PlatformUtils.h>
-#include <Scene/SceneSerializer.h>
+#include <Serializer/SceneSerializer.h>
 
 #include <Math/Math.h>
 
 namespace Echo
 {
-
-	extern const std::filesystem::path g_AssetPath;
 
 	EditorLayer::EditorLayer()
 		: m_EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f)
@@ -29,6 +27,10 @@ namespace Echo
 
 	void EditorLayer::OnAttach()
 	{
+		m_AssetRegistry = new AssetRegistry("C:\\Dev\\Echo Projects\\Testing");
+		m_ContentBrowserPanel.SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
+		m_SceneHierarchyPanel.GetEntityComponentPanel().SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
+
 		FramebufferSpecification framebufferSpec;
 		framebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
 		framebufferSpec.Width = 1280;
@@ -36,26 +38,15 @@ namespace Echo
 
 		m_Framebuffer = Framebuffer::Create(framebufferSpec);
 
-		FramebufferSpecification finalFbSpec;
-		finalFbSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
-		finalFbSpec.Width = 1280;
-		finalFbSpec.Height = 720;
-
-		m_FinalFramebuffer = Framebuffer::Create(finalFbSpec);
-
 		m_Window = &Application::Get().GetWindow();
 
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
-		m_StopButton = Texture2D::Create("Resources/StopButton.png");
+		//m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
+		//m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
 		RendererQuad::Init(m_Framebuffer, 0);
-		PostProcessingSystem::Init();
-
-		m_OutlineEffect = CreateRef<OutlineEffect>();
-		PostProcessingSystem::AddEffect(m_OutlineEffect);
 	}
 
 	void EditorLayer::OnDetach()
@@ -71,7 +62,7 @@ namespace Echo
 			m_EditorCamera.OnUpdate(ts);
 
 		CommandList cmd;
-		cmd.SetSourceFramebuffer(m_FinalFramebuffer);
+		cmd.SetSourceFramebuffer(m_Framebuffer);
 
 		cmd.Begin();
 		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
@@ -86,7 +77,6 @@ namespace Echo
 			m_ActiveScene->OnUpdateRuntime(cmd, ts);
 		}
 		cmd.EndRendering();
-		PostProcessingSystem::ApplyEffects(cmd, m_Framebuffer, m_FinalFramebuffer);
 		cmd.Execute();
 
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
@@ -120,13 +110,11 @@ namespace Echo
 					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
 					{
 						m_SceneHierarchyPanel.SetSelectedEntity(entityID);
-						m_OutlineEffect->SetSelectedEntityID(entityID);
 					}
 				}
 				else
 				{
 					m_Window->SetCursor(Cursor::ARROW);
-					m_OutlineEffect->SetSelectedEntityID(-1);
 				}
 			}
 		}
@@ -243,7 +231,7 @@ namespace Echo
 		m_ContentBrowserPanel.OnImGuiRender();
 
 		ViewportUI();
-		ToolbarUI();
+		//ToolbarUI();
 	}
 
 	void EditorLayer::ToolbarUI()
@@ -299,7 +287,7 @@ namespace Echo
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
 				const wchar_t* path = (const wchar_t*)payload->Data;
-				OpenScene(std::filesystem::path(g_AssetPath) / path);
+				OpenScene(m_AssetRegistry->GetGlobalPath() / path);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -361,7 +349,6 @@ namespace Echo
 
 	void EditorLayer::Destroy()
 	{
-		PostProcessingSystem::Shutdown();
 		RendererQuad::Destroy();
 	}
 

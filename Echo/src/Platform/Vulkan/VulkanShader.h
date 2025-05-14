@@ -9,7 +9,6 @@ namespace Echo
 	{
 	public:
 		VulkanShader(Device* device, const ShaderSpecification& specification);
-		VulkanShader(Device* device, std::filesystem::path& filePath);
 		virtual ~VulkanShader();
 
 		virtual void Reload() override;
@@ -19,6 +18,8 @@ namespace Echo
 		virtual const std::string& GetName() const override { return m_Name; }
 		virtual ShaderResourceLayout& GetResourceLayout() override { return m_ResourceLayout; }
 		virtual bool IsCompute() override { return m_IsCompute; }
+
+		virtual const ShaderReflection& GetReflection() const { return m_ShaderReflection; };
 	public:
 		VkShaderModule GetComputeShaderModule() { return m_ComputeShaderModule; }
 		VkShaderModule GetVertexShaderModule() { return m_VertexShaderModule; }
@@ -29,8 +30,7 @@ namespace Echo
 	private:
 		void CompileOrGetVulkanBinary();
 		void CreateShaderModule();
-		void ExtractResourceLayout();
-		void ReflectShader(VkShaderModule shader, ShaderStage stage);
+		//void ReflectShader(VkShaderModule shader, ShaderStage stage);
 		VkShaderModule CreateShaderModule(const char* shaderSource, const char* shaderName);
 		VkShaderModule CreateShaderModule(const char* shaderPath);
 		void RebuildShaderStages();
@@ -43,6 +43,8 @@ namespace Echo
 
 		ShaderSpecification m_Specification;
 		ShaderResourceLayout m_ResourceLayout;
+
+		ShaderReflection m_ShaderReflection;
 
 		// Cached file timestamps for hot reloading
 		std::unordered_map<std::string, long long> m_FileTimestamps;

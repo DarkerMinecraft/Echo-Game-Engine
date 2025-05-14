@@ -20,6 +20,8 @@ namespace Echo
 
 	BufferLayout ShaderReflection::GetVertexLayout() const
 	{
+		BufferLayout layout;
+
 		std::vector<BufferElement> elements;
 
 		// Sort attributes by location to ensure correct order
@@ -34,7 +36,7 @@ namespace Echo
 		{
 			elements.emplace_back(attribute.Type, attribute.Name);
 		}
-
-		return elements;
+	
+		return BufferLayout(elements);
 	}
 }

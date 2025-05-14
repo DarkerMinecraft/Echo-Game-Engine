@@ -5,7 +5,7 @@
 #include <slang-com-helper.h>
 
 #include <vulkan/vulkan.h>
-#include "ShaderReflection.h"
+#include "Reflections/ShaderReflection.h"
 
 using namespace slang;
 namespace Echo

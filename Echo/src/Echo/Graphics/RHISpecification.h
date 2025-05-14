@@ -77,22 +77,59 @@ namespace Echo
 	class BufferLayout
 	{
 	public:
+		// Default constructor for an empty layout
 		BufferLayout() = default;
 
+		// Constructor using initializer list (original behavior)
 		BufferLayout(const std::initializer_list<BufferElement>& elements)
 			: m_Elements(elements)
 		{
 			CalculateOffsetsAndStride();
 		}
 
+		// NEW: Constructor using a vector of BufferElements
+		BufferLayout(const std::vector<BufferElement>& elements)
+			: m_Elements(elements)
+		{
+			CalculateOffsetsAndStride();
+		}
+
+		// Getters
 		uint32_t GetStride() const { return m_Stride; }
 		const std::vector<BufferElement>& GetElements() const { return m_Elements; }
 
+		// Element access via iterators
 		std::vector<BufferElement>::iterator begin() { return m_Elements.begin(); }
 		std::vector<BufferElement>::iterator end() { return m_Elements.end(); }
 		std::vector<BufferElement>::const_iterator begin() const { return m_Elements.begin(); }
 		std::vector<BufferElement>::const_iterator end() const { return m_Elements.end(); }
 
+		// NEW: Method to add a single element to the layout
+		void AddElement(const BufferElement& element)
+		{
+			m_Elements.push_back(element);
+			CalculateOffsetsAndStride();
+		}
+
+		// NEW: Method to add a single element to the layout by parameters
+		void AddElement(ShaderDataType type, const std::string& name, bool normalized = false)
+		{
+			m_Elements.emplace_back(type, name, normalized);
+			CalculateOffsetsAndStride();
+		}
+
+		// NEW: Method to add multiple elements from a vector
+		void AddElements(const std::vector<BufferElement>& elements)
+		{
+			m_Elements.insert(m_Elements.end(), elements.begin(), elements.end());
+			CalculateOffsetsAndStride();
+		}
+
+		// NEW: Method to check if layout is empty
+		bool IsEmpty() const { return m_Elements.empty(); }
+
+		// NEW: Method to get the number of elements
+		size_t Size() const { return m_Elements.size(); }
 	private:
 		void CalculateOffsetsAndStride()
 		{

@@ -5,9 +5,9 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
+#include "VulkanRenderCaps.h"
 
 #include <unordered_set>
-#include "VulkanRenderCaps.h"
 
 namespace Echo 
 {
@@ -29,18 +29,19 @@ namespace Echo
 		}
 	}
 
-	VulkanPipeline::VulkanPipeline(Device* device, Material* material)
-		: m_Device((VulkanDevice*)device), m_Material(material)
+	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
+		: m_Device((VulkanDevice*)device), m_Shader(shader.get())
 	{
-		m_PipelineType = Graphics;
-		CreateGraphicsPipeline(material);
-	}
-
-	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineSpecification& spec)
-		: m_Device((VulkanDevice*)device), m_ComputeShader(computeShader)
-	{
-		m_PipelineType = Compute;
-		CreateComputePipeline(computeShader, spec);
+		if (shader->IsCompute())
+		{
+			m_PipelineType = PipelineType::Compute;
+			CreateComputePipeline(shader, spec);
+		}
+		else 
+		{
+			m_PipelineType = PipelineType::Graphics;
+			CreateGraphicsPipeline(shader, spec);
+		}
 	}
 
 	VulkanPipeline::~VulkanPipeline()
@@ -52,7 +53,7 @@ namespace Echo
 	{
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 
-		if (m_PipelineType == Graphics)
+		if (m_PipelineType == PipelineType::Graphics)
 		{
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			if (HasDescriptorSet())
@@ -60,7 +61,7 @@ namespace Echo
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 			}
 		}
-		else if (m_PipelineType == Compute)
+		else if (m_PipelineType == PipelineType::Graphics)
 		{
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
 			if (HasDescriptorSet())
@@ -70,7 +71,7 @@ namespace Echo
 		}
 	}
 
-	void VulkanPipeline::WriteDescriptorCombinedTexture(Ref<Texture> texture, uint32_t binding /*= 0*/)
+	void VulkanPipeline::BindResource(uint32_t binding, Ref<Texture2D> texture)
 	{
 		VulkanTexture2D* tex = (VulkanTexture2D*)texture.get();
 
@@ -79,16 +80,7 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::WriteDescriptorCombinedTexture(Texture* texture, uint32_t binding /*= 0*/)
-	{
-		VulkanTexture2D* tex = (VulkanTexture2D*)texture;
-
-		DescriptorWriter writer;
-		writer.WriteImage(binding, tex->GetTexture().ImageView, tex->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
-	}
-
-	void VulkanPipeline::WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding /*= 0*/)
+	void VulkanPipeline::BindResource(uint32_t binding, Ref<Framebuffer> framebuffer, uint32_t index)
 	{
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
 
@@ -105,7 +97,7 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding /*= 0*/)
+	void VulkanPipeline::BindResource(uint32_t binding, Ref<Texture2D> tex, uint32_t index)
 	{
 		VulkanTexture2D* texture = (VulkanTexture2D*)tex.get();
 
@@ -114,7 +106,7 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
 	}
 
-	void VulkanPipeline::WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding)
+	void VulkanPipeline::BindResource(uint32_t binding, Ref<UniformBuffer> uniformBuffer)
 	{
 		VulkanUniformBuffer* ubo = (VulkanUniformBuffer*)uniformBuffer.get();
 
@@ -127,14 +119,7 @@ namespace Echo
 	{
 		if (m_Destroyed) return;
 
-		if (m_PipelineType == Compute)
-		{
-			m_ComputeShader->Destroy();
-		}
-		else if (m_PipelineType == Graphics)
-		{
-			m_Material->Destroy();
-		}
+		m_Shader->Destroy();
 
 		if (m_DescriptorSet != nullptr)
 		{
@@ -148,27 +133,10 @@ namespace Echo
 		m_Destroyed = true;
 	}
 
-	void VulkanPipeline::WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding)
+	void VulkanPipeline::CreateComputePipeline(Ref<Shader> shader, const PipelineSpecification& spec)
 	{
-		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
-		if (fb->GetCurrentLayout(index) != VK_IMAGE_LAYOUT_GENERAL)
-		{
-			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
-			{
-				fb->TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_GENERAL);
-			});
-		}
-
-
-		DescriptorWriter writer;
-		writer.WriteImage(binding, fb->GetImage(index).ImageView, nullptr, VK_IMAGE_LAYOUT_GENERAL, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
-	}
-
-	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, PipelineSpecification& desc)
-	{
-		CreatePipelineLayout(desc.DescriptionSetLayouts);
-		CreateDescriptorSet(desc.DescriptionSetLayouts);
+		CreatePipelineLayout(spec.DescriptionSetLayouts);
+		CreateDescriptorSet(spec.DescriptionSetLayouts);
 
 		VkComputePipelineCreateInfo pipelineCreateInfo{};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -179,7 +147,7 @@ namespace Echo
 		shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStageCreateInfo.pNext = nullptr;
 		shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStageCreateInfo.module = ((VulkanShader*)computeShader.get())->GetComputeShaderModule();
+		shaderStageCreateInfo.module = ((VulkanShader*)shader.get())->GetComputeShaderModule();
 		shaderStageCreateInfo.pName = "main";
 
 		pipelineCreateInfo.stage = shaderStageCreateInfo;
@@ -187,12 +155,10 @@ namespace Echo
 		vkCreateComputePipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(Material* material)
+	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> shader, const PipelineSpecification& spec)
 	{
-		PipelineSpecification& desc = material->GetPipelineSpecification();
-
-		CreatePipelineLayout(desc.DescriptionSetLayouts);
-		CreateDescriptorSet(desc.DescriptionSetLayouts);
+		CreatePipelineLayout(spec.DescriptionSetLayouts);
+		CreateDescriptorSet(spec.DescriptionSetLayouts);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -217,13 +183,13 @@ namespace Echo
 
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = desc.VertexLayout.GetStride();
+		bindingDescription.stride = spec.VertexLayout.GetStride();
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 		bindingDescriptions.push_back(bindingDescription);
 
 		uint32_t count = 0;
-		for (const auto& element : desc.VertexLayout)
+		for (const auto& element : spec.VertexLayout)
 		{
 			VkVertexInputAttributeDescription attributeDescription{};
 			attributeDescription.binding = 0;
@@ -242,7 +208,7 @@ namespace Echo
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		switch (desc.GraphicsTopology)
+		switch (spec.GraphicsTopology)
 		{
 			case Topology::TriangleList:
 				inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -266,16 +232,16 @@ namespace Echo
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = (desc.FillMode == Fill::Wireframe) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
-		rasterizer.cullMode = (desc.CullMode == Cull::Back) ? VK_CULL_MODE_BACK_BIT :
-			(desc.CullMode == Cull::Front) ? VK_CULL_MODE_FRONT_BIT : VK_CULL_MODE_NONE;
+		rasterizer.polygonMode = (spec.FillMode == Fill::Wireframe) ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
+		rasterizer.cullMode = (spec.CullMode == Cull::Back) ? VK_CULL_MODE_BACK_BIT :
+			(spec.CullMode == Cull::Front) ? VK_CULL_MODE_FRONT_BIT : VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.lineWidth = 1.0f;
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencil.depthTestEnable = desc.EnableDepthTest ? VK_TRUE : VK_FALSE;
-		depthStencil.depthWriteEnable = desc.EnableDepthWrite ? VK_TRUE : VK_FALSE;
+		depthStencil.depthTestEnable = spec.EnableDepthTest ? VK_TRUE : VK_FALSE;
+		depthStencil.depthWriteEnable = spec.EnableDepthWrite ? VK_TRUE : VK_FALSE;
 		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
 		depthStencil.stencilTestEnable = VK_FALSE;
@@ -290,7 +256,7 @@ namespace Echo
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		auto shaderStages = ((VulkanShader*) (material->GetShader()))->GetShaderStages();
+		auto shaderStages = ((VulkanShader*) m_Shader)->GetShaderStages();
 
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -299,7 +265,7 @@ namespace Echo
 		viewportState.viewportCount = 1;
 		viewportState.scissorCount = 1;
 
-		VulkanFramebuffer* fb = (VulkanFramebuffer*)desc.RenderTarget.get();
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)spec.RenderTarget.get();
 
 		VkPipelineRenderingCreateInfo renderInfo{};
 		renderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
@@ -327,9 +293,9 @@ namespace Echo
 				// Regular color formats
 				colorBlendAttachments[i].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
 					VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-				colorBlendAttachments[i].blendEnable = desc.EnableBlending ? VK_TRUE : VK_FALSE;
+				colorBlendAttachments[i].blendEnable = spec.EnableBlending ? VK_TRUE : VK_FALSE;
 
-				if (desc.EnableBlending)
+				if (spec.EnableBlending)
 				{
 					// Set up blend factors only if blending is enabled
 					colorBlendAttachments[i].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;

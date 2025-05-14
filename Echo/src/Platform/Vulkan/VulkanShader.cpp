@@ -3,9 +3,12 @@
 
 #include "Utils/VulkanInitializers.h"
 
+#include <filesystem>
+#include <chrono>
+
 namespace Echo
 {
-	static long long GetFileTimestamp(const std::string& filepath)
+	static long long GetFileTimestamp(const std::filesystem::path filepath)
 	{
 		std::filesystem::file_time_type timestamp = std::filesystem::last_write_time(filepath);
 		auto systemTime = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
@@ -33,38 +36,8 @@ namespace Echo
 		CompileOrGetVulkanBinary();
 		CreateShaderModule();
 		RebuildShaderStages();
-		ExtractResourceLayout();
 
 		m_IsLoaded = true;
-	}
-
-	VulkanShader::VulkanShader(Device* device, std::filesystem::path& filePath)
-		: m_Device((VulkanDevice*)device)
-	{
-		ShaderSpecification specification = Shader::DeserializeFromYAML(filePath);
-
-		// Set shader name
-		if (specification.ShaderName)
-			m_Name = specification.ShaderName;
-		else if (specification.VertexShaderPath)
-			m_Name = std::filesystem::path(specification.VertexShaderPath).stem().string();
-		else if (specification.ComputeShaderPath)
-			m_Name = std::filesystem::path(specification.ComputeShaderPath).stem().string();
-		else
-			m_Name = "UnnamedShader";
-
-		// Check if it's a compute shader
-		m_IsCompute = specification.ComputeShaderPath != nullptr || specification.ComputeShaderSource != nullptr;
-
-		// Process shader files or source code
-		CompileOrGetVulkanBinary();
-		CreateShaderModule();
-		RebuildShaderStages();
-		ExtractResourceLayout();
-
-		m_IsLoaded = true;
-
-		m_Specification = specification;
 	}
 
 	VulkanShader::~VulkanShader()
@@ -139,7 +112,6 @@ namespace Echo
 		CompileOrGetVulkanBinary();
 		CreateShaderModule();
 		RebuildShaderStages();
-		ExtractResourceLayout();
 
 		m_IsLoaded = true;
 	}
@@ -251,73 +223,6 @@ namespace Echo
 				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, m_FragmentShaderModule));
 			if (m_GeometryShaderModule != VK_NULL_HANDLE)
 				m_ShaderStages.push_back(VulkanInitializers::PipelineShaderStageCreateInfo(VK_SHADER_STAGE_GEOMETRY_BIT, m_GeometryShaderModule));
-		}
-	}
-
-	void VulkanShader::ExtractResourceLayout()
-	{
-		// Clear previous resource layout
-		m_ResourceLayout.Clear();
-
-		// Reflect each shader stage
-		if (m_VertexShaderModule != VK_NULL_HANDLE)
-			ReflectShader(m_VertexShaderModule, ShaderStage::Vertex);
-		if (m_FragmentShaderModule != VK_NULL_HANDLE)
-			ReflectShader(m_FragmentShaderModule, ShaderStage::Fragment);
-		if (m_GeometryShaderModule != VK_NULL_HANDLE)
-			ReflectShader(m_GeometryShaderModule, ShaderStage::All); // Custom stages
-		if (m_ComputeShaderModule != VK_NULL_HANDLE)
-			ReflectShader(m_ComputeShaderModule, ShaderStage::Compute);
-	}
-
-	void VulkanShader::ReflectShader(VkShaderModule shader, ShaderStage stage)
-	{
-		// Here you would use the shader reflection from ShaderLibrary, either by:
-		// 1. Using the existing Slang reflection code you wrote earlier
-		// 2. Or using SpirV-Cross or other reflection libraries
-
-		// For simplicity, let's assume we're using the ShaderLibrary reflection:
-		ShaderResourceLayout stageLayout;
-
-		if (m_Specification.ShaderName != nullptr)
-		{
-			// For source-based shaders
-			if (stage == ShaderStage::Vertex && m_Specification.VertexShaderSource)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.VertexShaderSource, m_Specification.ShaderName);
-			else if (stage == ShaderStage::Fragment && m_Specification.FragmentShaderSource)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.FragmentShaderSource, m_Specification.ShaderName);
-			else if (stage == ShaderStage::Compute && m_Specification.ComputeShaderSource)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.ComputeShaderSource, m_Specification.ShaderName);
-		}
-		else
-		{
-			// For file-based shaders
-			if (stage == ShaderStage::Vertex && m_Specification.VertexShaderPath)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.VertexShaderPath);
-			else if (stage == ShaderStage::Fragment && m_Specification.FragmentShaderPath)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.FragmentShaderPath);
-			else if (stage == ShaderStage::Compute && m_Specification.ComputeShaderPath)
-				stageLayout = m_Device->GetShaderLibrary().ReflectShader(m_Specification.ComputeShaderPath);
-		}
-
-		// Merge the stage-specific layout into the overall resource layout
-		for (const auto& binding : stageLayout.GetResourceBindings())
-		{
-			m_ResourceLayout.AddResourceBinding(binding);
-		}
-
-		for (const auto& ubo : stageLayout.GetUniformBuffers())
-		{
-			m_ResourceLayout.AddUniformBuffer(ubo);
-		}
-
-		// Only add vertex attributes from the vertex shader
-		if (stage == ShaderStage::Vertex)
-		{
-			for (const auto& attribute : stageLayout.GetAttributes())
-			{
-				m_ResourceLayout.AddAttribute(attribute);
-			}
 		}
 	}
 

@@ -20,6 +20,8 @@ namespace Echo
 		void SetSelectedEntity(int entityID);
 
 		void OnImGuiRender();
+
+		EntityComponentPanel GetEntityComponentPanel() { return m_EntityComponentPanel; }
 	private:
 		void DrawEntityNode(Entity entity);
 	private:

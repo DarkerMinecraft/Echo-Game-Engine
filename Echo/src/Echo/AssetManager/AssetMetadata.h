@@ -31,7 +31,10 @@ namespace Echo
 		AssetType Type;
 		std::filesystem::path Path;
 		std::filesystem::file_time_type LastModified;
-		std::unordered_map<std::string, AssetVariant> CustomProps;
+		std::unordered_map<std::string, AssetVariant> CustomProps; 
+
+		bool SerializeToFile(const std::filesystem::path& filepath);
+		bool DeserializeFromFile(const std::filesystem::path& filepath);
 	};
 
 }

@@ -14,8 +14,7 @@ file(GLOB_RECURSE SRC_FILES
     "${ECHO_DIR}/src/**.cpp"
 )
 
-# Preserve exact source folder structure in the IDE
-source_group(TREE "${ECHO_DIR}/src" FILES ${SRC_FILES})
+source_group(TREE "${ECHO_DIR}/src" PREFIX "Source" FILES ${SRC_FILES})
 
 target_include_directories(Echo 
     PUBLIC

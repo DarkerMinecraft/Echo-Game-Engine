@@ -9,9 +9,13 @@ namespace Echo
 	class ContentBrowserPanel 
 	{
 	public:
-		ContentBrowserPanel();
+		ContentBrowserPanel(const std::filesystem::path currentDirectory);
+		ContentBrowserPanel()
+			: m_CurrentDirectory("") {}
 
 		void OnImGuiRender();
+
+		void SetCurrentDirectory(const std::filesystem::path currentDirectory) { m_CurrentDirectory = currentDirectory; }
 	private:
 		std::filesystem::path m_CurrentDirectory;
 

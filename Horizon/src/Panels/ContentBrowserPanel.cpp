@@ -5,10 +5,8 @@
 namespace Echo 
 {
 	
-	extern const std::filesystem::path g_AssetPath = "assets";
-
-	ContentBrowserPanel::ContentBrowserPanel()
-		: m_CurrentDirectory(g_AssetPath)
+	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path currentDirectory)
+		: m_CurrentDirectory(currentDirectory)
 	{
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
@@ -18,7 +16,7 @@ namespace Echo
 	{
 		ImGui::Begin("Content Browser");
 		
-		if (m_CurrentDirectory != std::filesystem::path(g_AssetPath))
+		if (m_CurrentDirectory != std::filesystem::path(m_CurrentDirectory))
 		{
 			if (ImGui::Button("<-"))
 			{
@@ -39,10 +37,9 @@ namespace Echo
 
 		for (auto& directoryEntry : std::filesystem::directory_iterator(m_CurrentDirectory)) 
 		{
-
 			const auto& path = directoryEntry.path();
 			std::string pathName = directoryEntry.path().string();
-			auto relativePath = std::filesystem::relative(path, g_AssetPath);
+			auto relativePath = std::filesystem::relative(path, m_CurrentDirectory);
 			std::string filenameString = relativePath.filename().string();
 
 			ImGui::PushID(filenameString.c_str());

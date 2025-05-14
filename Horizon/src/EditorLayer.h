@@ -40,9 +40,6 @@ namespace Echo
 		void ViewportUI();
 	private:
 		Ref<Framebuffer> m_Framebuffer;
-		Ref<Framebuffer> m_FinalFramebuffer;
-
-		Ref<OutlineEffect> m_OutlineEffect;
 
 		Ref<Scene> m_ActiveScene;
 
@@ -59,6 +56,8 @@ namespace Echo
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
+
+		AssetRegistry* m_AssetRegistry;
 
 		enum SceneState 
 		{

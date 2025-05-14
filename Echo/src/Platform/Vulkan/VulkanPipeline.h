@@ -12,43 +12,34 @@ namespace Echo
 	class VulkanPipeline : public Pipeline 
 	{
 	public:
-		VulkanPipeline(Device* device, Material* material);
-		VulkanPipeline(Device* device, Ref<Shader> computeShader, PipelineSpecification& spec);
+		VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& pipelineSpec);
 		virtual ~VulkanPipeline();
 
 		virtual void Bind(CommandBuffer* cmd) override;
 
-		virtual void WriteDescriptorStorageImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) override;
+		virtual PipelineType GetPipelineType() override { return m_PipelineType; }
 
-		virtual void WriteDescriptorCombinedTexture(Ref<Texture> tex, uint32_t binding = 0) override;
-		virtual void WriteDescriptorCombinedTextureArray(Ref<Texture> tex, int index, uint32_t binding = 0) override;
-		virtual void WriteDescriptorCombinedTexture(Texture* tex, uint32_t binding = 0) override;
-		
-		virtual void WriteDescriptorCombinedImage(Ref<Framebuffer> framebuffer, uint32_t index, uint32_t binding = 0) override;
-		virtual void WriteDescriptorUniformBuffer(Ref<UniformBuffer> uniformBuffer, uint32_t binding = 0) override;
+		virtual void BindResource(uint32_t binding, Ref<Texture2D> texture) override;
+		virtual void BindResource(uint32_t binding, Ref<Texture2D> texture, uint32_t texIndex) override;
+		virtual void BindResource(uint32_t binding, Ref<UniformBuffer> buffer) override;
+		virtual void BindResource(uint32_t binding, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) override;
 
-		virtual void Destroy() override;
-
-		PipelineType GetType()  { return m_PipelineType; }
-		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
-
-		VkDescriptorSet GetDescriptorSet() { return m_DescriptorSet; }
-		VkPipeline GetPipeline() { return m_Pipeline; }
-		VkPipelineLayout GetPipelineLayout() { return m_PipelineLayout; }
+		void Destroy();
 	private:
-		void CreateComputePipeline(Ref<Shader> computeShader, PipelineSpecification& specs);
-		void CreateGraphicsPipeline(Material* material);
+		void CreateComputePipeline(Ref<Shader> shader, const PipelineSpecification& spec);
+		void CreateGraphicsPipeline(Ref<Shader> shader, const PipelineSpecification& spec);
 
 		void CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
 		void CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
+
+		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
 	private:
 		static ShaderLibrary s_ShaderLibrary;
 	private:
 		VulkanDevice* m_Device;
 		PipelineType m_PipelineType;
-		
-		Material* m_Material;
-		Ref<Shader> m_ComputeShader;
+
+		Shader* m_Shader;
 
 		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;

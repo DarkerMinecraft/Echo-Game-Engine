@@ -6,26 +6,41 @@
 namespace Echo 
 {
 
-
-	VulkanMaterial::VulkanMaterial(Device* device, Ref<Shader> shader, Ref<Texture2D> texture, PipelineSpecification& spec)
-		: m_Device(static_cast<VulkanDevice*>(device)), m_Shader(static_cast<VulkanShader*>(shader.get())), m_Texture(static_cast<VulkanTexture2D*>(texture.get())), m_PipelineSpecification(spec)
+	VulkanMaterial::VulkanMaterial(Device* device, Ref<Pipeline> pipeline)
+		: m_Device((VulkanDevice*) device), m_Pipeline((VulkanPipeline*) pipeline.get())
 	{
-		m_Pipeline = new VulkanPipeline(device, this);
+
 	}
 
-	VulkanMaterial::VulkanMaterial(Device* device, Ref<Shader> shader, glm::vec3 color, PipelineSpecification& spec)
-		: m_Device(static_cast<VulkanDevice*>(device)), m_Shader(static_cast<VulkanShader*>(shader.get())), m_Color(color), m_PipelineSpecification(spec)
+	void VulkanMaterial::Reload()
 	{
-		m_Pipeline = new VulkanPipeline(device, this);
+
+	}
+
+	void VulkanMaterial::Load()
+	{
+
 	}
 
 	void VulkanMaterial::Destroy()
 	{
-		m_Shader->Destroy();
 		m_Pipeline->Destroy();
+	}
 
-		if (m_Texture != nullptr)
-			m_Texture->Destroy();
+	void VulkanMaterial::SetParam(const std::string& name, const MaterialParamValue& value)
+	{
+
+	}
+
+	const MaterialParamValue& VulkanMaterial::GetParam(const std::string& name) const
+	{
+		MaterialParamValue val;
+		return val;
+	}
+
+	bool VulkanMaterial::HasParam(const std::string& name) const
+	{
+		return false;
 	}
 
 }

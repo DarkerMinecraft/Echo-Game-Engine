@@ -7,25 +7,13 @@
 namespace Echo 
 {
 
-	Ref<Material> Material::Create(Ref<Shader> shader, Ref<Texture2D> texture, PipelineSpecification& spec)
+	Ref<Material> Material::Create(Ref<Pipeline> pipeline)
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
 
 		switch (device->GetDeviceType())
 		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanMaterial>(device, shader, texture, spec);
-		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
-
-	Ref<Material> Material::Create(Ref<Shader> shader, const glm::vec3& color, PipelineSpecification& spec)
-	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-
-		switch (device->GetDeviceType())
-		{
-			case DeviceType::Vulkan:  return CreateScope<VulkanMaterial>(device, shader, color, spec);
+			case DeviceType::Vulkan:  return CreateScope<VulkanMaterial>(device, pipeline);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

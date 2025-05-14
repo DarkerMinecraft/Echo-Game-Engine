@@ -4,7 +4,6 @@
 #include "Components.h"
 
 #include "Graphics/NamedRenderer/RendererQuad.h"
-#include "Graphics/NamedRenderer/Renderer3D.h"
 
 #include "Entity.h"
 #include "ScriptableEntity.h"
@@ -124,17 +123,6 @@ namespace Echo
 			}
 
 			RendererQuad::EndScene();
-
-			Renderer3D::BeginScene(cmd, *mainCamera, cameraTransform);
-			{
-				auto view = m_Registry.view<TransformComponent, MeshComponent>();
-				for (auto entity : view) 
-				{
-					auto [transform, mesh] = view.get<TransformComponent, MeshComponent>(entity);
-					Renderer3D::SubmitMesh(mesh, mesh, transform.GetTransform());
-				}
-			}
-			Renderer3D::EndScene();
 		}
 	}
 

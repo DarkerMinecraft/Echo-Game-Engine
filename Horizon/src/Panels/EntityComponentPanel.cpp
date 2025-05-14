@@ -13,8 +13,6 @@
 namespace Echo
 {
 
-	extern const std::filesystem::path g_AssetPath;
-
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValues = 0.0f, float colWidth = 100)
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -175,7 +173,7 @@ namespace Echo
 			DrawVec3Control("Scale", component.Scale, 1.0f);
 		});
 
-		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
+		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [this](auto& component)
 		{
 			ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
 			ImGui::Button("Texture", ImVec2(100.0f, 0));
@@ -185,7 +183,7 @@ namespace Echo
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 				{
 					const wchar_t* path = (const wchar_t*)payload->Data;
-					std::filesystem::path texturePath = std::filesystem::path(g_AssetPath) / path;
+					std::filesystem::path texturePath = m_CurrentDirectory / path;
 
 					component.Texture = Texture2D::Create(texturePath.string());
 				}
