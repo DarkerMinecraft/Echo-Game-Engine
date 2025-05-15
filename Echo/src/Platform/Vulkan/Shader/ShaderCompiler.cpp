@@ -98,7 +98,7 @@ namespace Echo
 
 	ShaderReflection ShaderLibrary::ReflectShader(const std::filesystem::path& path)
 	{
-		slang::IComponentType* linkedProgram = CompileShader(path);
+		Slang::ComPtr<IComponentType> linkedProgram = CompileShader(path);
 
 		ShaderReflection reflections = ExtractReflection(linkedProgram);
 		return reflections;
@@ -106,26 +106,17 @@ namespace Echo
 
 	ShaderReflection ShaderLibrary::ReflectShader(const char* source, const char* name)
 	{
-		slang::IComponentType* linkedProgram = CompileShader(source, name);
+		Slang::ComPtr<IComponentType> linkedProgram = CompileShader(source, name);
 
 		ShaderReflection reflections = ExtractReflection(linkedProgram);
 		return reflections;
 	}
 
-	ShaderReflection ShaderLibrary::ExtractReflection(slang::IComponentType* program)
+	ShaderReflection ShaderLibrary::ExtractReflection(Slang::ComPtr<IComponentType> program)
 	{
 		ShaderReflection reflections;
 
-		slang::ProgramLayout* layout; 
-		{
-			Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-			layout = program->getLayout(0i64, diagnosticsBlob.writeRef());
-			if (diagnosticsBlob)
-			{
-				std::string message = (char*)diagnosticsBlob->getBufferPointer();
-				EC_CORE_CRITICAL("Failed to get layout: {0}", message);
-			}
-		}
+		slang::ProgramLayout* layout = program->getLayout(); 
 
 		uint32_t entryPointCount = layout->getEntryPointCount();
 
@@ -259,7 +250,7 @@ namespace Echo
 		return 0;
 	}
 
-	slang::IComponentType* ShaderLibrary::CompileShader(const std::filesystem::path& path)
+	Slang::ComPtr<IComponentType> ShaderLibrary::CompileShader(const std::filesystem::path& path)
 	{
 		SessionDesc sessionDesc{};
 		TargetDesc targetDesc{};
@@ -329,7 +320,7 @@ namespace Echo
 			}
 		}
 
-		return linkedProgram.get();
+		return linkedProgram;
 	}
 
 	Slang::ComPtr<IComponentType> ShaderLibrary::CompileShader(const char* source, const char* name)
