@@ -31,7 +31,7 @@ target_include_directories(Echo
     $ENV{VULKAN_SDK}
     ${ECHO_DIR}/vendor/vk-bootstrap/src
     ${ECHO_DIR}/vendor/VulkanMemoryAllocator/include
-    ${ECHO_DIR}/vendor/tinyobjloader
+    ${ECHO_DIR}/vendor/tinyobjloader/include
     ${ECHO_DIR}/vendor/stb
     ${ECHO_DIR}/vendor/DirectXTK12/Inc
     ${ECHO_DIR}/vendor/Slang/include
