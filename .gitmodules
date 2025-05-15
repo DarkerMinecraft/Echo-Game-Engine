@@ -28,9 +28,6 @@
 [submodule "Echo/vendor/ImGuizmo"]
 	path = Echo/vendor/ImGuizmo
 	url = https://github.com/DarkerMinecraft/ImGuizmo.git
-[submodule "Echo/vendor/tinyobjloader"]
-	path = Echo/vendor/tinyobjloader
-	url = https://github.com/tinyobjloader/tinyobjloader.git
 [submodule "Echo/vendor/imgui"]
 	path = Echo/vendor/imgui
 	branch = docking
