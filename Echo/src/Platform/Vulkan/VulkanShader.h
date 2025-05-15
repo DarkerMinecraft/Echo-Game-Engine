@@ -8,16 +8,15 @@ namespace Echo
 	class VulkanShader : public Shader
 	{
 	public:
-		VulkanShader(Device* device, const ShaderSpecification& specification);
+		VulkanShader(Device* device, const std::filesystem::path& shaderPath);
+		VulkanShader(Device* device, const std::string& shaderSource, const std::string& name);
 		virtual ~VulkanShader();
 
-		virtual void Reload() override;
 		virtual void Unload() override;
 		virtual void Destroy() override;
 
 		virtual const std::string& GetName() const override { return m_Name; }
 		virtual ShaderResourceLayout& GetResourceLayout() override { return m_ResourceLayout; }
-		virtual bool IsCompute() override { return m_IsCompute; }
 
 		virtual const ShaderReflection& GetReflection() const { return m_ShaderReflection; };
 	public:
@@ -25,35 +24,28 @@ namespace Echo
 		VkShaderModule GetVertexShaderModule() { return m_VertexShaderModule; }
 		VkShaderModule GetFragmentShaderModule() { return m_FragmentShaderModule; }
 		VkShaderModule GetGeometryShaderModule() { return m_GeometryShaderModule; }
-
-		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() { return m_ShaderStages; }
 	private:
-		void CompileOrGetVulkanBinary();
-		void CreateShaderModule();
-		//void ReflectShader(VkShaderModule shader, ShaderStage stage);
+		void CompileOrGetVulkanBinary(const std::filesystem::path& shaderPath);
+		void CreateShader(const std::filesystem::path& shaderPath);
+		void CreateShader(const char* shaderSource, const char* shaderName);
+
 		VkShaderModule CreateShaderModule(const char* shaderSource, const char* shaderName);
-		VkShaderModule CreateShaderModule(const char* shaderPath);
-		void RebuildShaderStages();
+		VkShaderModule CreateShaderModule(const std::filesystem::path& shaderPath);
 	private:
 		VulkanDevice* m_Device;
 		std::string m_Name;
-		bool m_IsCompute = false;
 		bool m_Destroyed = false;
 		bool m_IsLoaded = false;
 
-		ShaderSpecification m_Specification;
 		ShaderResourceLayout m_ResourceLayout;
 
 		ShaderReflection m_ShaderReflection;
 
-		// Cached file timestamps for hot reloading
-		std::unordered_map<std::string, long long> m_FileTimestamps;
+		std::unordered_map<std::filesystem::path, long long> m_FileTimestamps;
 
 		VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_GeometryShaderModule = VK_NULL_HANDLE;
 		VkShaderModule m_ComputeShaderModule = VK_NULL_HANDLE;
-
-		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
 	};
 }

@@ -28,7 +28,7 @@ namespace Echo
 		std::string ShaderParameterName; 
 	};
 
-	class Material : public Asset
+	class Material
 	{
 	public:
 		virtual ~Material() = default;

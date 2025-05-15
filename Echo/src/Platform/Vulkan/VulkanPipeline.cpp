@@ -9,7 +9,7 @@
 
 #include <unordered_set>
 
-namespace Echo 
+namespace Echo
 {
 
 	static VkFormat ShaderDataTypeToVulkanFormat(ShaderDataType type)
@@ -30,18 +30,16 @@ namespace Echo
 	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
-		: m_Device((VulkanDevice*)device), m_Shader(shader.get())
+		: m_Device((VulkanDevice*)device)
 	{
-		if (shader->IsCompute())
-		{
-			m_PipelineType = PipelineType::Compute;
-			CreateComputePipeline(shader, spec);
-		}
-		else 
-		{
-			m_PipelineType = PipelineType::Graphics;
-			CreateGraphicsPipeline(shader, spec);
-		}
+		m_PipelineType = PipelineType::Compute;
+		CreateComputePipeline(shader, spec);
+	}
+
+	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& pipelineSpec)
+	{
+		m_PipelineType = PipelineType::Graphics;
+		CreateGraphicsPipeline(vertexShader, fragmentShader, pipelineSpec);
 	}
 
 	VulkanPipeline::~VulkanPipeline()
@@ -119,8 +117,6 @@ namespace Echo
 	{
 		if (m_Destroyed) return;
 
-		m_Shader->Destroy();
-
 		if (m_DescriptorSet != nullptr)
 		{
 			vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
@@ -155,7 +151,7 @@ namespace Echo
 		vkCreateComputePipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> shader, const PipelineSpecification& spec)
+	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& spec)
 	{
 		CreatePipelineLayout(spec.DescriptionSetLayouts);
 		CreateDescriptorSet(spec.DescriptionSetLayouts);
@@ -256,7 +252,7 @@ namespace Echo
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		auto shaderStages = ((VulkanShader*) m_Shader)->GetShaderStages();
+		//auto shaderStages = ((VulkanShader*)m_Shader)->GetShaderStages();
 
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -326,8 +322,8 @@ namespace Echo
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.pNext = &renderInfo;
-		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-		pipelineInfo.pStages = shaderStages.data();
+		//pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		//pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
@@ -388,7 +384,7 @@ namespace Echo
 		}
 
 		if (count != 0)
-			m_DescriptorSetLayout = builder.Build(m_Device->GetDevice()); 
+			m_DescriptorSetLayout = builder.Build(m_Device->GetDevice());
 
 		VkPipelineLayoutCreateInfo layoutCreateInfo{};
 

@@ -8,22 +8,17 @@ namespace Echo
 	class Asset 
 	{
 	public:
-		virtual ~Asset(); 
+		virtual ~Asset() = default; 
 
 		virtual void Load() = 0;
 		virtual void Reload() = 0;
 		virtual void Destroy() = 0; 
 		
-		AssetMetadata GetMetadata() { return m_Metadata; }
-		const AssetMetadata GetMetadata() const { return m_Metadata; }
+		virtual bool IsDirty() = 0;
+		virtual bool IsLoaded() = 0;
 		
-		bool IsDirty() { return m_IsDirty; }
-		bool IsLoaded() { return m_IsLoaded; }
-	private:
-		AssetMetadata m_Metadata;
-
-		bool m_IsDirty;
-		bool m_IsLoaded;
+		virtual AssetMetadata GetMetadata() = 0;
+		virtual const AssetMetadata GetMetadata() const = 0;
 	};
 
 }

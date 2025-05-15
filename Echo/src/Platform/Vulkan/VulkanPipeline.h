@@ -13,6 +13,7 @@ namespace Echo
 	{
 	public:
 		VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& pipelineSpec);
+		VulkanPipeline(Device* device, Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& pipelineSpec);
 		virtual ~VulkanPipeline();
 
 		virtual void Bind(CommandBuffer* cmd) override;
@@ -27,19 +28,15 @@ namespace Echo
 		void Destroy();
 	private:
 		void CreateComputePipeline(Ref<Shader> shader, const PipelineSpecification& spec);
-		void CreateGraphicsPipeline(Ref<Shader> shader, const PipelineSpecification& spec);
+		void CreateGraphicsPipeline(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& spec);
 
 		void CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
 		void CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
 
 		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
 	private:
-		static ShaderLibrary s_ShaderLibrary;
-	private:
 		VulkanDevice* m_Device;
 		PipelineType m_PipelineType;
-
-		Shader* m_Shader;
 
 		VkPipeline m_Pipeline;
 		VkPipelineLayout m_PipelineLayout;

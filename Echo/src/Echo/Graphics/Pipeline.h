@@ -28,6 +28,7 @@ namespace Echo
 		virtual void BindResource(uint32_t binding, Ref<UniformBuffer> buffer) = 0;
 		virtual void BindResource(uint32_t binding, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) = 0;
 
-		static Ref<Pipeline> Create(Ref<Shader> shader, const PipelineSpecification& specification);
+		static Ref<Pipeline> Create(Ref<Shader> computeShader, const PipelineSpecification& specification);
+		static Ref<Pipeline> Create(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& specification);
 	};
 }

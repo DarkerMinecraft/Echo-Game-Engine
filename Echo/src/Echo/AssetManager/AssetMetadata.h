@@ -14,6 +14,8 @@ namespace Echo
 
 	enum class AssetType
 	{
+		None = 0,
+
 		Shader,
 		Material,
 		Scene

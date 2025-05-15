@@ -1,13 +1,13 @@
 #pragma once
 
-#include "RHISpecification.h"
 #include "Reflections/ShaderReflection.h"
 
 #include <unordered_map>
+#include <filesystem>
 
 namespace Echo
 {
-	// Add shader reflection data structure
+
 	struct ShaderResourceLayout
 	{
 		struct UniformBuffer
@@ -33,16 +33,15 @@ namespace Echo
 	public:
 		virtual ~Shader() = default;
 
-		virtual void Reload() = 0;
 		virtual void Unload() = 0;
 		virtual void Destroy() = 0;
 
 		virtual const std::string& GetName() const = 0;
 		virtual ShaderResourceLayout& GetResourceLayout() = 0;
-		virtual bool IsCompute() = 0;
 
 		virtual const ShaderReflection& GetReflection() const = 0;
 
-		static Ref<Shader> Create(const ShaderSpecification& spec);
+		static Ref<Shader> Create(const std::filesystem::path shaderPath);
+		static Ref<Shader> Create(const std::string& shaderSource, const std::string& shaderName);
 	};
 }

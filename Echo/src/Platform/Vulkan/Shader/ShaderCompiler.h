@@ -5,6 +5,8 @@
 #include <slang-com-helper.h>
 
 #include <vulkan/vulkan.h>
+#include <filesystem>
+
 #include "Reflections/ShaderReflection.h"
 
 using namespace slang;
@@ -16,19 +18,23 @@ namespace Echo
 		ShaderLibrary(VkDevice device);
 		~ShaderLibrary();
 
-		VkShaderModule AddSpirvShader(const std::string& path);
+		VkShaderModule AddSpirvShader(const std::filesystem::path& path);
 		VkShaderModule AddSpirvShader(const char* source, const char* name);
 
-		// New method to get shader reflection
-		ShaderReflection ReflectShader(const std::string& path);
+		ShaderReflection ReflectShader(const std::filesystem::path& path);
 		ShaderReflection ReflectShader(const char* source, const char* name);
-
 	private:
-		ShaderReflection ExtractReflection(slang::IComponentType* program);
-		ShaderDataType SlangTypeToShaderDataType(slang::TypeReflection* type);
-		DescriptorType SlangBindingTypeToDescriptorType(slang::BindingType bindingType);
-		ShaderStage SlangStageToShaderStage(SlangStage stage);
+		ShaderReflection ExtractReflection(Slang::ComPtr<IComponentType> program);
+		
+		void ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection& reflection);
 
+		ShaderStage SlangStageToShaderStage(SlangStage stage);
+		ShaderDataType SlangTypeToShaderDataType(slang::TypeReflection* type);
+		uint32_t ExtractLocationFromSemantic(const char* semantic);
+
+		Slang::ComPtr<IComponentType> CompileShader(const std::filesystem::path& path);
+		Slang::ComPtr<IComponentType> CompileShader(const char* source, const char* name);
+	private:
 		VkDevice m_Device;
 		Slang::ComPtr<IGlobalSession> m_GlobalSession;
 	};
