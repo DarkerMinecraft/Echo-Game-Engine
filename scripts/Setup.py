@@ -20,6 +20,8 @@ def setup_and_build():
                         help="Only configure, don't build")
     parser.add_argument("--clean", action="store_true", 
                         help="Clean build (wipes build directory)")
+    parser.add_argument("--no-cmake", action="store_true", 
+                        help="Skip CMake configuration and build")
     args = parser.parse_args()
 
     # Change to project root directory
@@ -61,6 +63,11 @@ def setup_and_build():
     if not args.no_build:
         build_choice = input("\nBuild after configuration? (y/n) [y]: ").strip().lower()
         args.no_build = build_choice == 'n'
+    
+    # Ask about using CMake if not specified via command line
+    if not args.no_cmake:
+        cmake_choice = input("\nRun CMake configuration? (y/n) [y]: ").strip().lower()
+        args.no_cmake = cmake_choice == 'n'
 
     # Define build directory and clean if requested
     build_dir = os.path.join(project_root, "build")
@@ -85,23 +92,26 @@ def setup_and_build():
     os.makedirs(build_dir, exist_ok=True)
 
     # Configure the project - this creates a global solution
-    print("\nConfiguring project with CMake...")
-    configure_cmd = [
-        "cmake", 
-        "-G", "Visual Studio 17 2022", 
-        "-A", "x64",
-        "-B", build_dir,
-        "-S", project_root
-    ]
-    
-    configure_result = subprocess.call(configure_cmd)
-    
-    if configure_result != 0:
-        print(f"\nCMake configuration failed with error code: {configure_result}")
-        sys.exit(configure_result)
+    if not args.no_cmake:
+        print("\nConfiguring project with CMake...")
+        configure_cmd = [
+            "cmake", 
+            "-G", "Visual Studio 17 2022", 
+            "-A", "x64",
+            "-B", build_dir,
+            "-S", project_root
+        ]
+        
+        configure_result = subprocess.call(configure_cmd)
+        
+        if configure_result != 0:
+            print(f"\nCMake configuration failed with error code: {configure_result}")
+            sys.exit(configure_result)
+    else:
+        print("\nSkipping CMake configuration as requested.")
     
     # Build the project if requested
-    if not args.no_build:
+    if not args.no_build and not args.no_cmake:
         configs_to_build = []
         if args.config == "All":
             configs_to_build = ["Debug", "Release", "Dist"]
@@ -128,11 +138,17 @@ def setup_and_build():
                         sys.exit(build_result)
                 else:
                     sys.exit(build_result)
+    elif not args.no_build and args.no_cmake:
+        print("\nSkipping build because CMake configuration was skipped.")
+        print("To build, please run CMake configuration first.")
     
     # Print completion message with information on how to use the result
     print("\nSetup complete!")
-    print(f"\nYou can open the solution at: {os.path.join(build_dir, 'EchoEngine.sln')}")
-    print("Visual Studio will edit your source files directly while keeping build artifacts in the build directory.")
+    if not args.no_cmake:
+        print(f"\nYou can open the solution at: {os.path.join(build_dir, 'EchoEngine.sln')}")
+        print("Visual Studio will edit your source files directly while keeping build artifacts in the build directory.")
+    else:
+        print("\nCMake configuration was skipped. Run the script without --no-cmake to configure the project.")
 
 if __name__ == "__main__":
     setup_and_build()
