@@ -8,7 +8,7 @@ namespace Echo
 	class VulkanShader : public Shader
 	{
 	public:
-		VulkanShader(Device* device, const std::filesystem::path& shaderPath);
+		VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool useCurrentDirectory);
 		VulkanShader(Device* device, const std::string& shaderSource, const std::string& name);
 		virtual ~VulkanShader();
 

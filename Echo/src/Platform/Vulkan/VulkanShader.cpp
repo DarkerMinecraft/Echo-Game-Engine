@@ -16,11 +16,12 @@ namespace Echo
 		return systemTime.time_since_epoch().count();
 	}
 
-	VulkanShader::VulkanShader(Device* device, const std::filesystem::path& shaderPath)
+	VulkanShader::VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool useCurrentDirectory)
 		: m_Device((VulkanDevice*)device), m_Name(shaderPath.stem().string())
 	{
-		CompileOrGetVulkanBinary(shaderPath);
-		CreateShader(shaderPath);
+		std::filesystem::path path = useCurrentDirectory ? std::filesystem::current_path() / shaderPath : shaderPath;
+		CompileOrGetVulkanBinary(path);
+		CreateShader(path);
 	}
 
 	VulkanShader::VulkanShader(Device* device, const std::string& name, const std::string& source)

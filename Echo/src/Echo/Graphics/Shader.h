@@ -41,7 +41,7 @@ namespace Echo
 
 		virtual const ShaderReflection& GetReflection() const = 0;
 
-		static Ref<Shader> Create(const std::filesystem::path shaderPath);
+		static Ref<Shader> Create(const std::filesystem::path shaderPath, bool useCurrentDirectory = false);
 		static Ref<Shader> Create(const std::string& shaderSource, const std::string& shaderName);
 	};
 }

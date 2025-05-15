@@ -104,8 +104,8 @@ namespace Echo
 			{ ShaderDataType::Int, "InstanceID" },
 		};
 
-		s_Data.QuadVertexShader = Shader::Create("assets/shaders/quadVertex.slang");
-		s_Data.QuadFragmentShader = Shader::Create("assets/shaders/quadFragment.slang");
+		s_Data.QuadVertexShader = Shader::Create("assets/shaders/quadVertex.slang", true);
+		s_Data.QuadFragmentShader = Shader::Create("assets/shaders/quadFragment.slang", true);
 		//s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadVertexShader, s_Data.QuadFragmentShader, pipelineSpec);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
