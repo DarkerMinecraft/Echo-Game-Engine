@@ -18,7 +18,7 @@ namespace Echo
 
 	VkShaderModule ShaderLibrary::AddSpirvShader(const std::filesystem::path& path)
 	{
-		Slang::ComPtr<slang::IComponentType> linkedProgram = CompileShader(path);
+		slang::IComponentType* linkedProgram = CompileShader(path);
 
 		Slang::ComPtr<slang::IBlob> spirvCode;
 		{
@@ -58,7 +58,7 @@ namespace Echo
 
 	VkShaderModule ShaderLibrary::AddSpirvShader(const char* source, const char* name)
 	{
-		Slang::ComPtr<slang::IComponentType> linkedProgram = CompileShader(source, name);
+		slang::IComponentType* linkedProgram = CompileShader(source, name);
 
 		Slang::ComPtr<slang::IBlob> spirvCode;
 		{
@@ -98,7 +98,7 @@ namespace Echo
 
 	ShaderReflection ShaderLibrary::ReflectShader(const std::filesystem::path& path)
 	{
-		Slang::ComPtr<IComponentType> linkedProgram = CompileShader(path);
+		slang::IComponentType* linkedProgram = CompileShader(path);
 
 		ShaderReflection reflections = ExtractReflection(linkedProgram);
 		return reflections;
@@ -106,13 +106,13 @@ namespace Echo
 
 	ShaderReflection ShaderLibrary::ReflectShader(const char* source, const char* name)
 	{
-		Slang::ComPtr<IComponentType> linkedProgram = CompileShader(source, name);
+		slang::IComponentType* linkedProgram = CompileShader(source, name);
 
 		ShaderReflection reflections = ExtractReflection(linkedProgram);
 		return reflections;
 	}
 
-	ShaderReflection ShaderLibrary::ExtractReflection(Slang::ComPtr<IComponentType> program)
+	ShaderReflection ShaderLibrary::ExtractReflection(slang::IComponentType* program)
 	{
 		ShaderReflection reflections;
 
@@ -259,7 +259,7 @@ namespace Echo
 		return 0;
 	}
 
-	Slang::ComPtr<IComponentType> ShaderLibrary::CompileShader(const std::filesystem::path& path)
+	slang::IComponentType* ShaderLibrary::CompileShader(const std::filesystem::path& path)
 	{
 		SessionDesc sessionDesc{};
 		TargetDesc targetDesc{};
@@ -329,7 +329,7 @@ namespace Echo
 			}
 		}
 
-		return linkedProgram;
+		return linkedProgram.get();
 	}
 
 	Slang::ComPtr<IComponentType> ShaderLibrary::CompileShader(const char* source, const char* name)
