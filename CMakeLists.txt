@@ -78,6 +78,7 @@ set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies")
 set_target_properties(slang-common-objects PROPERTIES FOLDER "Dependencies")
 set_target_properties(core PROPERTIES FOLDER "Dependencies")
 set_target_properties(compiler-core PROPERTIES FOLDER "Dependencies")
+set_target_properties(slangi PROPERTIES FOLDER "Dependencies")
 
 # Create Clean targets for Echo and Horizon
 add_custom_target(CleanEcho

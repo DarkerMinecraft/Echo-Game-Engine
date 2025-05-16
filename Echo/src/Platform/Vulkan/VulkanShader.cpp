@@ -84,46 +84,57 @@ namespace Echo
 
 	void VulkanShader::CreateShader(const std::filesystem::path& shaderPath)
 	{
-		m_ShaderReflection = m_Device->GetShaderLibrary().ReflectShader(shaderPath);
-
+		VkShaderModule module = CreateShaderModule(shaderPath);
 		switch (m_ShaderReflection.GetShaderStage())
 		{
 			case ShaderStage::Vertex:
-				m_VertexShaderModule = CreateShaderModule(shaderPath);
+				m_VertexShaderModule = module;
 				break;
 			case ShaderStage::Fragment:
-				m_FragmentShaderModule = CreateShaderModule(shaderPath);
+				m_FragmentShaderModule = module;
+				break;
+			case ShaderStage::Geometry:
+				m_GeometryShaderModule = module;
 				break;
 			case ShaderStage::Compute:
-				m_ComputeShaderModule = CreateShaderModule(shaderPath);
+				m_ComputeShaderModule = module;
 				break;
 		}
 	}
 
 	void VulkanShader::CreateShader(const char* shaderSource, const char* shaderName)
 	{
-		m_ShaderReflection = m_Device->GetShaderLibrary().ReflectShader(shaderSource, shaderName);
+		VkShaderModule module = CreateShaderModule(shaderSource, shaderName);
 		switch (m_ShaderReflection.GetShaderStage())
 		{
 			case ShaderStage::Vertex:
-				m_VertexShaderModule = CreateShaderModule(shaderSource, shaderName);
+				m_VertexShaderModule = module;
 				break;
 			case ShaderStage::Fragment:
-				m_FragmentShaderModule = CreateShaderModule(shaderSource, shaderName);
+				m_FragmentShaderModule = module;
+				break;
+			case ShaderStage::Geometry:
+				m_GeometryShaderModule = module;
 				break;
 			case ShaderStage::Compute:
-				m_ComputeShaderModule = CreateShaderModule(shaderSource, shaderName);
+				m_ComputeShaderModule = module;
 				break;
 		}
 	}
 
 	VkShaderModule VulkanShader::CreateShaderModule(const std::filesystem::path& shaderPath)
 	{
-		return m_Device->GetShaderLibrary().AddSpirvShader(shaderPath);
+		VkShaderModule module;
+		m_Device->GetShaderLibrary().AddSpirvShader(shaderPath, &module, &m_ShaderReflection);
+
+		return module;
 	}
 
 	VkShaderModule VulkanShader::CreateShaderModule(const char* shaderSource, const char* shaderName)
 	{
-		return m_Device->GetShaderLibrary().AddSpirvShader(shaderSource, shaderName);
+		VkShaderModule module;
+		m_Device->GetShaderLibrary().AddSpirvShader(shaderSource, shaderName, &module, &m_ShaderReflection);
+
+		return module;
 	}
 }
