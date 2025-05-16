@@ -12,14 +12,21 @@
 using namespace slang;
 namespace Echo
 {
+
+	struct ShaderData 
+	{
+		VkShaderModule Module;
+		ShaderReflection Reflection;
+	};
+
 	class ShaderLibrary
 	{
 	public:
 		ShaderLibrary(VkDevice device);
 		~ShaderLibrary();
 
-		void AddSpirvShader(const std::filesystem::path& path, VkShaderModule* module, ShaderReflection* reflection);
-		void AddSpirvShader(const char* source, const char* name, VkShaderModule* module, ShaderReflection* reflection);
+		std::vector<ShaderData> AddSpirvShader(const std::filesystem::path& path);
+		std::vector<ShaderData> AddSpirvShader(const char* source, const char* name);
 	private:
 		void ExtractReflection(slang::ProgramLayout* layout, ShaderReflection* reflection);
 		

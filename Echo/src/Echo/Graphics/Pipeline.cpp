@@ -19,16 +19,4 @@ namespace Echo
 		return nullptr;
 	}
 
-	Ref<Pipeline> Pipeline::Create(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& specification)
-	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-
-		switch (device->GetDeviceType())
-		{
-			case DeviceType::Vulkan: return CreateScope<VulkanPipeline>(device, vertexShader, fragmentShader, specification);
-		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
-
 }

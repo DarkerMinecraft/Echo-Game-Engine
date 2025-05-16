@@ -15,24 +15,31 @@ namespace Echo
 		virtual void Unload() override;
 		virtual void Destroy() override;
 
-		virtual const std::string& GetName() const override { return m_Name; }
+		virtual const std::vector<ShaderReflection>& GetReflections() const { return m_ShaderReflections; }
+		virtual const ShaderReflection& GetVertexReflection() const { return m_VertexReflection; }
+		virtual const ShaderReflection& GetFragmentReflection() const { return m_FragmentReflection; }
+		virtual const ShaderReflection& GetComputeRelection() const { return m_ComputeReflection; }
 
-		virtual const ShaderReflection& GetReflection() const { return m_ShaderReflection; };
+		virtual const std::string& GetName() const override { return m_Name; }
+		virtual bool IsCompute() override { return m_IsCompute; };
 	public:
-		VkShaderModule GetShaderModule() { return m_ShaderModule; }
+		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() { return m_ShaderStages; };
 	private:
 		void CompileOrGetVulkanBinary(const std::filesystem::path& shaderPath);
 
-		VkShaderModule CreateShaderModule(const char* shaderSource, const char* shaderName);
-		VkShaderModule CreateShaderModule(const std::filesystem::path& shaderPath);
+		void CreateShaderModules(const char* shaderSource, const char* shaderName);
+		void CreateShaderModules(const std::filesystem::path& shaderPath);
 	private:
 		VulkanDevice* m_Device;
 		std::string m_Name;
 		bool m_Destroyed = false;
+		bool m_IsCompute = false;
 
-		ShaderReflection m_ShaderReflection;
+		std::vector<ShaderReflection> m_ShaderReflections;
+		std::vector<VkShaderModule> m_ShaderModules;
+		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
 
-		VkShaderModule m_ShaderModule;
+		ShaderReflection m_VertexReflection, m_FragmentReflection, m_GeometryReflection, m_ComputeReflection;
 
 		std::unordered_map<std::filesystem::path, long long> m_FileTimestamps;
 	};

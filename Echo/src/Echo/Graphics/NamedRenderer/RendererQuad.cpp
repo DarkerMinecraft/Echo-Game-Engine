@@ -37,8 +37,7 @@ namespace Echo
 		Ref<VertexBuffer> QuadVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
 
-		Ref<Shader> QuadVertexShader;
-		Ref<Shader> QuadFragmentShader;
+		Ref<Shader> QuadShader;
 		Ref<Pipeline> QuadPipeline;
 
 		Ref<UniformBuffer> QuadUniformBuffer;
@@ -90,9 +89,8 @@ namespace Echo
 
 		pipelineSpec.RenderTarget = framebuffer;
 
-		s_Data.QuadVertexShader = Shader::Create("assets/shaders/quadVertex.slang", true);
-		s_Data.QuadFragmentShader = Shader::Create("assets/shaders/quadFragment.slang", true);
-		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadVertexShader, s_Data.QuadFragmentShader, pipelineSpec);
+		s_Data.QuadShader = Shader::Create("assets/shaders/quadShader.slang", true);
+		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader, pipelineSpec);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 
@@ -327,8 +325,7 @@ namespace Echo
 		s_Data.QuadPipeline.reset();
 		s_Data.QuadUniformBuffer.reset();
 		s_Data.QuadHighlightBuffer.reset();
-		s_Data.QuadVertexShader.reset();
-		s_Data.QuadFragmentShader.reset();
+		s_Data.QuadShader.reset();
 		s_Data.TextureSlots[0]->Destroy();
 
 		delete[] s_Data.QuadVertexBufferBase;

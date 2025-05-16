@@ -26,7 +26,7 @@ struct Camera
 [[vk::binding(0, 0)]] ConstantBuffer<Camera> cam : register(b0);
 
 [shader("vertex")]
-VSOuput main(VSInput input)
+VSOuput vertexMain(VSInput input)
 {
     VSOuput output;
     output.position = mul(float4(input.position, 1.0), cam.projViewMatrix);
@@ -36,5 +36,36 @@ VSOuput main(VSInput input)
     output.tilingFactor = input.tilingFactor;
     output.instanceID = input.instanceID;
 
+    return output;
+}
+
+struct PSInput
+{
+    float4 position : SV_Position;
+    float2 uv : TEXCOORD0;
+    float4 color : COLOR;
+    int texIndex : ATTRIB0;
+    float tilingFactor : ATTRIB1;
+    int instanceID : ATTRIB2;
+}
+
+[[vk::binding(1, 0)]] Sampler2D texSamplers[] : register(s0, space0);
+
+struct PSOutput
+{
+    float4 color : SV_Target;
+    int instanceID : SV_Target1;
+}
+
+[shader("pixel")]
+PSOutput pixelMain(PSInput input) : SV_Target
+{
+    PSOutput output;
+
+    // Sample the texture
+    float4 texColor = texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
+    output.color = input.color * texColor;
+
+    output.instanceID = input.instanceID;
     return output;
 }

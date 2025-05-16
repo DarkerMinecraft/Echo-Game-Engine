@@ -32,15 +32,16 @@ namespace Echo
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
 		: m_Device((VulkanDevice*) device)
 	{
-		m_PipelineType = PipelineType::Compute;
-		CreateComputePipeline(shader, spec);
-	}
-
-	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& pipelineSpec)
-		: m_Device((VulkanDevice*) device)
-	{
-		m_PipelineType = PipelineType::Graphics;
-		CreateGraphicsPipeline(vertexShader, fragmentShader, pipelineSpec);
+		if (shader->IsCompute()) 
+		{
+			m_PipelineType = PipelineType::Compute;
+			CreateComputePipeline(shader, spec);
+		}
+		else 
+		{
+			m_PipelineType = PipelineType::Graphics;
+			CreateGraphicsPipeline(shader, spec);
+		}
 	}
 
 	VulkanPipeline::~VulkanPipeline()
@@ -136,26 +137,20 @@ namespace Echo
 		CreatePipelineLayout(layouts);
 		CreateDescriptorSet(layouts);
 
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages = ((VulkanShader*)computeShader.get())->GetShaderStages();
+
 		VkComputePipelineCreateInfo pipelineCreateInfo{};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		pipelineCreateInfo.pNext = nullptr;
 		pipelineCreateInfo.layout = m_PipelineLayout;
-
-		VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
-		shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStageCreateInfo.pNext = nullptr;
-		shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStageCreateInfo.module = ((VulkanShader*)computeShader.get())->GetShaderModule();
-		shaderStageCreateInfo.pName = "main";
-
-		pipelineCreateInfo.stage = shaderStageCreateInfo;
+		pipelineCreateInfo.stage = shaderStages[0];
 
 		vkCreateComputePipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& spec)
+	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> graphicsShader, const PipelineSpecification& spec)
 	{
-		std::vector<DescriptionSetLayout> layouts = CreateLayout(vertexShader, fragmentShader);
+		std::vector<DescriptionSetLayout> layouts = CreateLayout(graphicsShader);
 		CreatePipelineLayout(layouts);
 		CreateDescriptorSet(layouts);
 
@@ -180,15 +175,16 @@ namespace Echo
 			}
 		};
 
+		BufferLayout layout = graphicsShader->GetVertexReflection().GetVertexLayout();
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = spec.VertexLayout.GetStride();
+		bindingDescription.stride = layout.GetStride();
 		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 		bindingDescriptions.push_back(bindingDescription);
 
 		uint32_t count = 0;
-		for (const auto& element : vertexShader->GetReflection().GetVertexLayout())
+		for (const auto& element : layout)
 		{
 			VkVertexInputAttributeDescription attributeDescription{};
 			attributeDescription.binding = 0;
@@ -320,22 +316,7 @@ namespace Echo
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
 
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages; 
-		shaderStages.push_back({
-				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				.pNext = nullptr,
-				.stage = VK_SHADER_STAGE_VERTEX_BIT,
-				.module = ((VulkanShader*)vertexShader.get())->GetShaderModule(),
-				.pName = "main"
-		});
-
-		shaderStages.push_back({
-				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				.pNext = nullptr,
-				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.module = ((VulkanShader*)fragmentShader.get())->GetShaderModule(),
-				.pName = "main"
-		});
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages = ((VulkanShader*)graphicsShader.get())->GetShaderStages();
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -420,46 +401,21 @@ namespace Echo
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
 	}
-
-	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> vertexShader, Ref<Shader> fragmentShader)
+	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> shader)
 	{
 		std::vector<DescriptionSetLayout> descriptorSetLayout;
 
-		for (auto ubo : vertexShader->GetReflection().GetUniformBuffers()) 
+		for (auto& reflection : shader->GetReflections())
 		{
-			descriptorSetLayout.push_back({ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage});
-		}
+			for (auto ubo : reflection.GetUniformBuffers())
+			{
+				descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
+			}
 
-		for (auto rbo : vertexShader->GetReflection().GetResourceBindings()) 
-		{
-			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
-		}
-
-		for (auto ubo : fragmentShader->GetReflection().GetUniformBuffers())
-		{
-			descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
-		}
-
-		for (auto rbo : fragmentShader->GetReflection().GetResourceBindings())
-		{
-			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
-		}
-
-		return descriptorSetLayout;
-	}
-
-	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> computeShader)
-	{
-		std::vector<DescriptionSetLayout> descriptorSetLayout;
-
-		for (auto ubo : computeShader->GetReflection().GetUniformBuffers())
-		{
-			descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
-		}
-
-		for (auto rbo : computeShader->GetReflection().GetResourceBindings())
-		{
-			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+			for (auto rbo : reflection.GetResourceBindings())
+			{
+				descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+			}
 		}
 
 		return descriptorSetLayout;

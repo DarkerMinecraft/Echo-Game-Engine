@@ -167,7 +167,6 @@ namespace Echo
 		Fill FillMode = Fill::Solid;
 
 		CompareOp DepthCompareOp = CompareOp::Less;
-		BufferLayout VertexLayout;
 
 		Topology GraphicsTopology = Topology::TriangleList;
 
