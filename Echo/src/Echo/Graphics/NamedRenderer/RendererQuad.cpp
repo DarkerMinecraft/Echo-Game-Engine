@@ -32,7 +32,7 @@ namespace Echo
 		uint32_t MaxVertices = MaxQuads * 4;
 		uint32_t MaxIndices = MaxQuads * 6;
 
-		static const uint32_t MaxTextureSlots = 32;
+		uint32_t MaxTextureSlots;
 
 		Ref<VertexBuffer> QuadVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
@@ -48,7 +48,7 @@ namespace Echo
 		QuadVertex* QuadVertexBufferBase = nullptr;
 		QuadVertex* QuadVertexBufferPtr = nullptr;
 
-		std::array<Ref<Texture2D>, MaxTextureSlots> TextureSlots;
+		std::vector<Ref<Texture2D>> TextureSlots;
 		uint32_t TextureSlotIndex = 1;
 
 		const glm::vec2 QuadTexCoords[4] = {
@@ -76,6 +76,8 @@ namespace Echo
 
 	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
 	{
+		s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
+
 		PipelineSpecification pipelineSpec{};
 		pipelineSpec.EnableBlending = false;
 		pipelineSpec.EnableDepthTest = false;
@@ -88,29 +90,13 @@ namespace Echo
 
 		pipelineSpec.RenderTarget = framebuffer;
 
-		pipelineSpec.DescriptionSetLayouts =
-		{
-			{0, DescriptorType::UniformBuffer, 1, ShaderStage::Vertex},
-			{1, DescriptorType::SampledImage, s_Data.MaxTextureSlots, ShaderStage::Fragment }
-		};
-
-		pipelineSpec.VertexLayout =
-		{
-			{ ShaderDataType::Float3, "Position" },
-			{ ShaderDataType::Float2, "TexCoord" },
-			{ ShaderDataType::Float4, "Color" },
-			{ ShaderDataType::Int, "TexIndex" },
-			{ ShaderDataType::Float, "TilingFactor" },
-			{ ShaderDataType::Int, "InstanceID" },
-		};
-
 		s_Data.QuadVertexShader = Shader::Create("assets/shaders/quadVertex.slang", true);
 		s_Data.QuadFragmentShader = Shader::Create("assets/shaders/quadFragment.slang", true);
-		//s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadVertexShader, s_Data.QuadFragmentShader, pipelineSpec);
+		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadVertexShader, s_Data.QuadFragmentShader, pipelineSpec);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 
-		s_Data.TextureSlots[0] = Texture2D::Create(1, 1, new uint32_t(0xffffffff));
+		s_Data.TextureSlots.push_back(Texture2D::Create(1, 1, new uint32_t(0xffffffff)));
 
 		BatchUniformBuffer batchUniformBuffer{};
 		s_Data.QuadUniformBuffer = UniformBuffer::Create(&batchUniformBuffer, sizeof(BatchUniformBuffer));

@@ -6,8 +6,6 @@
 
 namespace Echo 
 {
-
-
 	Ref<VertexBuffer> VertexBuffer::Create(float* data, uint32_t size, bool isDynamic)
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();

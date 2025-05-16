@@ -30,13 +30,14 @@ namespace Echo
 	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
-		: m_Device((VulkanDevice*)device)
+		: m_Device((VulkanDevice*) device)
 	{
 		m_PipelineType = PipelineType::Compute;
 		CreateComputePipeline(shader, spec);
 	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& pipelineSpec)
+		: m_Device((VulkanDevice*) device)
 	{
 		m_PipelineType = PipelineType::Graphics;
 		CreateGraphicsPipeline(vertexShader, fragmentShader, pipelineSpec);
@@ -129,10 +130,11 @@ namespace Echo
 		m_Destroyed = true;
 	}
 
-	void VulkanPipeline::CreateComputePipeline(Ref<Shader> shader, const PipelineSpecification& spec)
+	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, const PipelineSpecification& spec)
 	{
-		CreatePipelineLayout(spec.DescriptionSetLayouts);
-		CreateDescriptorSet(spec.DescriptionSetLayouts);
+		std::vector<DescriptionSetLayout> layouts = CreateLayout(computeShader);
+		CreatePipelineLayout(layouts);
+		CreateDescriptorSet(layouts);
 
 		VkComputePipelineCreateInfo pipelineCreateInfo{};
 		pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -143,7 +145,7 @@ namespace Echo
 		shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStageCreateInfo.pNext = nullptr;
 		shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		shaderStageCreateInfo.module = ((VulkanShader*)shader.get())->GetComputeShaderModule();
+		shaderStageCreateInfo.module = ((VulkanShader*)computeShader.get())->GetShaderModule();
 		shaderStageCreateInfo.pName = "main";
 
 		pipelineCreateInfo.stage = shaderStageCreateInfo;
@@ -153,8 +155,9 @@ namespace Echo
 
 	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& spec)
 	{
-		CreatePipelineLayout(spec.DescriptionSetLayouts);
-		CreateDescriptorSet(spec.DescriptionSetLayouts);
+		std::vector<DescriptionSetLayout> layouts = CreateLayout(vertexShader, fragmentShader);
+		CreatePipelineLayout(layouts);
+		CreateDescriptorSet(layouts);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -185,7 +188,7 @@ namespace Echo
 		bindingDescriptions.push_back(bindingDescription);
 
 		uint32_t count = 0;
-		for (const auto& element : spec.VertexLayout)
+		for (const auto& element : vertexShader->GetReflection().GetVertexLayout())
 		{
 			VkVertexInputAttributeDescription attributeDescription{};
 			attributeDescription.binding = 0;
@@ -252,8 +255,6 @@ namespace Echo
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		//auto shaderStages = ((VulkanShader*)m_Shader)->GetShaderStages();
-
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.pNext = nullptr;
@@ -319,11 +320,28 @@ namespace Echo
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
 
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages; 
+		shaderStages.push_back({
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = nullptr,
+				.stage = VK_SHADER_STAGE_VERTEX_BIT,
+				.module = ((VulkanShader*)vertexShader.get())->GetShaderModule(),
+				.pName = "main"
+		});
+
+		shaderStages.push_back({
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = nullptr,
+				.stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.module = ((VulkanShader*)fragmentShader.get())->GetShaderModule(),
+				.pName = "main"
+		});
+
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		pipelineInfo.pNext = &renderInfo;
-		//pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-		//pipelineInfo.pStages = shaderStages.data();
+		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
 		pipelineInfo.pViewportState = &viewportState;
@@ -339,7 +357,7 @@ namespace Echo
 		vkCreateGraphicsPipelines(m_Device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline);
 	}
 
-	void VulkanPipeline::CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout)
+	void VulkanPipeline::CreatePipelineLayout(std::vector<DescriptionSetLayout> descriptorSetLayout)
 	{
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
 		{
@@ -403,7 +421,51 @@ namespace Echo
 		}
 	}
 
-	void VulkanPipeline::CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout)
+	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> vertexShader, Ref<Shader> fragmentShader)
+	{
+		std::vector<DescriptionSetLayout> descriptorSetLayout;
+
+		for (auto ubo : vertexShader->GetReflection().GetUniformBuffers()) 
+		{
+			descriptorSetLayout.push_back({ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage});
+		}
+
+		for (auto rbo : vertexShader->GetReflection().GetResourceBindings()) 
+		{
+			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+		}
+
+		for (auto ubo : fragmentShader->GetReflection().GetUniformBuffers())
+		{
+			descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
+		}
+
+		for (auto rbo : fragmentShader->GetReflection().GetResourceBindings())
+		{
+			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+		}
+
+		return descriptorSetLayout;
+	}
+
+	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> computeShader)
+	{
+		std::vector<DescriptionSetLayout> descriptorSetLayout;
+
+		for (auto ubo : computeShader->GetReflection().GetUniformBuffers())
+		{
+			descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
+		}
+
+		for (auto rbo : computeShader->GetReflection().GetResourceBindings())
+		{
+			descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+		}
+
+		return descriptorSetLayout;
+	}
+
+	void VulkanPipeline::CreateDescriptorSet(std::vector<DescriptionSetLayout> descriptorSetLayout)
 	{
 		if (descriptorSetLayout.empty()) return;
 		int maxSets = descriptorSetLayout.size();

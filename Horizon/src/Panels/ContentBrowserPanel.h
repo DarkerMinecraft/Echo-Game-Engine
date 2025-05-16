@@ -10,8 +10,7 @@ namespace Echo
 	{
 	public:
 		ContentBrowserPanel(const std::filesystem::path currentDirectory);
-		ContentBrowserPanel()
-			: m_CurrentDirectory("") {}
+		ContentBrowserPanel();
 
 		void OnImGuiRender();
 

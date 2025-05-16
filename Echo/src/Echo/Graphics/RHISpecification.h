@@ -147,6 +147,14 @@ namespace Echo
 		uint32_t m_Stride = 0;
 	};
 
+	struct DescriptionSetLayout
+	{
+		uint32_t Binding = 0;
+		DescriptorType Type;
+		uint32_t Count;
+		ShaderStage Stage;
+	};
+
 	struct PipelineSpecification
 	{
 		bool EnableBlending = false;
@@ -162,15 +170,6 @@ namespace Echo
 		BufferLayout VertexLayout;
 
 		Topology GraphicsTopology = Topology::TriangleList;
-
-		struct DescriptionSetLayout
-		{
-			uint32_t Binding = 0;
-			DescriptorType Type;
-			uint32_t Count;
-			ShaderStage Stage;
-		};
-		std::vector<DescriptionSetLayout> DescriptionSetLayouts;
 
 		Ref<Framebuffer> RenderTarget;
 	};

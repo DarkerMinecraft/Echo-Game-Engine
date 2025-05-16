@@ -61,6 +61,11 @@ namespace Echo
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 
+	const uint32_t VulkanDevice::GetMaxTextureSlots() const
+	{
+		return VulkanRenderCaps::GetMaxTextureSlots();
+	}
+
 	VkImage VulkanDevice::GetSwapchainImage(uint32_t imageIndex)
 	{
 		return m_Swapchain->GetImage(imageIndex);

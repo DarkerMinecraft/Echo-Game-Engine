@@ -18,16 +18,18 @@ struct VSOuput
     nointerpolation int instanceID : ATTRIB2;
 }
 
-[[vk::binding(0, 0)]] cbuffer Camera : register(b0)
+struct Camera 
 {
-    float4x4 projViewMatrix;
+    float4x4 projViewMatrix; 
 }
+
+[[vk::binding(0, 0)]] ConstantBuffer<Camera> cam : register(b0);
 
 [shader("vertex")]
 VSOuput main(VSInput input)
 {
     VSOuput output;
-    output.position = mul(float4(input.position, 1.0), projViewMatrix);
+    output.position = mul(float4(input.position, 1.0), cam.projViewMatrix);
     output.uv = input.uv;
     output.color = input.color;
     output.texIndex = input.texIndex;

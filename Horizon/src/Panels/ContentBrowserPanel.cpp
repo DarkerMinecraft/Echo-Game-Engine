@@ -1,12 +1,20 @@
 #include "ContentBrowserPanel.h"
 
 #include <imgui.h>
+#include <Core/Log.h>
 
 namespace Echo 
 {
 	
 	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path currentDirectory)
 		: m_CurrentDirectory(currentDirectory)
+	{
+		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
+	}
+
+	ContentBrowserPanel::ContentBrowserPanel()
+		: m_CurrentDirectory("")
 	{
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
@@ -49,7 +57,7 @@ namespace Echo
 
 			if (ImGui::BeginDragDropSource()) 
 			{
-				const wchar_t* itemPath = relativePath.c_str();
+				const wchar_t* itemPath = path.c_str();
 
 				ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t));
 				ImGui::EndDragDropSource();

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
 
+#include "Vulkan/VulkanRenderCaps.h"
+
 using namespace slang;
 namespace Echo
 {
@@ -235,7 +237,11 @@ namespace Echo
 		if (entryPointCount > 1) EC_CORE_CRITICAL("More than 1 entry points");
 		slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(0);
 
-		reflection->SetShaderStage(SlangStageToShaderStage(entryPoint->getStage()));
+		ShaderStage stage = SlangStageToShaderStage(entryPoint->getStage());
+		reflection->SetShaderStage(stage);
+
+		ExtractUniformBuffers(stage, layout, reflection);
+		ExtractResourceBuffers(stage, layout, reflection);
 
 		ExtractVertexAttributes(entryPoint, reflection);
 	}
@@ -243,6 +249,8 @@ namespace Echo
 	void ShaderLibrary::ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection)
 	{
 		if (entryPoint->getStage() != SLANG_STAGE_VERTEX) return;
+
+		BufferLayout layout;
 
 		uint32_t paramCount = entryPoint->getParameterCount();
 		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++)
@@ -262,15 +270,97 @@ namespace Echo
 
 						const char* fieldName = field->getName();
 						ShaderDataType fieldType = SlangTypeToShaderDataType(field->getType());
-
-						ShaderAttribute attribute;
-						attribute.Location = fieldIndex;
-						attribute.Name = fieldName;
-						attribute.Type = fieldType;
-
-						reflection->AddAttribute(attribute);
+						
+						layout.AddElement({fieldType, fieldName});
 					}
 				}
+			}
+		}
+
+		reflection->SetBufferLayout(layout);
+	}
+
+	void ShaderLibrary::ExtractUniformBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection)
+	{
+		uint32_t paramCount = layout->getParameterCount();
+		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++) 
+		{
+			auto param = layout->getParameterByIndex(paramIndex);
+			auto paramType = param->getType();
+
+			if (paramType->getKind() == slang::TypeReflection::Kind::ConstantBuffer) 
+			{
+				ShaderUniformBuffer ubo; 
+				ubo.Name = param->getName();
+				ubo.Binding = param->getBindingIndex();
+				ubo.Stage = stage;
+				
+				reflection->AddUniformBuffer(ubo);
+			}
+		}
+	}
+
+	void ShaderLibrary::ExtractResourceBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection)
+	{
+		uint32_t paramCount = layout->getParameterCount();
+		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++)
+		{
+			auto param = layout->getParameterByIndex(paramIndex);
+			auto paramType = param->getType();
+
+			if (paramType->getKind() != slang::TypeReflection::Kind::ConstantBuffer)
+			{
+				ShaderResourceBinding binding;
+				binding.Name = param->getName();
+				binding.Binding = param->getBindingIndex();
+				binding.Stage = stage;
+
+				if (paramType->isArray()) 
+				{
+					uint32_t count = paramType->getTotalArrayElementCount();
+					if (count == 0) 
+					{
+						slang::TypeReflection::Kind kind = paramType->getElementType()->getKind();
+						if (paramType->getElementType()->getKind() == slang::TypeReflection::Kind::Resource)
+						{
+							auto shape = paramType->getResourceShape();
+							auto access = paramType->getResourceAccess();
+
+							if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
+							{
+								count = VulkanRenderCaps::GetMaxTextureSlots();
+								binding.Type = (access == SLANG_RESOURCE_ACCESS_READ)
+									? DescriptorType::SampledImage
+									: DescriptorType::StorageImage;
+							}
+						}
+					}
+					binding.Count = count;
+				}
+				else 
+				{
+					binding.Count = 1;
+				}
+
+
+				if (paramType->getKind() == slang::TypeReflection::Kind::Resource) 
+				{
+					auto shape = paramType->getResourceShape();
+					auto access = paramType->getResourceAccess();
+
+					if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
+					{
+						binding.Type = (access == SLANG_RESOURCE_ACCESS_READ)
+							? DescriptorType::SampledImage
+							: DescriptorType::StorageImage;
+					}
+					else if (shape == SlangResourceShape::SLANG_STRUCTURED_BUFFER) 
+					{
+						binding.Type = DescriptorType::StorageBuffer;
+					}
+				}
+
+				reflection->AddResourceBinding(binding);
 			}
 		}
 	}
@@ -288,7 +378,7 @@ namespace Echo
 			case SLANG_STAGE_GEOMETRY:
 				return ShaderStage::Geometry;
 			default:
-				EC_CORE_INFO("Couldn't find the correct shader stage!")
+				EC_CORE_WARN("Couldn't find the correct shader stage!")
 				return ShaderStage::All;
 		}
 	}

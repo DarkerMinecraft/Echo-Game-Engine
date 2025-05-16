@@ -39,7 +39,9 @@ namespace Echo
 		VulkanDevice(Window* window, unsigned int width, unsigned int height);
 		~VulkanDevice();
 
-		virtual DeviceType GetDeviceType() const { return DeviceType::Vulkan; };
+		virtual const DeviceType GetDeviceType() const override { return DeviceType::Vulkan; };
+		virtual const uint32_t GetMaxTextureSlots() const override;
+
 		FrameData& GetFrameData() { return m_Frames[m_CurrentFrame % MAX_FRAMES_IN_FLIGHT]; }
 
 		ShaderLibrary GetShaderLibrary() { return m_ShaderLibrary; }

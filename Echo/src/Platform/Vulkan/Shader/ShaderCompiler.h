@@ -24,6 +24,8 @@ namespace Echo
 		void ExtractReflection(slang::ProgramLayout* layout, ShaderReflection* reflection);
 		
 		void ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection);
+		void ExtractUniformBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection);
+		void ExtractResourceBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection);
 
 		ShaderStage SlangStageToShaderStage(SlangStage stage);
 		ShaderDataType SlangTypeToShaderDataType(slang::TypeReflection* type);

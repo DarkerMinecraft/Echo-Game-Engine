@@ -11,13 +11,13 @@ namespace Echo
 {
 
 	VulkanTexture2D::VulkanTexture2D(Device* device, const std::string& path)
-		: m_Device((VulkanDevice*)device), m_UUID()
+		: m_Device((VulkanDevice*)device)
 	{
 		LoadTexture(path);
 	}
 
 	VulkanTexture2D::VulkanTexture2D(Device* device, uint32_t width, uint32_t height, void* pixels)
-		: m_Device((VulkanDevice*)device), m_UUID(), m_Width(width), m_Height(height)
+		: m_Device((VulkanDevice*)device), m_Width(width), m_Height(height)
 	{
 		LoadTexture(pixels);
 	}

@@ -27,11 +27,13 @@ namespace Echo
 
 		void Destroy();
 	private:
-		void CreateComputePipeline(Ref<Shader> shader, const PipelineSpecification& spec);
+		void CreateComputePipeline(Ref<Shader> computeShader, const PipelineSpecification& spec);
 		void CreateGraphicsPipeline(Ref<Shader> vertexShader, Ref<Shader> fragmentShader, const PipelineSpecification& spec);
 
-		void CreatePipelineLayout(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
-		void CreateDescriptorSet(std::vector<PipelineSpecification::DescriptionSetLayout> descriptorSetLayout);
+		std::vector<DescriptionSetLayout> CreateLayout(Ref<Shader> computeShader);
+		std::vector<DescriptionSetLayout> CreateLayout(Ref<Shader> vertexShader, Ref<Shader> fragmentShader);
+		void CreatePipelineLayout(std::vector<DescriptionSetLayout> descriptorSetLayout);
+		void CreateDescriptorSet(std::vector<DescriptionSetLayout> descriptorSetLayout);
 
 		bool HasDescriptorSet() { return m_DescriptorSet != nullptr; }
 	private:
