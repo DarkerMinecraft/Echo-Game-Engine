@@ -139,7 +139,7 @@ namespace Echo
 		};
 
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->BindResource(0, s_Data.QuadUniformBuffer);
+		s_Data.QuadPipeline->BindResource(0, 0, s_Data.QuadUniformBuffer);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
@@ -160,7 +160,7 @@ namespace Echo
 			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix(),
 		};
 		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->BindResource(0, s_Data.QuadUniformBuffer);
+		s_Data.QuadPipeline->BindResource(0, 0, s_Data.QuadUniformBuffer);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
@@ -291,7 +291,7 @@ namespace Echo
 	{
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
-			s_Data.QuadPipeline->BindResource(1, s_Data.TextureSlots[i], i);
+			s_Data.QuadPipeline->BindResource(0, 1, s_Data.TextureSlots[i], i);
 		}
 
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);

@@ -12,6 +12,7 @@ namespace Echo
 	{
 		uint32_t Binding;
 		uint32_t Count;
+		uint32_t Set;
 		ShaderStage Stage;
 		DescriptorType Type;
 		std::string Name;
@@ -21,6 +22,7 @@ namespace Echo
 	{
 		std::string Name;
 		uint32_t Binding;
+		uint32_t Set;
 		ShaderStage Stage;
 	};
 

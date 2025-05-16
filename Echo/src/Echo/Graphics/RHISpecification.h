@@ -149,7 +149,8 @@ namespace Echo
 
 	struct DescriptionSetLayout
 	{
-		uint32_t Binding = 0;
+		uint32_t Binding;
+		uint32_t Set;
 		DescriptorType Type;
 		uint32_t Count;
 		ShaderStage Stage;

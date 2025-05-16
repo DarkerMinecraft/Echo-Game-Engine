@@ -314,6 +314,7 @@ namespace Echo
 			{
 				ShaderUniformBuffer ubo;
 				ubo.Name = param->getName();
+				ubo.Set = param->getBindingSpace();
 				ubo.Binding = param->getBindingIndex();
 				ubo.Stage = stage;
 
@@ -335,6 +336,7 @@ namespace Echo
 				ShaderResourceBinding binding;
 				binding.Name = param->getName();
 				binding.Binding = param->getBindingIndex();
+				binding.Set = param->getBindingSpace();
 				binding.Stage = stage;
 
 				if (paramType->isArray())

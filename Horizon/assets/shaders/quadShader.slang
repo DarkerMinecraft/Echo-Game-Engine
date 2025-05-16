@@ -49,7 +49,7 @@ struct PSInput
     int instanceID : ATTRIB2;
 }
 
-[[vk::binding(1, 0)]] Sampler2D texSamplers[] : register(s0, space0);
+[[vk::binding(0, 1)]] Sampler2D texSamplers[] : register(s0, space1);
 
 struct PSOutput
 {

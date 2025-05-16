@@ -58,7 +58,18 @@ namespace Echo
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			if (HasDescriptorSet())
 			{
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+				for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
+				{
+					vkCmdBindDescriptorSets(
+						commandBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						m_PipelineLayout,
+						i,  // Set index
+						1,  // Set count
+						&m_DescriptorSets[i],
+						0, nullptr
+					);
+				}
 			}
 		}
 		else if (m_PipelineType == PipelineType::Graphics)
@@ -66,22 +77,45 @@ namespace Echo
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
 			if (HasDescriptorSet())
 			{
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+				for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
+				{
+					vkCmdBindDescriptorSets(
+						commandBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						m_PipelineLayout,
+						i,  // Set index
+						1,  // Set count
+						&m_DescriptorSets[i],
+						0, nullptr
+					);
+				}
 			}
 		}
 	}
 
-	void VulkanPipeline::BindResource(uint32_t binding, Ref<Texture2D> texture)
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> texture)
 	{
+		if (set >= m_DescriptorSets.size())
+		{
+			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
+			return;
+		}
+
 		VulkanTexture2D* tex = (VulkanTexture2D*)texture.get();
 
 		DescriptorWriter writer;
 		writer.WriteImage(binding, tex->GetTexture().ImageView, tex->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
-	void VulkanPipeline::BindResource(uint32_t binding, Ref<Framebuffer> framebuffer, uint32_t index)
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Framebuffer> framebuffer, uint32_t index)
 	{
+		if (set >= m_DescriptorSets.size())
+		{
+			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
+			return;
+		}
+
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer.get();
 
 		if (fb->GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -94,35 +128,50 @@ namespace Echo
 
 		DescriptorWriter writer;
 		writer.WriteImage(binding, fb->GetImage(index).ImageView, fb->GetSampler(index), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
-	void VulkanPipeline::BindResource(uint32_t binding, Ref<Texture2D> tex, uint32_t index)
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> tex, uint32_t index)
 	{
+		if (set >= m_DescriptorSets.size())
+		{
+			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
+			return;
+		}
+
 		VulkanTexture2D* texture = (VulkanTexture2D*)tex.get();
 
 		DescriptorWriter writer;
 		writer.WriteImage(index, binding, texture->GetTexture().ImageView, texture->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
-	void VulkanPipeline::BindResource(uint32_t binding, Ref<UniformBuffer> uniformBuffer)
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<UniformBuffer> uniformBuffer)
 	{
+		if (set >= m_DescriptorSets.size())
+		{
+			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
+			return;
+		}
+
 		VulkanUniformBuffer* ubo = (VulkanUniformBuffer*)uniformBuffer.get();
 
 		DescriptorWriter writer;
 		writer.WriteBuffer(binding, ubo->GetBuffer().Buffer, ubo->GetSize(), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSet);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
 	void VulkanPipeline::Destroy()
 	{
 		if (m_Destroyed) return;
 
-		if (m_DescriptorSet != nullptr)
+		for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
 		{
-			vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
-			m_DescriptorAllocator.DestroyPools(m_Device->GetDevice());
+			if (m_DescriptorSets[i] != nullptr)
+			{
+				vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayouts[i], nullptr);
+				m_DescriptorAllocators[i].DestroyPools(m_Device->GetDevice());
+			}
 		}
 
 		vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
@@ -374,29 +423,45 @@ namespace Echo
 			}
 		};
 
-		DescriptorLayoutBuilder builder;
-		int count = 0;
+		std::map<uint32_t, std::vector<DescriptionSetLayout>> setLayouts;
+
 		for (const auto& layout : descriptorSetLayout)
 		{
-			builder.AddBinding(layout.Binding, layout.Count, MapShaderStage(layout.Stage), MapDescriptorType(layout.Type));
-			count++;
+			setLayouts[layout.Set].push_back(layout);
 		}
 
-		if (count != 0)
-			m_DescriptorSetLayout = builder.Build(m_Device->GetDevice());
+		std::vector<VkDescriptorSetLayout> vkSetLayouts;
+		m_DescriptorSetLayouts.clear(); 
 
-		VkPipelineLayoutCreateInfo layoutCreateInfo{};
-
-		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutCreateInfo.pNext = nullptr;
-
-		if (count != 0)
+		for (const auto& [setIndex, layouts] : setLayouts)
 		{
-			layoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
-			layoutCreateInfo.setLayoutCount = 1;
+			DescriptorLayoutBuilder builder;
+
+			for (const auto& layout : layouts)
+			{
+				VkDescriptorType vkType = MapDescriptorType(layout.Type);
+				VkShaderStageFlags vkStage = MapShaderStage(layout.Stage);
+
+				builder.AddBinding(layout.Binding, layout.Count, vkStage, vkType);
+			}
+
+			VkDescriptorSetLayout setLayout = builder.Build(m_Device->GetDevice());
+			vkSetLayouts.push_back(setLayout);
+			m_DescriptorSetLayouts.push_back(setLayout);
 		}
 
-		if (vkCreatePipelineLayout(m_Device->GetDevice(), &layoutCreateInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+		if (vkSetLayouts.empty()) 
+		{
+			DescriptorLayoutBuilder builder;
+			vkSetLayouts.push_back(builder.Build(m_Device->GetDevice()));
+		}
+
+		VkPipelineLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutInfo.setLayoutCount = vkSetLayouts.size();
+		layoutInfo.pSetLayouts = vkSetLayouts.data();
+
+		if (vkCreatePipelineLayout(m_Device->GetDevice(), &layoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
@@ -409,12 +474,12 @@ namespace Echo
 		{
 			for (auto ubo : reflection.GetUniformBuffers())
 			{
-				descriptorSetLayout.push_back({ ubo.Binding, DescriptorType::UniformBuffer, 1, ubo.Stage });
+				descriptorSetLayout.push_back({ ubo.Binding, ubo.Set, DescriptorType::UniformBuffer, 1, ubo.Stage });
 			}
 
 			for (auto rbo : reflection.GetResourceBindings())
 			{
-				descriptorSetLayout.push_back({ rbo.Binding, rbo.Type, rbo.Count, rbo.Stage });
+				descriptorSetLayout.push_back({ rbo.Binding, rbo.Set, rbo.Type, rbo.Count, rbo.Stage });
 			}
 		}
 
@@ -424,12 +489,16 @@ namespace Echo
 	void VulkanPipeline::CreateDescriptorSet(std::vector<DescriptionSetLayout> descriptorSetLayout)
 	{
 		if (descriptorSetLayout.empty()) return;
-		int maxSets = descriptorSetLayout.size();
 
-		m_DescriptorAllocator = DescriptorAllocatorGrowable();
+		for (auto& allocator : m_DescriptorAllocators)
+		{
+			allocator.DestroyPools(m_Device->GetDevice());
+		}
+		m_DescriptorSets.clear();
+		m_DescriptorAllocators.clear();
 
-		std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> poolSizes;
-		std::unordered_map<VkDescriptorType, uint32_t> descriptorCounts;
+		std::map<uint32_t, std::vector<DescriptionSetLayout>> setLayoutMap;
+		uint32_t maxSetIndex = 0;
 
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
 		{
@@ -450,21 +519,55 @@ namespace Echo
 
 		for (const auto& layout : descriptorSetLayout)
 		{
-			VkDescriptorType vkType = MapDescriptorType(layout.Type);
-			descriptorCounts[vkType] += layout.Count * maxSets;
+			setLayoutMap[layout.Set].push_back(layout);
+			maxSetIndex = std::max(maxSetIndex, layout.Set);
 		}
 
-		for (auto& [type, count] : descriptorCounts)
+		// Prepare vectors with correct size
+		m_DescriptorSets.resize(maxSetIndex + 1);
+		m_DescriptorAllocators.resize(maxSetIndex + 1);
+
+		// Process each set
+		for (const auto& [setIndex, layouts] : setLayoutMap)
 		{
-			DescriptorAllocatorGrowable::PoolSizeRatio poolSize{};
-			poolSize.Type = type;
-			poolSize.Ratio = count;
+			// Count descriptor types for this set
+			std::unordered_map<VkDescriptorType, uint32_t> descriptorCounts;
+			uint32_t totalDescriptors = 0;
 
-			poolSizes.push_back(poolSize);
+			for (const auto& layout : layouts)
+			{
+				VkDescriptorType vkType = MapDescriptorType(layout.Type);
+				descriptorCounts[vkType] += layout.Count;
+				totalDescriptors += layout.Count;
+			}
+
+			// Setup pool ratios for this set
+			std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> poolSizes;
+			for (auto& [type, count] : descriptorCounts)
+			{
+				DescriptorAllocatorGrowable::PoolSizeRatio poolSize{};
+				poolSize.Type = type;
+				poolSize.Ratio = static_cast<float>(count);
+				poolSizes.push_back(poolSize);
+			}
+
+			// Create allocator for this set
+			m_DescriptorAllocators[setIndex] = DescriptorAllocatorGrowable();
+			m_DescriptorAllocators[setIndex].Init(
+				m_Device->GetDevice(),
+				std::max(10u, totalDescriptors), // Ensure minimum size
+				poolSizes
+			);
+
+			// Allocate descriptor set
+			m_DescriptorSets[setIndex] = m_DescriptorAllocators[setIndex].Allocate(
+				m_Device->GetDevice(),
+				m_DescriptorSetLayouts[setIndex]
+			);
+
+			EC_CORE_INFO("Created descriptor set {0} with {1} descriptors",
+						 setIndex, totalDescriptors);
 		}
-
-		m_DescriptorAllocator.Init(m_Device->GetDevice(), maxSets, poolSizes);
-		m_DescriptorSet = m_DescriptorAllocator.Allocate(m_Device->GetDevice(), m_DescriptorSetLayout);
 	}
 
 }
