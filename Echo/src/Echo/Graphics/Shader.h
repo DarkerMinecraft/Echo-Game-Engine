@@ -16,15 +16,12 @@ namespace Echo
 		virtual void Unload() = 0;
 		virtual void Destroy() = 0;
 
-		virtual const std::vector<ShaderReflection>& GetReflections() const = 0;
-		virtual const ShaderReflection& GetVertexReflection() const = 0;
-		virtual const ShaderReflection& GetFragmentReflection() const = 0;
-		virtual const ShaderReflection& GetComputeRelection() const = 0;
+		virtual const BufferLayout& GetVertexLayout() const = 0; 
+		virtual const std::vector<ShaderResourceBinding> GetResourceBindings() const = 0;
 
 		virtual const std::string& GetName() const = 0;
 		virtual bool IsCompute() = 0;
 
 		static Ref<Shader> Create(const std::filesystem::path shaderPath, bool useCurrentDirectory = false);
-		static Ref<Shader> Create(const std::string& shaderSource, const std::string& shaderName);
 	};
 }

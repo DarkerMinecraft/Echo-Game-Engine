@@ -13,26 +13,16 @@ using namespace slang;
 namespace Echo
 {
 
-	struct ShaderData 
-	{
-		VkShaderModule Module;
-		ShaderReflection Reflection;
-	};
-
 	class ShaderLibrary
 	{
 	public:
 		ShaderLibrary(VkDevice device);
 		~ShaderLibrary();
 
-		std::vector<ShaderData> AddSpirvShader(const std::filesystem::path& path);
-		std::vector<ShaderData> AddSpirvShader(const char* source, const char* name);
-	private:
-		void ExtractReflection(slang::ProgramLayout* layout, ShaderReflection* reflection);
-		
+		std::vector<VkShaderModule> AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection);
+	private:		
 		void ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection);
-		void ExtractUniformBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection);
-		void ExtractResourceBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection);
+		void ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* entryPointMetadata, ShaderReflection* reflection);
 
 		ShaderStage SlangStageToShaderStage(SlangStage stage);
 		ShaderDataType SlangTypeToShaderDataType(slang::TypeReflection* type);

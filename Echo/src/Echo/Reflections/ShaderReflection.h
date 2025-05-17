@@ -11,19 +11,17 @@ namespace Echo
 	struct ShaderResourceBinding
 	{
 		uint32_t Binding;
-		uint32_t Count;
 		uint32_t Set;
+		uint32_t Count;
 		ShaderStage Stage;
 		DescriptorType Type;
 		std::string Name;
 	};
 
-	struct ShaderUniformBuffer
+	struct EntryPointData 
 	{
-		std::string Name;
-		uint32_t Binding;
-		uint32_t Set;
 		ShaderStage Stage;
+		const char* EntryPointName;
 	};
 
 	class ShaderReflection
@@ -32,23 +30,19 @@ namespace Echo
 		ShaderReflection() = default;
 		~ShaderReflection() = default;
 
-		void SetShaderStage(ShaderStage shaderStage) { m_ShaderStage = shaderStage; }
 		void SetBufferLayout(BufferLayout layout) { m_BufferLayout = layout; }
-		void SetEntryPointName(const char* entryPointName) { m_EntryPointName = entryPointName; }
-		void AddResourceBinding(const ShaderResourceBinding& binding);
-		void AddUniformBuffer(const ShaderUniformBuffer& uniformBuffer);
+		void AddEntryPointData(const EntryPointData& data) { m_EntryPointData.push_back(data); }
+		void AddResourceBinding(const ShaderResourceBinding& binding) { m_ResourceBindings.push_back(binding); }
 
-		const ShaderStage GetShaderStage() { return m_ShaderStage; }
-		const BufferLayout GetVertexLayout() const { return m_BufferLayout; };
-		const char* GetEntryPointName() { return m_EntryPointName; }
+		void SetParamStage(uint32_t index, const ShaderStage& stage) { m_ResourceBindings[index].Stage = stage; }
+
+		const BufferLayout& GetVertexLayout() const { return m_BufferLayout; };
+		const std::vector<EntryPointData>& GetEntryPointData() const { return m_EntryPointData; }
 		const std::vector<ShaderResourceBinding>& GetResourceBindings() const { return m_ResourceBindings; }
-		const std::vector<ShaderUniformBuffer>& GetUniformBuffers() const { return m_UniformBuffers; }
 	private:
-		ShaderStage m_ShaderStage = ShaderStage::All;
 		BufferLayout m_BufferLayout;
-		const char* m_EntryPointName;
 
+		std::vector<EntryPointData> m_EntryPointData;
 		std::vector<ShaderResourceBinding> m_ResourceBindings;
-		std::vector<ShaderUniformBuffer> m_UniformBuffers;
 	};
 }

@@ -291,7 +291,7 @@ namespace Echo
 	{
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
-			s_Data.QuadPipeline->BindResource(0, 1, s_Data.TextureSlots[i], i);
+			s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
 		}
 
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);

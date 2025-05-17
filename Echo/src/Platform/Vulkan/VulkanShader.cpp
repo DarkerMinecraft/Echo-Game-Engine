@@ -24,12 +24,6 @@ namespace Echo
 		CreateShaderModules(path);
 	}
 
-	VulkanShader::VulkanShader(Device* device, const std::string& name, const std::string& source)
-		: m_Device((VulkanDevice*)device)
-	{
-		CreateShaderModules(name.c_str(), source.c_str());
-	}
-
 	VulkanShader::~VulkanShader()
 	{
 		Destroy();
@@ -53,6 +47,16 @@ namespace Echo
 		m_Destroyed = true;
 	}
 
+	const BufferLayout& VulkanShader::GetVertexLayout() const
+	{
+		return m_ShaderReflection.GetVertexLayout();
+	}
+
+	const std::vector<ShaderResourceBinding> VulkanShader::GetResourceBindings() const
+	{
+		return m_ShaderReflection.GetResourceBindings();
+	}
+
 	void VulkanShader::CompileOrGetVulkanBinary(const std::filesystem::path& shaderPath)
 	{
 		m_FileTimestamps[shaderPath] = GetFileTimestamp(shaderPath);
@@ -60,69 +64,35 @@ namespace Echo
 
 	void VulkanShader::CreateShaderModules(const std::filesystem::path& shaderPath)
 	{
-		std::vector<ShaderData> shaderDatas = m_Device->GetShaderLibrary().AddSpirvShader(shaderPath);
-		for (auto& data : shaderDatas) 
-		{
-			m_ShaderModules.push_back(data.Module);
-			m_ShaderReflections.push_back(data.Reflection);
+		ShaderReflection reflections;
+		m_ShaderModules = m_Device->GetShaderLibrary().AddSpirvShader(shaderPath, &m_ShaderReflection);
 
+		uint32_t index = 0;
+		for (auto& entryPointData : m_ShaderReflection.GetEntryPointData())
+		{
 			VkPipelineShaderStageCreateInfo createInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 			createInfo.pNext = nullptr;
-			createInfo.module = data.Module;
-			createInfo.pName = data.Reflection.GetEntryPointName();
-			m_ShaderStages.push_back(createInfo);
-
-			if (data.Reflection.GetShaderStage() == ShaderStage::Compute)
+			createInfo.module = m_ShaderModules[index];
+			createInfo.pName = entryPointData.EntryPointName;
+			switch (entryPointData.Stage)
 			{
-				m_IsCompute = true;
-				m_ComputeReflection = data.Reflection;
+				case ShaderStage::Vertex:
+					createInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+					break;
+				case ShaderStage::Fragment:
+					createInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+					break;
+				case ShaderStage::Compute:
+					createInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+					break;
+				case ShaderStage::Geometry:
+					createInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
+					break;
+				default:
+					EC_CORE_ERROR("Unknown shader stage");
+					break;
 			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Vertex) 
-			{
-				m_VertexReflection = data.Reflection;
-			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Fragment) 
-			{
-				m_FragmentReflection = data.Reflection;
-			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Geometry) 
-			{
-				m_GeometryReflection = data.Reflection;
-			}
-		}
-	}
-
-	void VulkanShader::CreateShaderModules(const char* shaderSource, const char* shaderName)
-	{
-		std::vector<ShaderData> shaderDatas = m_Device->GetShaderLibrary().AddSpirvShader(shaderSource, shaderName);
-		for (auto& data : shaderDatas)
-		{
-			m_ShaderModules.push_back(data.Module);
-			m_ShaderReflections.push_back(data.Reflection);
-			
-			VkPipelineShaderStageCreateInfo createInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-			createInfo.pNext = nullptr;
-			createInfo.module = data.Module;
-			createInfo.pName = data.Reflection.GetEntryPointName();
-			m_ShaderStages.push_back(createInfo);
-
-			if (data.Reflection.GetShaderStage() == ShaderStage::Compute)
-			{
-				m_IsCompute = true;
-				m_ComputeReflection = data.Reflection;
-			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Vertex)
-			{
-				m_VertexReflection = data.Reflection;
-			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Fragment)
-			{
-				m_FragmentReflection = data.Reflection;
-			}
-			else if (data.Reflection.GetShaderStage() == ShaderStage::Geometry)
-			{
-				m_GeometryReflection = data.Reflection;
-			}
+			index++;
 		}
 	}
 }

@@ -30,14 +30,14 @@ namespace Echo
 	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
-		: m_Device((VulkanDevice*) device)
+		: m_Device((VulkanDevice*)device)
 	{
-		if (shader->IsCompute()) 
+		if (shader->IsCompute())
 		{
 			m_PipelineType = PipelineType::Compute;
 			CreateComputePipeline(shader, spec);
 		}
-		else 
+		else
 		{
 			m_PipelineType = PipelineType::Graphics;
 			CreateGraphicsPipeline(shader, spec);
@@ -224,7 +224,7 @@ namespace Echo
 			}
 		};
 
-		BufferLayout layout = graphicsShader->GetVertexReflection().GetVertexLayout();
+		BufferLayout layout = graphicsShader->GetVertexLayout();
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
 		bindingDescription.stride = layout.GetStride();
@@ -431,7 +431,7 @@ namespace Echo
 		}
 
 		std::vector<VkDescriptorSetLayout> vkSetLayouts;
-		m_DescriptorSetLayouts.clear(); 
+		m_DescriptorSetLayouts.clear();
 
 		for (const auto& [setIndex, layouts] : setLayouts)
 		{
@@ -450,7 +450,7 @@ namespace Echo
 			m_DescriptorSetLayouts.push_back(setLayout);
 		}
 
-		if (vkSetLayouts.empty()) 
+		if (vkSetLayouts.empty())
 		{
 			DescriptorLayoutBuilder builder;
 			vkSetLayouts.push_back(builder.Build(m_Device->GetDevice()));
@@ -470,17 +470,9 @@ namespace Echo
 	{
 		std::vector<DescriptionSetLayout> descriptorSetLayout;
 
-		for (auto& reflection : shader->GetReflections())
+		for (auto rbo : shader->GetResourceBindings())
 		{
-			for (auto ubo : reflection.GetUniformBuffers())
-			{
-				descriptorSetLayout.push_back({ ubo.Binding, ubo.Set, DescriptorType::UniformBuffer, 1, ubo.Stage });
-			}
-
-			for (auto rbo : reflection.GetResourceBindings())
-			{
-				descriptorSetLayout.push_back({ rbo.Binding, rbo.Set, rbo.Type, rbo.Count, rbo.Stage });
-			}
+			descriptorSetLayout.push_back({ rbo.Binding, rbo.Set, rbo.Type, rbo.Count, rbo.Stage });
 		}
 
 		return descriptorSetLayout;

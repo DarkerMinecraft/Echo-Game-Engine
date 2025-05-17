@@ -18,9 +18,9 @@ namespace Echo
 
 	}
 
-	std::vector<ShaderData> ShaderLibrary::AddSpirvShader(const std::filesystem::path& path)
+	std::vector<VkShaderModule> ShaderLibrary::AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection)
 	{
-		std::vector<ShaderData> datas;
+		std::vector<VkShaderModule> modules;
 
 		SessionDesc sessionDesc{};
 		TargetDesc targetDesc{};
@@ -29,6 +29,18 @@ namespace Echo
 
 		sessionDesc.targets = &targetDesc;
 		sessionDesc.targetCount = 1;
+
+		std::vector<slang::CompilerOptionEntry> options;
+		options.push_back({
+			slang::CompilerOptionName::VulkanUseEntryPointName,
+			{slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}
+						  });
+		options.push_back({
+			slang::CompilerOptionName::Optimization,
+			{slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}
+						  });
+		sessionDesc.compilerOptionEntries = options.data();
+		sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
 
 		Slang::ComPtr<ISession> session;
 		m_GlobalSession->createSession(sessionDesc, session.writeRef());
@@ -48,20 +60,20 @@ namespace Echo
 		uint32_t entryPointCount = slangModule->getDefinedEntryPointCount();
 		for (int i = 0; i < entryPointCount; i++)
 		{
-			Slang::ComPtr<IEntryPoint> entryPoint;
+			IEntryPoint* entryPoint;
 			{
-				slangModule->getDefinedEntryPoint(i, entryPoint.writeRef());
+				slangModule->getDefinedEntryPoint(i, &entryPoint);
 				if (!entryPoint)
 				{
 					EC_CORE_CRITICAL("Failed to find entry point in {0}: ", path.string().c_str());
 				}
 			}
 
-			std::array<IComponentType*, 2> componentTypes =
+			std::vector<IComponentType*> componentTypes =
 			{
 				slangModule,
-				entryPoint
 			};
+			componentTypes.push_back(entryPoint);
 
 			Slang::ComPtr<IComponentType> composedProgram;
 			{
@@ -92,7 +104,6 @@ namespace Echo
 					EC_CORE_CRITICAL("Failed to link program: {0}", message);
 				}
 			}
-
 			Slang::ComPtr<slang::IBlob> spirvCode;
 			{
 				Slang::ComPtr<slang::IBlob> diagnosticsBlob;
@@ -114,175 +125,55 @@ namespace Echo
 				EC_CORE_CRITICAL("Empty SPIR-V code generated");
 			}
 
+			EC_CORE_INFO("SPIR-V code size: {0} bytes", spirvCode->getBufferSize());
 			VkShaderModuleCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			createInfo.pNext = nullptr;
 			createInfo.codeSize = spirvCode->getBufferSize();
 			createInfo.pCode = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
 
-			ShaderData data;
-
-			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &data.Module) != VK_SUCCESS)
+			VkShaderModule module;
+			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
 			{
 				EC_CORE_CRITICAL("Failed to create shader module!");
 			}
 
 			slang::ProgramLayout* layout = linkedProgram->getLayout();
-			ExtractReflection(layout, &data.Reflection);
+			slang::EntryPointReflection* entryPointReflection = layout->getEntryPointByIndex(0);
+			ShaderStage shaderStage = SlangStageToShaderStage(entryPointReflection->getStage());
 
-			datas.push_back(data);
+			EC_CORE_INFO("Shader Reflection {0}", entryPointReflection->getName());
+
+			reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
+
+			if (shaderStage == ShaderStage::Vertex)
+			{
+				ExtractVertexAttributes(entryPointReflection, reflection);
+			}
+			IMetadata* metadata;
+			linkedProgram->getEntryPointMetadata(
+				0,
+				0,
+				&metadata);
+			ExtractBuffers(shaderStage, layout, metadata, reflection);
+
+			modules.push_back(module);
 		}
 
-		return datas;
-	}
-
-	std::vector<ShaderData> ShaderLibrary::AddSpirvShader(const char* source, const char* name)
-	{
-		std::vector<ShaderData> datas;
-
-		SessionDesc sessionDesc{};
-		TargetDesc targetDesc{};
-		targetDesc.format = SLANG_SPIRV;
-		targetDesc.profile = m_GlobalSession->findProfile("spirv_1_5");
-
-		sessionDesc.targets = &targetDesc;
-		sessionDesc.targetCount = 1;
-
-		Slang::ComPtr<ISession> session;
-		m_GlobalSession->createSession(sessionDesc, session.writeRef());
-
-		Slang::ComPtr<IModule> slangModule;
-		{
-			Slang::ComPtr<IBlob> diagnosticBlob;
-			std::string modulePath = std::string(name) + ".slang";
-			slangModule = session->loadModuleFromSourceString(name, modulePath.c_str(), source, diagnosticBlob.writeRef());
-			if (diagnosticBlob)
-			{
-				std::string message = (char*)diagnosticBlob->getBufferPointer();
-				EC_CORE_CRITICAL("Failed to load shader: {0}", message);
-			}
-		}
-
-		uint32_t entryPointCount = slangModule->getDefinedEntryPointCount();
-		for (uint32_t i = 0; i < entryPointCount; i++)
-		{
-			Slang::ComPtr<IEntryPoint> entryPoint;
-			{
-				slangModule->getDefinedEntryPoint(i, entryPoint.writeRef());
-				if (!entryPoint)
-				{
-					EC_CORE_CRITICAL("Failed to find entry point in {0}: ", name);
-				}
-			}
-
-			std::array<IComponentType*, 2> componentTypes =
-			{
-				slangModule,
-				entryPoint
-			};
-
-			Slang::ComPtr<IComponentType> composedProgram;
-			{
-				Slang::ComPtr<IBlob> diagnosticBlob;
-				session->createCompositeComponentType(
-					componentTypes.data(),
-					componentTypes.size(),
-					composedProgram.writeRef(),
-					diagnosticBlob.writeRef());
-
-				if (diagnosticBlob)
-				{
-					std::string message = (char*)diagnosticBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to create composite component type: {0}", message);
-				}
-			}
-
-			Slang::ComPtr<slang::IComponentType> linkedProgram;
-			{
-				Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-				SlangResult result = composedProgram->link(
-					linkedProgram.writeRef(),
-					diagnosticsBlob.writeRef());
-
-				if (diagnosticsBlob)
-				{
-					std::string message = (char*)diagnosticsBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to link program: {0}", message);
-				}
-			}
-
-			Slang::ComPtr<slang::IBlob> spirvCode;
-			{
-				Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-				SlangResult result = linkedProgram->getEntryPointCode(
-					0, // entryPointIndex
-					0, // targetIndex
-					spirvCode.writeRef(),
-					diagnosticsBlob.writeRef());
-
-				if (diagnosticsBlob)
-				{
-					std::string message = (char*)diagnosticsBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to get entry point code: {0}", message);
-				}
-			}
-
-			if (!spirvCode || spirvCode->getBufferSize() == 0)
-			{
-				EC_CORE_CRITICAL("Empty SPIR-V code generated");
-			}
-
-			VkShaderModuleCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.codeSize = spirvCode->getBufferSize();
-			createInfo.pCode = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
-
-			ShaderData data;
-			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &data.Module) != VK_SUCCESS)
-			{
-				EC_CORE_CRITICAL("Failed to create shader module!");
-			}
-
-			slang::ProgramLayout* layout = linkedProgram->getLayout();
-			ExtractReflection(layout, &data.Reflection);
-			datas.push_back(data);
-		}
-
-		return datas;
-	}
-
-	void ShaderLibrary::ExtractReflection(slang::ProgramLayout* layout, ShaderReflection* reflection)
-	{
-		uint32_t entryPointCount = layout->getEntryPointCount();
-
-		slang::EntryPointReflection* entryPoint = layout->getEntryPointByIndex(0);
-
-		ShaderStage stage = SlangStageToShaderStage(entryPoint->getStage());
-		reflection->SetShaderStage(stage);
-		reflection->SetEntryPointName(entryPoint->getName());
-
-		ExtractUniformBuffers(stage, layout, reflection);
-		ExtractResourceBuffers(stage, layout, reflection);
-
-		ExtractVertexAttributes(entryPoint, reflection);
+		return modules;
 	}
 
 	void ShaderLibrary::ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection)
 	{
-		if (entryPoint->getStage() != SLANG_STAGE_VERTEX) return;
-
 		BufferLayout layout;
 
 		uint32_t paramCount = entryPoint->getParameterCount();
 		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++)
 		{
 			auto param = entryPoint->getParameterByIndex(paramIndex);
-
+			auto paramType = param->getType();
 			if (param->getCategory() == slang::ParameterCategory::VaryingInput)
 			{
-				auto paramType = param->getType();
-
 				if (paramType->getKind() == slang::TypeReflection::Kind::Struct)
 				{
 					uint32_t fieldCount = paramType->getFieldCount();
@@ -302,92 +193,89 @@ namespace Echo
 		reflection->SetBufferLayout(layout);
 	}
 
-	void ShaderLibrary::ExtractUniformBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection)
+	void ShaderLibrary::ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* metadata, ShaderReflection* reflection)
 	{
-		uint32_t paramCount = layout->getParameterCount();
-		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++)
-		{
-			auto param = layout->getParameterByIndex(paramIndex);
-			auto paramType = param->getType();
+		// 1) Get the program layout so we can fetch the *global* scope:
+		auto globalParamsVarLayout = layout->getGlobalParamsVarLayout();
 
-			if (paramType->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
+		// 2) Unwrap any ParameterBlock<> / ConstantBuffer<> around your struct:
+		{
+			auto tLayout = globalParamsVarLayout->getTypeLayout();
+			if (tLayout->getKind() == slang::TypeReflection::Kind::ParameterBlock)
 			{
-				ShaderUniformBuffer ubo;
-				ubo.Name = param->getName();
-				ubo.Set = param->getBindingSpace();
-				ubo.Binding = param->getBindingIndex();
+				globalParamsVarLayout = tLayout->getElementVarLayout();
+				tLayout = globalParamsVarLayout->getTypeLayout();
+			}
+			if (tLayout->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
+			{
+				globalParamsVarLayout = tLayout->getContainerVarLayout();
+			}
+		}
+
+		// 3) Now iterate each field in that struct:
+		auto structLayout = globalParamsVarLayout->getTypeLayout();
+		for (uint32_t i = 0; i < structLayout->getFieldCount(); ++i)
+		{
+			auto field = structLayout->getFieldByIndex(i);
+
+			uint32_t space = field->getOffset(slang::ParameterCategory::SubElementRegisterSpace);
+			uint32_t offset = field->getOffset(slang::ParameterCategory::DescriptorTableSlot);
+
+			// 4) **Filter**: only keep it if this entry point actually uses it:
+			bool isUsed = false;
+			metadata->isParameterLocationUsed(
+				SlangParameterCategory::SLANG_PARAMETER_CATEGORY_DESCRIPTOR_TABLE_SLOT,
+				space, offset,
+				isUsed);
+			if (!isUsed)
+				continue;
+
+			// 5) Extract binding, set, stage, etc.
+			const char* name = field->getVariable()->getName();
+			uint32_t    binding = field->getBindingIndex();
+			uint32_t    set = field->getBindingSpace();
+			auto        type = field->getTypeLayout()->getType();
+
+			EC_CORE_INFO("Name {0}, Binding {1}, Set {2}, Stage {3}", name, binding, set, (uint32_t)stage)
+
+			if (type->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
+			{
+				ShaderResourceBinding ubo{};
+				ubo.Name = name;
+				ubo.Binding = binding;
+				ubo.Set = set;
 				ubo.Stage = stage;
-
-				reflection->AddUniformBuffer(ubo);
+				ubo.Type = DescriptorType::UniformBuffer;
+				reflection->AddResourceBinding(ubo);
 			}
-		}
-	}
-
-	void ShaderLibrary::ExtractResourceBuffers(ShaderStage stage, slang::ProgramLayout* layout, ShaderReflection* reflection)
-	{
-		uint32_t paramCount = layout->getParameterCount();
-		for (uint32_t paramIndex = 0; paramIndex < paramCount; paramIndex++)
-		{
-			auto param = layout->getParameterByIndex(paramIndex);
-			auto paramType = param->getType();
-
-			if (paramType->getKind() != slang::TypeReflection::Kind::ConstantBuffer)
+			else
 			{
-				ShaderResourceBinding binding;
-				binding.Name = param->getName();
-				binding.Binding = param->getBindingIndex();
-				binding.Set = param->getBindingSpace();
-				binding.Stage = stage;
+				ShaderResourceBinding res = {};
+				res.Name = name;
+				res.Set = set;
+				res.Binding = binding;
+				res.Stage = stage;
 
-				if (paramType->isArray())
-				{
-					uint32_t count = paramType->getTotalArrayElementCount();
-					if (count == 0)
-					{
-						slang::TypeReflection::Kind kind = paramType->getElementType()->getKind();
-						if (paramType->getElementType()->getKind() == slang::TypeReflection::Kind::Resource)
-						{
-							auto shape = paramType->getResourceShape();
-							auto access = paramType->getResourceAccess();
+				auto shape = type->getResourceShape();
+				auto access = type->getResourceAccess();
 
-							if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
-							{
-								count = VulkanRenderCaps::GetMaxTextureSlots();
-								binding.Type = (access == SLANG_RESOURCE_ACCESS_READ)
-									? DescriptorType::SampledImage
-									: DescriptorType::StorageImage;
-							}
-						}
-					}
-					binding.Count = count;
-				}
-				else
-				{
-					binding.Count = 1;
-				}
+				if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
+					res.Type = (access == SLANG_RESOURCE_ACCESS_READ)
+					? DescriptorType::SampledImage
+					: DescriptorType::StorageImage;
+				else if (shape == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
+					res.Type = DescriptorType::StorageBuffer;
 
+				res.Count = type->isArray()
+					? type->getTotalArrayElementCount() == 0 ? VulkanRenderCaps::GetMaxTextureSlots() : type->getTotalArrayElementCount()
+					: 1;
 
-				if (paramType->getKind() == slang::TypeReflection::Kind::Resource)
-				{
-					auto shape = paramType->getResourceShape();
-					auto access = paramType->getResourceAccess();
-
-					if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
-					{
-						binding.Type = (access == SLANG_RESOURCE_ACCESS_READ)
-							? DescriptorType::SampledImage
-							: DescriptorType::StorageImage;
-					}
-					else if (shape == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
-					{
-						binding.Type = DescriptorType::StorageBuffer;
-					}
-				}
-
-				reflection->AddResourceBinding(binding);
+				reflection->AddResourceBinding(res);
 			}
 		}
 	}
+
+
 
 	ShaderStage ShaderLibrary::SlangStageToShaderStage(SlangStage stage)
 	{
