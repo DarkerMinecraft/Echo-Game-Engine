@@ -64,9 +64,6 @@ namespace Echo
 			{ -0.5f, 0.5f, 0.0f, 1.0f }
 		};
 
-		int SelectedEntity = -1; 
-		glm::vec4 HighlightColor = { 1.0f, 0.5f, 0.0f, 0.7f };
-
 		Statistics Stats;
 		CommandList* Cmd;
 	};
@@ -179,10 +176,10 @@ namespace Echo
 
 	void RendererQuad::DrawQuad(const VertexData& data)
 	{
-		
+
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
-		
+
 		if (s_Data.TextureSlotIndex >= s_Data.MaxTextureSlots)
 			FlushAndReset();
 
@@ -272,21 +269,6 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
-	void RendererQuad::SetSelectedEntity(int entityID)
-	{
-		s_Data.SelectedEntity = entityID;
-	}
-
-	void RendererQuad::ClearSelection()
-	{
-		s_Data.SelectedEntity = -1;
-	}
-
-	uint32_t RendererQuad::GetSelectedEntity()
-	{
-		return s_Data.SelectedEntity;
-	}
-
 	void RendererQuad::Flush()
 	{
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
@@ -298,7 +280,7 @@ namespace Echo
 		s_Data.Stats.DrawCalls++;
 	}
 
-	void RendererQuad::FlushAndReset() 
+	void RendererQuad::FlushAndReset()
 	{
 		EndScene();
 
@@ -317,7 +299,7 @@ namespace Echo
 	{
 		memset(&s_Data.Stats, 0, sizeof(Statistics));
 	}
-	
+
 	void RendererQuad::Destroy()
 	{
 		s_Data.QuadVertexBuffer.reset();

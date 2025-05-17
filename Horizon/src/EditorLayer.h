@@ -34,12 +34,19 @@ namespace Echo
 		void OpenScene();
 		void OpenScene(const std::filesystem::path& path);
 		void SaveSceneAs();
+		void SaveScene();
 
 		//UI 
 		void ToolbarUI();
 		void ViewportUI();
 	private:
-		Ref<Framebuffer> m_Framebuffer;
+		Ref<Framebuffer> m_MainFramebuffer;
+		Ref<Framebuffer> m_FinalFramebuffer;
+
+		Ref<Shader> m_OutlineShader;
+		Ref<Pipeline> m_OutlinePipeline;
+
+		Ref<UniformBuffer> m_OutlineBuffer;
 
 		Ref<Scene> m_ActiveScene;
 
@@ -64,10 +71,21 @@ namespace Echo
 			Edit = 0, Play = 1
 		};
 
+		struct OutlineParams
+		{
+			int selectedEntityID;
+			glm::vec4 outlineColor;
+			float outlineThickness;
+			float padding[3]; // For alignment
+		};
+		OutlineParams m_OutlineParams;
+
 		SceneState m_SceneState = SceneState::Edit;
 
 		Ref<Texture2D> m_PlayButton;
 		Ref<Texture2D> m_StopButton; 
+
+		std::filesystem::path m_CurrentScenePath;
 
 		int m_GuizmoType = -1;
 	};

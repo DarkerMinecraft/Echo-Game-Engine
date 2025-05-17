@@ -284,10 +284,11 @@ namespace Echo
 		deviceFeatures.shaderStorageImageMultisample = true;
 		deviceFeatures.sampleRateShading = true;
 		deviceFeatures.independentBlend = true;
+		deviceFeatures.robustBufferAccess = true;
 
 		vkb::PhysicalDeviceSelector selector{ vkb_inst };
 		vkb::PhysicalDevice physicalDevice = selector
-			.set_minimum_version(1, 4)
+			.set_minimum_version(1, 3)
 			.set_required_features_13(features)
 			.set_required_features_12(features12)
 			.set_required_features(deviceFeatures)

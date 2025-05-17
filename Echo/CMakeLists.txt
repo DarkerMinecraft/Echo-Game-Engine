@@ -24,7 +24,6 @@ target_include_directories(Echo
     ${ECHO_DIR}/vendor/entt/include
     ${ECHO_DIR}/vendor/imgui
     ${ECHO_DIR}/vendor/ImGuizmo
-    ${ECHO_DIR}/vendor/uuidv4
     PRIVATE
     ${ECHO_DIR}/src/Platform
     ${ECHO_DIR}/vendor/DirectX/include
@@ -36,6 +35,7 @@ target_include_directories(Echo
     ${ECHO_DIR}/vendor/DirectXTK12/Inc
     ${ECHO_DIR}/vendor/Slang/include
     ${ECHO_DIR}/vendor/yaml/include
+    ${ECHO_DIR}/vendor/Box2D/include
 )
 
 # Link with dependencies

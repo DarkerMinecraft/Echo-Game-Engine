@@ -32,3 +32,6 @@
 	path = Echo/vendor/imgui
 	branch = docking
 	url = https://github.com/DarkerMinecraft/imgui.git
+[submodule "Echo/vendor/Box2D"]
+	path = Echo/vendor/Box2D
+	url = https://github.com/erincatto/box2d.git

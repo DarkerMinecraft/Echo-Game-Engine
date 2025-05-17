@@ -225,30 +225,41 @@ namespace Echo
 		};
 
 		BufferLayout layout = graphicsShader->GetVertexLayout();
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = layout.GetStride();
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		bindingDescriptions.push_back(bindingDescription);
-
-		uint32_t count = 0;
-		for (const auto& element : layout)
+		if (!layout.IsEmpty())
 		{
-			VkVertexInputAttributeDescription attributeDescription{};
-			attributeDescription.binding = 0;
-			attributeDescription.location = count;
-			attributeDescription.format = ShaderDataTypeToVulkanFormat(element.Type);
-			attributeDescription.offset = element.Offset;
-			attributeDescriptions.push_back(attributeDescription);
+			VkVertexInputBindingDescription bindingDescription{};
+			bindingDescription.binding = 0;
+			bindingDescription.stride = layout.GetStride();
+			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-			count++;
+			bindingDescriptions.push_back(bindingDescription);
+
+			uint32_t count = 0;
+			for (const auto& element : layout)
+			{
+				VkVertexInputAttributeDescription attributeDescription{};
+				attributeDescription.binding = 0;
+				attributeDescription.location = count;
+				attributeDescription.format = ShaderDataTypeToVulkanFormat(element.Type);
+				attributeDescription.offset = element.Offset;
+				attributeDescriptions.push_back(attributeDescription);
+
+				count++;
+			}
+
+			vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+			vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		}
-
-		vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		else 
+		{
+			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+			vertexInputInfo.vertexBindingDescriptionCount = 0;
+			vertexInputInfo.pVertexBindingDescriptions = nullptr;
+			vertexInputInfo.vertexAttributeDescriptionCount = 0;
+			vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		}
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -556,9 +567,6 @@ namespace Echo
 				m_Device->GetDevice(),
 				m_DescriptorSetLayouts[setIndex]
 			);
-
-			EC_CORE_INFO("Created descriptor set {0} with {1} descriptors",
-						 setIndex, totalDescriptors);
 		}
 	}
 

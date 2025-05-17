@@ -93,6 +93,7 @@ namespace Echo
 					break;
 			}
 			index++;
+			m_ShaderStages.push_back(createInfo);
 		}
 	}
 }

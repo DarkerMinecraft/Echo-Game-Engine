@@ -46,10 +46,6 @@ namespace Echo
 		static void DrawQuad(const VertexData& data);
 		static void DrawQuad(const VertexData& data, const glm::mat4& transform);
 
-		static void SetSelectedEntity(int entityID);
-		static void ClearSelection();
-		static uint32_t GetSelectedEntity();
-
 		static void Flush();
 		
 		static Statistics GetStats();

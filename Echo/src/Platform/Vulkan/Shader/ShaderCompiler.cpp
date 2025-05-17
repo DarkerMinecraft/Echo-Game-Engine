@@ -7,6 +7,52 @@ using namespace slang;
 namespace Echo
 {
 
+
+	static const char* ShaderStageToString(ShaderStage stage)
+	{
+		switch (stage)
+		{
+			case ShaderStage::Vertex:   return "Vertex";
+			case ShaderStage::Fragment: return "Fragment";
+			case ShaderStage::Compute:  return "Compute";
+			case ShaderStage::Geometry: return "Geometry";
+			case ShaderStage::All:      return "All";
+			default:                    return "Unknown";
+		}
+	}
+
+	static const char* ShaderDataTypeToString(ShaderDataType type)
+	{
+		switch (type)
+		{
+			case ShaderDataType::None:   return "None";
+			case ShaderDataType::Float:  return "Float";
+			case ShaderDataType::Float2: return "Float2";
+			case ShaderDataType::Float3: return "Float3";
+			case ShaderDataType::Float4: return "Float4";
+			case ShaderDataType::Int:    return "Int";
+			case ShaderDataType::Int2:   return "Int2";
+			case ShaderDataType::Int3:   return "Int3";
+			case ShaderDataType::Int4:   return "Int4";
+			case ShaderDataType::Mat3:   return "Mat3";
+			case ShaderDataType::Mat4:   return "Mat4";
+			case ShaderDataType::Bool:   return "Bool";
+			default:                     return "Unknown";
+		}
+	}
+
+	static const char* DescriptorTypeToString(DescriptorType type)
+	{
+		switch (type)
+		{
+			case DescriptorType::UniformBuffer: return "UniformBuffer";
+			case DescriptorType::StorageBuffer: return "StorageBuffer";
+			case DescriptorType::SampledImage:  return "SampledImage";
+			case DescriptorType::StorageImage:  return "StorageImage";
+			default:                            return "Unknown";
+		}
+	}
+
 	ShaderLibrary::ShaderLibrary(VkDevice device)
 		: m_Device(device)
 	{
@@ -125,7 +171,6 @@ namespace Echo
 				EC_CORE_CRITICAL("Empty SPIR-V code generated");
 			}
 
-			EC_CORE_INFO("SPIR-V code size: {0} bytes", spirvCode->getBufferSize());
 			VkShaderModuleCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 			createInfo.pNext = nullptr;
@@ -142,10 +187,12 @@ namespace Echo
 			slang::EntryPointReflection* entryPointReflection = layout->getEntryPointByIndex(0);
 			ShaderStage shaderStage = SlangStageToShaderStage(entryPointReflection->getStage());
 
-			EC_CORE_INFO("Shader Reflection {0}", entryPointReflection->getName());
-
 			reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
 
+
+			EC_CORE_INFO("Shader Reflection: {0}", path.stem().string().c_str())
+			EC_CORE_INFO("  Entry Point: {0}", entryPointReflection->getName())
+			EC_CORE_INFO("  Stage: {0}", ShaderStageToString(shaderStage))
 			if (shaderStage == ShaderStage::Vertex)
 			{
 				ExtractVertexAttributes(entryPointReflection, reflection);
@@ -165,6 +212,7 @@ namespace Echo
 
 	void ShaderLibrary::ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection)
 	{
+		EC_CORE_INFO("  Vertex Attributes:");
 		BufferLayout layout;
 
 		uint32_t paramCount = entryPoint->getParameterCount();
@@ -185,6 +233,8 @@ namespace Echo
 						ShaderDataType fieldType = SlangTypeToShaderDataType(field->getType());
 
 						layout.AddElement({ fieldType, fieldName });
+
+						EC_CORE_INFO("    - {0}: {1}", fieldName, ShaderDataTypeToString(fieldType))
 					}
 				}
 			}
@@ -195,6 +245,7 @@ namespace Echo
 
 	void ShaderLibrary::ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* metadata, ShaderReflection* reflection)
 	{
+		EC_CORE_INFO("  Resource Bindings:");
 		// 1) Get the program layout so we can fetch the *global* scope:
 		auto globalParamsVarLayout = layout->getGlobalParamsVarLayout();
 
@@ -235,47 +286,60 @@ namespace Echo
 			uint32_t    binding = field->getBindingIndex();
 			uint32_t    set = field->getBindingSpace();
 			auto        type = field->getTypeLayout()->getType();
+			
+			ShaderResourceBinding rbo;
 
-			EC_CORE_INFO("Name {0}, Binding {1}, Set {2}, Stage {3}", name, binding, set, (uint32_t)stage)
-
-			if (type->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
+			if (type->getKind() == slang::TypeReflection::Kind::SamplerState)
 			{
-				ShaderResourceBinding ubo{};
-				ubo.Name = name;
-				ubo.Binding = binding;
-				ubo.Set = set;
-				ubo.Stage = stage;
-				ubo.Type = DescriptorType::UniformBuffer;
-				reflection->AddResourceBinding(ubo);
+				rbo.Name = name;
+				rbo.Binding = binding;
+				rbo.Set = set;
+				rbo.Stage = stage;
+				rbo.Count = 1;
+				rbo.Type = DescriptorType::SampledImage;
+				reflection->AddResourceBinding(rbo);
+			} 
+			else if (type->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
+			{
+				rbo.Name = name;
+				rbo.Binding = binding;
+				rbo.Set = set;
+				rbo.Stage = stage;
+				rbo.Count = 1;
+				rbo.Type = DescriptorType::UniformBuffer;
+				reflection->AddResourceBinding(rbo);
 			}
 			else
 			{
-				ShaderResourceBinding res = {};
-				res.Name = name;
-				res.Set = set;
-				res.Binding = binding;
-				res.Stage = stage;
+				rbo.Name = name;
+				rbo.Set = set;
+				rbo.Binding = binding;
+				rbo.Stage = stage;
 
 				auto shape = type->getResourceShape();
 				auto access = type->getResourceAccess();
 
 				if (shape == SlangResourceShape::SLANG_TEXTURE_2D)
-					res.Type = (access == SLANG_RESOURCE_ACCESS_READ)
+					rbo.Type = (access == SLANG_RESOURCE_ACCESS_READ)
 					? DescriptorType::SampledImage
 					: DescriptorType::StorageImage;
 				else if (shape == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
-					res.Type = DescriptorType::StorageBuffer;
+					rbo.Type = DescriptorType::StorageBuffer;
 
-				res.Count = type->isArray()
+				rbo.Count = type->isArray()
 					? type->getTotalArrayElementCount() == 0 ? VulkanRenderCaps::GetMaxTextureSlots() : type->getTotalArrayElementCount()
 					: 1;
 
-				reflection->AddResourceBinding(res);
+				reflection->AddResourceBinding(rbo);
 			}
+
+			EC_CORE_INFO("      Name: {0}", name);
+			EC_CORE_INFO("      Type: {0}", DescriptorTypeToString(rbo.Type));
+			EC_CORE_INFO("      Set: {0}, Binding: {1}", set, binding);
+			EC_CORE_INFO("      Count: {0}", rbo.Count);
+			EC_CORE_INFO("      Stage: {0}", ShaderStageToString(stage));
 		}
 	}
-
-
 
 	ShaderStage ShaderLibrary::SlangStageToShaderStage(SlangStage stage)
 	{

@@ -168,7 +168,6 @@ namespace Echo
 		Fill FillMode = Fill::Solid;
 
 		CompareOp DepthCompareOp = CompareOp::Less;
-
 		Topology GraphicsTopology = Topology::TriangleList;
 
 		Ref<Framebuffer> RenderTarget;

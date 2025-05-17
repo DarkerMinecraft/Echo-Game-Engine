@@ -31,22 +31,44 @@ namespace Echo
 		m_ContentBrowserPanel.SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
 		m_SceneHierarchyPanel.GetEntityComponentPanel().SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
 
-		FramebufferSpecification framebufferSpec;
-		framebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
-		framebufferSpec.Width = 1280;
-		framebufferSpec.Height = 720;
+		FramebufferSpecification mainFramebufferSpec;
+		mainFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
+		mainFramebufferSpec.Width = 1280;
+		mainFramebufferSpec.Height = 720;
 
-		m_Framebuffer = Framebuffer::Create(framebufferSpec);
+		m_MainFramebuffer = Framebuffer::Create(mainFramebufferSpec);
+
+		FramebufferSpecification finalFramebufferSpec;
+		finalFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+		finalFramebufferSpec.Width = 1280;
+		finalFramebufferSpec.Height = 720;
+
+		m_FinalFramebuffer = Framebuffer::Create(finalFramebufferSpec);
+
+		m_OutlineShader = Shader::Create("assets/shaders/outlineShader.slang", true);
+
+		PipelineSpecification outlineSpec;
+		outlineSpec.EnableBlending = true;
+		outlineSpec.EnableDepthTest = false;
+		outlineSpec.EnableDepthWrite = false;
+		outlineSpec.EnableCulling = false;
+		outlineSpec.RenderTarget = m_FinalFramebuffer; 
+		m_OutlinePipeline = Pipeline::Create(m_OutlineShader, outlineSpec);
+
+		m_OutlineParams.selectedEntityID = -1;
+		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); 
+		m_OutlineParams.outlineThickness = 2.0f;
+		m_OutlineBuffer = UniformBuffer::Create(&m_OutlineParams, sizeof(OutlineParams));
 
 		m_Window = &Application::Get().GetWindow();
 
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		//m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
-		//m_StopButton = Texture2D::Create("Resources/StopButton.png");
+		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
+		m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
-		RendererQuad::Init(m_Framebuffer, 0);
+		RendererQuad::Init(m_MainFramebuffer, 0);
 	}
 
 	void EditorLayer::OnDetach()
@@ -58,31 +80,56 @@ namespace Echo
 	{
 		RendererQuad::ResetStats();
 
-		if (m_ViewportFocused)
-			m_EditorCamera.OnUpdate(ts);
-
-		CommandList cmd;
-		cmd.SetSourceFramebuffer(m_Framebuffer);
-
-		cmd.Begin();
-		cmd.ClearColor(m_Framebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
-		cmd.ClearColor(m_Framebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
-		cmd.BeginRendering(m_Framebuffer);
-		if (m_SceneState == Edit)
 		{
-			m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+			CommandList cmd;
+			cmd.SetSourceFramebuffer(m_MainFramebuffer);
+
+			cmd.Begin();
+			cmd.ClearColor(m_MainFramebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
+			cmd.ClearColor(m_MainFramebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
+			cmd.BeginRendering(m_MainFramebuffer);
+			if (m_SceneState == Edit)
+			{
+				if (m_ViewportFocused)
+					m_EditorCamera.OnUpdate(ts);
+
+				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+			}
+			else if (m_SceneState == Play)
+			{
+				m_GuizmoType = -1;
+				m_OutlineParams.selectedEntityID = -1;
+				m_ActiveScene->OnUpdateRuntime(cmd, ts);
+			}
+			cmd.EndRendering();
+			cmd.Execute();
 		}
-		else if (m_SceneState == Play)
+
 		{
-			m_ActiveScene->OnUpdateRuntime(cmd, ts);
+			m_OutlineBuffer->SetData(&m_OutlineParams, sizeof(OutlineParams));
+
+			CommandList cmd;
+			cmd.SetSourceFramebuffer(m_FinalFramebuffer);
+
+			cmd.Begin();
+			cmd.ClearColor(m_FinalFramebuffer, 0, { 0.0f, 0.0f, 0.0f, 0.0f });
+			cmd.BeginRendering(m_FinalFramebuffer);
+			cmd.BindPipeline(m_OutlinePipeline);
+			m_OutlinePipeline->BindResource(0, 0, m_MainFramebuffer, 0);
+			m_OutlinePipeline->BindResource(0, 1, m_MainFramebuffer, 0);
+			m_OutlinePipeline->BindResource(1, 0, m_MainFramebuffer, 1);
+			m_OutlinePipeline->BindResource(2, 0, m_OutlineBuffer);
+			cmd.Draw(3, 1, 0, 0);
+			cmd.EndRendering();
+			cmd.Execute();
 		}
-		cmd.EndRendering();
-		cmd.Execute();
 
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
-			&& (m_Framebuffer->GetWidth() != m_ViewportSize.x || m_Framebuffer->GetHeight() != m_ViewportSize.y))
+			&& (m_MainFramebuffer->GetWidth() != m_ViewportSize.x || m_MainFramebuffer->GetHeight() != m_ViewportSize.y))
 		{
-			m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_MainFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			m_FinalFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+
 			m_EditorCamera.SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
@@ -100,10 +147,10 @@ namespace Echo
 			int mouseY = (int)my;
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				int texX = (int)((mouseX / viewportSize.x) * m_Framebuffer->GetWidth());
-				int texY = (int)((mouseY / viewportSize.y) * m_Framebuffer->GetHeight());
+				int texX = (int)((mouseX / viewportSize.x) * m_MainFramebuffer->GetWidth());
+				int texY = (int)((mouseY / viewportSize.y) * m_MainFramebuffer->GetHeight());
 
-				int entityID = m_Framebuffer->ReadPixel(1, texX, texY);
+				int entityID = m_MainFramebuffer->ReadPixel(1, texX, texY);
 				if (entityID != -1)
 				{
 					m_Window->SetCursor(Cursor::HAND);
@@ -203,6 +250,11 @@ namespace Echo
 					}
 				}
 
+				if (ImGui::MenuItem("Save...", "Ctrl+S"))
+				{
+					SaveScene();
+				}
+
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 				{
 					std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
@@ -231,7 +283,7 @@ namespace Echo
 		m_ContentBrowserPanel.OnImGuiRender();
 
 		ViewportUI();
-		//ToolbarUI();
+		ToolbarUI();
 	}
 
 	void EditorLayer::ToolbarUI()
@@ -280,7 +332,7 @@ namespace Echo
 		{
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
-		ImGui::Image((ImTextureID)m_Framebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image((ImTextureID)m_FinalFramebuffer->GetImGuiTexture(0), ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -309,13 +361,6 @@ namespace Echo
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_ViewportSize.x, m_ViewportSize.y);
 
-			//Runtime
-			/*
-			auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-			const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-			const glm::mat4& projection = camera.GetProjection();
-			glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-			*/
 			const glm::mat4& projection = m_EditorCamera.GetProjection();
 			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
 
@@ -361,9 +406,12 @@ namespace Echo
 		{
 			case EC_KEY_S:
 			{
-				if (controlPressed && shiftPressed)
+				if (controlPressed)
 				{
-					SaveSceneAs();
+					if (shiftPressed)
+						SaveSceneAs();
+					else
+						SaveScene();
 
 					return true;
 				}
@@ -425,6 +473,8 @@ namespace Echo
 
 	void EditorLayer::OpenScene(const std::filesystem::path& path)
 	{
+		m_CurrentScenePath = path;
+
 		m_ActiveScene = CreateRef<Scene>();
 		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -440,6 +490,17 @@ namespace Echo
 		{
 			SceneSerializer serializer(m_ActiveScene);
 			serializer.Serialize(filePath);
+		}
+	}
+
+	void EditorLayer::SaveScene()
+	{
+		if (m_CurrentScenePath.empty())
+			SaveSceneAs();
+		else
+		{
+			SceneSerializer serializer(m_ActiveScene);
+			serializer.Serialize(m_CurrentScenePath.string());
 		}
 	}
 

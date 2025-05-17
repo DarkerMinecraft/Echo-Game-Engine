@@ -62,7 +62,6 @@ PSOutput pixelMain(PSInput input) : SV_Target
 {
     PSOutput output;
 
-    // Sample the texture
     float4 texColor = texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
     output.color = input.color * texColor;
 

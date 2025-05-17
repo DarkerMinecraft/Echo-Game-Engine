@@ -71,6 +71,10 @@ add_subdirectory(Echo/vendor/ImGuizmo ${CMAKE_BINARY_DIR}/vendor_build/ImGuizmo)
 set_target_properties(ImGuizmo PROPERTIES FOLDER "Dependencies")
 add_dependencies(VendorLibs ImGuizmo)
 
+add_subdirectory(Echo/vendor/Box2D ${CMAKE_BINARY_DIR}/vendor_build/Box2D)
+set_target_properties(box2d PROPERTIES FOLDER "Dependencies")
+add_dependencies(VendorLibs box2d)
+
 # Handle any dependency sub-targets
 set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies")
 set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies")

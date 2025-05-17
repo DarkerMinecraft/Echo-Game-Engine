@@ -122,6 +122,7 @@ namespace Echo
 
 			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 			out << YAML::Key << "FixedAspectRatio" << YAML::Value << cameraComponent.FixedAspectRatio;
+			out << YAML::EndMap;
 		}
 		if (entity.HasComponent<SpriteRendererComponent>())
 		{
@@ -138,8 +139,6 @@ namespace Echo
 	{
 		YAML::Emitter out;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Scene";
-		out << YAML::Value << "Scene Name";
 		out << YAML::Key << "Entities";
 		out << YAML::Value << YAML::BeginSeq;
 		m_Scene->m_Registry.view<entt::entity>().each([&](auto entityID)
