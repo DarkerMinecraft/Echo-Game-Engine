@@ -34,6 +34,48 @@ namespace Echo
 
 	}
 
+	template<typename T>
+	static void CopyComponent(entt::registry& srcRegistry, entt::registry& dstRegistry, std::unordered_map<UUID, entt::entity>& enttMap) 
+	{
+		auto view = srcRegistry.view<T>();
+		for (auto& e : view) 
+		{
+			auto& component = srcRegistry.get<T>(e);
+			entt::entity dstEntity = enttMap.at(dstRegistry.get<IDComponent>(e).ID);
+
+			dstRegistry.emplace_or_replace<T>(dstEntity, component);
+		}
+	}
+
+	Ref<Scene> Scene::Copy(Ref<Scene> srcScene)
+	{
+		Ref<Scene> newScene = CreateRef<Scene>();
+
+		newScene->m_ViewportWidth = srcScene->m_ViewportWidth;
+		newScene->m_ViewportHeight = srcScene->m_ViewportHeight;
+
+		std::unordered_map<UUID, entt::entity> enttMap;
+		auto& srcRegistry = srcScene->m_Registry;
+		auto& dstRegistry = newScene->m_Registry;
+		auto view = srcRegistry.view<IDComponent>();
+		for (auto& e : view) 
+		{
+			UUID uuid = srcRegistry.get<IDComponent>(e).ID;
+			std::string name = srcRegistry.get<TagComponent>(e).Tag;
+			enttMap[uuid] = newScene->CreateEntity(name, uuid);
+		}
+
+		CopyComponent<TransformComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<SpriteRendererComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<CameraComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<MeshComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<NativeScriptComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<Rigidbody2DComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<BoxCollider2DComponent>(srcRegistry, dstRegistry, enttMap);
+
+		return newScene;
+	}
+
 	Entity Scene::CreateEntity(const std::string& name)
 	{
 		Entity entity = { m_Registry.create(), this };
@@ -92,7 +134,8 @@ namespace Echo
 
 			b2BodyDef bodyDef = b2DefaultBodyDef();
 			bodyDef.type = Rigidbody2DTypeToBox2DBody(rb2d.Type);
-			bodyDef.position = (b2Vec2)(transform.Translation.x, transform.Translation.y);
+			bodyDef.position.x = transform.Translation.x;
+			bodyDef.position.y = transform.Translation.y;
 			bodyDef.rotation = b2MakeRot(transform.Rotation.z);
 			bodyDef.fixedRotation = rb2d.FixedRotation;
 
@@ -167,7 +210,7 @@ namespace Echo
 		// Physics
 		{
 			int subStepCount = 4;
-			m_Physics2D->Step(ts, subStepCount);
+			m_Physics2D->Step(1.0f / 60.0f, subStepCount);
 
 			auto view = m_Registry.view<Rigidbody2DComponent>();
 			for (auto e : view) 

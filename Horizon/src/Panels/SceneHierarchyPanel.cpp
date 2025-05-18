@@ -30,19 +30,23 @@ namespace Echo
 	void SceneHierarchyPanel::OnImGuiRender()
 	{
 		ImGui::Begin("Scene Hierarchy");
-		m_Context->m_Registry.view<entt::entity>().each([&](auto entityID) 
-		{
-			Entity entity{ entityID, m_Context.get() };
-			DrawEntityNode(entity);
-		});
 
-		if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight)) 
+		if (m_Context)
 		{
-			if (ImGui::MenuItem("Create Empty Entity"))
+			m_Context->m_Registry.view<entt::entity>().each([&](auto entityID)
 			{
-				m_Context->CreateEntity();
+				Entity entity{ entityID, m_Context.get() };
+				DrawEntityNode(entity);
+			});
+
+			if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+			{
+				if (ImGui::MenuItem("Create Empty Entity"))
+				{
+					m_Context->CreateEntity();
+				}
+				ImGui::EndPopup();
 			}
-			ImGui::EndPopup();
 		}
 
 		ImGui::End();

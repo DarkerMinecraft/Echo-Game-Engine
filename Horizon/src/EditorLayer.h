@@ -36,6 +36,9 @@ namespace Echo
 		void SaveSceneAs();
 		void SaveScene();
 
+		void OnScenePlay();
+		void OnSceneEdit();
+
 		//UI 
 		void ToolbarUI();
 		void ViewportUI();
@@ -49,6 +52,7 @@ namespace Echo
 		Ref<UniformBuffer> m_OutlineBuffer;
 
 		Ref<Scene> m_ActiveScene;
+		Ref<Scene> m_EditorScene;
 
 		bool m_PrimaryCamera = false;
 

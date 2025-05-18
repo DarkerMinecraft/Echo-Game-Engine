@@ -17,6 +17,8 @@ namespace Echo
 		Scene();
 		~Scene();
 
+		static Ref<Scene> Copy(Ref<Scene> srcScene);
+
 		Entity CreateEntity(const std::string& name = std::string());
 		Entity CreateEntity(const std::string& name, uint64_t uuid);
 		Entity GetPrimaryCameraEntity();

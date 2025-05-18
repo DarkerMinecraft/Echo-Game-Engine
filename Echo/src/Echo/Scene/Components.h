@@ -45,6 +45,7 @@ namespace Echo
 		glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
+		TransformComponent(const TransformComponent&) = default;
 		TransformComponent(const glm::vec3& translation)
 			: Translation(translation)
 		{}
@@ -135,8 +136,6 @@ namespace Echo
 		BodyType Type = BodyType::Static;
 		bool FixedRotation = false;
 
-		int RuntimeBody = -1;
-
 		Rigidbody2DComponent() = default;
 		Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
 	};
@@ -149,8 +148,6 @@ namespace Echo
 		float Density = 1.0f;
 		float Friction = 0.5f;
 		float Restitution = 0.0f;
-
-		void* RuntimeShape;
 
 		BoxCollider2DComponent() = default;
 		BoxCollider2DComponent(const BoxCollider2DComponent&) = default;

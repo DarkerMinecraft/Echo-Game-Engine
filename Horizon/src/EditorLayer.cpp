@@ -60,8 +60,8 @@ namespace Echo
 
 		m_Window = &Application::Get().GetWindow();
 
-		m_ActiveScene = CreateRef<Scene>();
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		m_EditorScene = CreateRef<Scene>();
+		m_ActiveScene = m_EditorScene;
 
 		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
 		m_StopButton = Texture2D::Create("Resources/StopButton.png");
@@ -97,6 +97,7 @@ namespace Echo
 			{
 				m_GuizmoType = -1;
 				m_OutlineParams.selectedEntityID = -2;
+
 				m_ActiveScene->OnUpdateRuntime(cmd, ts);
 			}
 			cmd.EndRendering();
@@ -243,12 +244,7 @@ namespace Echo
 
 					if (!filePath.empty())
 					{
-						m_ActiveScene = CreateRef<Scene>();
-						m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-						m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
-						SceneSerializer serializer(m_ActiveScene);
-						serializer.Deserialize(filePath);
+						OpenScene(filePath);
 					}
 				}
 
@@ -310,13 +306,11 @@ namespace Echo
 		{
 			if (m_SceneState == SceneState::Edit)
 			{
-				m_ActiveScene->OnRuntimeStart();
-				m_SceneState = SceneState::Play;
+				OnScenePlay();
 			}
 			else
 			{
-				m_ActiveScene->OnRuntimeStop();
-				m_SceneState = SceneState::Edit;
+				OnSceneEdit();
 			}
 		}
 
@@ -363,37 +357,40 @@ namespace Echo
 
 		//Gizmos 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-		if (selectedEntity && m_GuizmoType != -1)
+		if (selectedEntity)
 		{
-			ImGuizmo::SetOrthographic(false);
-			ImGuizmo::SetDrawlist();
-			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_ViewportSize.x, m_ViewportSize.y);
-
-			const glm::mat4& projection = m_EditorCamera.GetProjection();
-			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
-
-			auto& tc = selectedEntity.GetComponent<TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
-
-			bool snap = Input::IsKeyPressed(EC_KEY_LEFT_CONTROL);
-			float snapValue = 0.5f;
-			if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
-				snapValue = 45.0f;
-
-			float snapValues[3] = { snapValue, snapValue, snapValue };
-
-			ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(projection),
-								 (ImGuizmo::OPERATION)m_GuizmoType, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
-
-			if (ImGuizmo::IsUsing())
+			if (m_GuizmoType != -1)
 			{
-				glm::vec3 translation, rotation, scale;
-				Math::DecomposeTransform(transform, translation, rotation, scale);
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::SetDrawlist();
+				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_ViewportSize.x, m_ViewportSize.y);
 
-				glm::vec3 deltaRot = rotation - tc.Rotation;
-				tc.Translation = translation;
-				tc.Rotation += deltaRot;
-				tc.Scale = scale;
+				const glm::mat4& projection = m_EditorCamera.GetProjection();
+				glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
+
+				auto& tc = selectedEntity.GetComponent<TransformComponent>();
+				glm::mat4 transform = tc.GetTransform();
+
+				bool snap = Input::IsKeyPressed(EC_KEY_LEFT_CONTROL);
+				float snapValue = 0.5f;
+				if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
+					snapValue = 45.0f;
+
+				float snapValues[3] = { snapValue, snapValue, snapValue };
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(projection),
+									 (ImGuizmo::OPERATION)m_GuizmoType, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform), nullptr, snap ? snapValues : nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					glm::vec3 translation, rotation, scale;
+					Math::DecomposeTransform(transform, translation, rotation, scale);
+
+					glm::vec3 deltaRot = rotation - tc.Rotation;
+					tc.Translation = translation;
+					tc.Rotation += deltaRot;
+					tc.Scale = scale;
+				}
 			}
 		}
 		ImGui::PopStyleVar();
@@ -483,12 +480,14 @@ namespace Echo
 	{
 		m_CurrentScenePath = path;
 
-		m_ActiveScene = CreateRef<Scene>();
-		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		m_EditorScene = CreateRef<Scene>();
+		m_EditorScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+		m_SceneHierarchyPanel.SetContext(m_EditorScene);
 
-		SceneSerializer serializer(m_ActiveScene);
+		SceneSerializer serializer(m_EditorScene);
 		serializer.Deserialize(path.string());
+
+		m_ActiveScene = m_EditorScene;
 	}
 
 	void EditorLayer::SaveSceneAs()
@@ -510,6 +509,24 @@ namespace Echo
 			SceneSerializer serializer(m_ActiveScene);
 			serializer.Serialize(m_CurrentScenePath.string());
 		}
+	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		m_ActiveScene = Scene::Copy(m_EditorScene);
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		m_ActiveScene->OnRuntimeStart();
+		m_SceneState = SceneState::Play;
+	}
+
+	void EditorLayer::OnSceneEdit()
+	{
+		m_ActiveScene->OnRuntimeStop();
+		m_SceneState = SceneState::Edit;
+
+		m_ActiveScene = m_EditorScene;
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 
 }
