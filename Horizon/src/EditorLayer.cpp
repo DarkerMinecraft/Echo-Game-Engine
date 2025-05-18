@@ -78,6 +78,12 @@ namespace Echo
 	{
 		RendererQuad::ResetStats();
 
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+		if (selectedEntity && m_OutlineParams.selectedEntityID != (int)(uint32_t)selectedEntity)
+		{
+			m_OutlineParams.selectedEntityID = (int)(uint32_t)selectedEntity;
+		}
+
 		{
 			CommandList cmd;
 			cmd.SetSourceFramebuffer(m_MainFramebuffer);
@@ -273,8 +279,8 @@ namespace Echo
 		auto stats = RendererQuad::GetStats();
 		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 		ImGui::Text("Quad Count: %d", stats.QuadCount);
-		ImGui::Text("Vertex Count: %d", stats.GetTotalVertexCount());
-		ImGui::Text("Index Count: %d", stats.GetTotalIndexCount());
+		ImGui::Text("Vertex Count: %d", stats.GetTotalQuadVertexCount());
+		ImGui::Text("Index Count: %d", stats.GetTotalQuadIndexCount());
 		ImGui::End();
 
 		m_SceneHierarchyPanel.OnImGuiRender();

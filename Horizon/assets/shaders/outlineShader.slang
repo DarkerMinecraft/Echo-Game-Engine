@@ -1,7 +1,7 @@
 struct VSOutput 
 {
     float4 position : SV_Position;
-    float2 uv : TEXCOORD0;
+    float2 uv;
 }
 
 [shader("vertex")]
@@ -30,8 +30,7 @@ VSOutput vertexMain(uint vertexID : SV_VertexID)
 
 struct PSInput
 {
-    float4 position : SV_POSITION;
-    float2 uv : TEXCOORD0;
+    float2 uv;
 };
 
 struct OutlineParams
@@ -51,7 +50,7 @@ struct PSOutput
 }
 
 [shader("pixel")]
-PSOutput pixelMain(PSInput input) : SV_TARGET
+PSOutput pixelMain(PSInput input)
 {
     
     PSOutput output;

@@ -1,20 +1,23 @@
 struct VSInput
 {
-    float3 position;
-    float2 uv;
+    float3 worldPosition;
+    float3 localPosition;
+
     float4 color;
-    int texIndex;
-    float tilingFactor;
+    float outlineThickness;
+    float fade;
+
     int instanceID;
 }
 
 struct VSOuput
 {
     float4 position : SV_POSITION;
-    float2 uv;
+    float2 localPosition;
     float4 color;
-    nointerpolation int texIndex;
-    float tilingFactor;
+    float outlineThickness;
+    float fade;
+
     nointerpolation int instanceID;
 }
 
@@ -29,11 +32,11 @@ struct Camera
 VSOuput vertexMain(VSInput input)
 {
     VSOuput output;
-    output.position = mul(float4(input.position, 1.0), cam.projViewMatrix);
-    output.uv = input.uv;
+    output.position = mul(float4(input.worldPosition, 1.0), cam.projViewMatrix);
+    output.localPosition = input.localPosition.xy;
     output.color = input.color;
-    output.texIndex = input.texIndex;
-    output.tilingFactor = input.tilingFactor;
+    output.outlineThickness = input.outlineThickness;
+    output.fade = input.fade;
     output.instanceID = input.instanceID;
 
     return output;
@@ -41,14 +44,13 @@ VSOuput vertexMain(VSInput input)
 
 struct PSInput
 {
-    float2 uv;
+    float2 localPosition;
     float4 color;
-    nointerpolation int texIndex;
-    float tilingFactor;
+    float outlineThickness;
+    float fade;
+
     nointerpolation int instanceID;
 }
-
-[[vk::binding(1, 0)]] Sampler2D texSamplers[] : register(s1, space0);
 
 struct PSOutput
 {
@@ -61,9 +63,12 @@ PSOutput pixelMain(PSInput input)
 {
     PSOutput output;
 
-    float4 texColor = texSamplers[input.texIndex].Sample(input.uv * input.tilingFactor);
-    output.color = input.color * texColor;
+    float distance = 1.0 - length(input.localPosition);
+    float circleAlpha = smoothstep(0.0, input.fade, distance);
+    circleAlpha *= smoothstep(input.outlineThickness + input.fade, input.outlineThickness, distance);
 
     output.instanceID = input.instanceID;
+    output.color = input.color;
+    output.color.a *= circleAlpha;
     return output;
 }

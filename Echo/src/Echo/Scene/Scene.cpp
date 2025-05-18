@@ -10,12 +10,12 @@
 
 #include "Physics/Physics2D.h"
 
-namespace Echo 
+namespace Echo
 {
 
 	static b2BodyType Rigidbody2DTypeToBox2DBody(Rigidbody2DComponent::BodyType bodyType)
 	{
-		switch (bodyType) 
+		switch (bodyType)
 		{
 			case Rigidbody2DComponent::BodyType::Kinematic: return b2_kinematicBody;
 			case Rigidbody2DComponent::BodyType::Dynamic: return b2_dynamicBody;
@@ -26,7 +26,7 @@ namespace Echo
 	Scene::Scene()
 		: m_Physics2D(CreateScope<Physics2D>())
 	{
-		
+
 	}
 
 	Scene::~Scene()
@@ -35,15 +35,18 @@ namespace Echo
 	}
 
 	template<typename T>
-	static void CopyComponent(entt::registry& srcRegistry, entt::registry& dstRegistry, std::unordered_map<UUID, entt::entity>& enttMap) 
+	static void CopyComponent(entt::registry& srcRegistry, entt::registry& dstRegistry, std::unordered_map<UUID, entt::entity>& enttMap)
 	{
-		auto view = srcRegistry.view<T>();
-		for (auto& e : view) 
+		auto view = srcRegistry.view<IDComponent>();
+		for (auto& e : view)
 		{
-			auto& component = srcRegistry.get<T>(e);
-			entt::entity dstEntity = enttMap.at(dstRegistry.get<IDComponent>(e).ID);
+			if (srcRegistry.any_of<T>(e))
+			{
+				auto& component = srcRegistry.get<T>(e);
+				entt::entity dstEntity = enttMap.at(srcRegistry.get<IDComponent>(e).ID);
 
-			dstRegistry.emplace_or_replace<T>(dstEntity, component);
+				dstRegistry.emplace_or_replace<T>(dstEntity, component);
+			}
 		}
 	}
 
@@ -58,10 +61,11 @@ namespace Echo
 		auto& srcRegistry = srcScene->m_Registry;
 		auto& dstRegistry = newScene->m_Registry;
 		auto view = srcRegistry.view<IDComponent>();
-		for (auto& e : view) 
+		for (auto& e : view)
 		{
 			UUID uuid = srcRegistry.get<IDComponent>(e).ID;
 			std::string name = srcRegistry.get<TagComponent>(e).Tag;
+
 			enttMap[uuid] = newScene->CreateEntity(name, uuid);
 		}
 
@@ -84,7 +88,7 @@ namespace Echo
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Unnamed Entity" : name;
 
-		return entity; 
+		return entity;
 	}
 
 	Entity Scene::CreateEntity(const std::string& name, uint64_t uuid)
@@ -126,7 +130,7 @@ namespace Echo
 		m_Physics2D->StartPhysicsWorld(&worldDef);
 
 		auto view = m_Registry.view<Rigidbody2DComponent>();
-		for (auto e : view) 
+		for (auto e : view)
 		{
 			Entity entity = { e, this };
 			auto& transform = entity.GetComponent<TransformComponent>();
@@ -141,7 +145,7 @@ namespace Echo
 
 			b2BodyId body = m_Physics2D->AddBody(entity.GetUUID(), &bodyDef);
 
-			if (entity.HasComponent<BoxCollider2DComponent>()) 
+			if (entity.HasComponent<BoxCollider2DComponent>())
 			{
 				auto& bc2d = entity.GetComponent<BoxCollider2DComponent>();
 
@@ -165,11 +169,22 @@ namespace Echo
 	{
 		RendererQuad::BeginScene(cmd, camera);
 
-		auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
-		for (auto entity : view)
 		{
-			auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-			RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+				RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+			}
+		}
+
+		{
+			auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+				RendererQuad::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
+			}
 		}
 
 		RendererQuad::EndScene();
@@ -213,7 +228,7 @@ namespace Echo
 			m_Physics2D->Step(1.0f / 60.0f, subStepCount);
 
 			auto view = m_Registry.view<Rigidbody2DComponent>();
-			for (auto e : view) 
+			for (auto e : view)
 			{
 				Entity entity = { e, this };
 
@@ -238,6 +253,15 @@ namespace Echo
 				{
 					auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
 					RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite, .Texture = sprite, .TilingFactor = sprite }, transform.GetTransform());
+				}
+			}
+
+			{
+				auto view = m_Registry.view<TransformComponent, CircleRendererComponent>();
+				for (auto entity : view)
+				{
+					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
+					RendererQuad::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 				}
 			}
 
@@ -288,6 +312,12 @@ namespace Echo
 
 	template<>
 	void Scene::OnComponentAdd<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
+	{
+
+	}
+
+	template<>
+	void Scene::OnComponentAdd<CircleRendererComponent>(Entity entity, CircleRendererComponent& component)
 	{
 
 	}

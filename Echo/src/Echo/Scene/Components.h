@@ -69,9 +69,6 @@ namespace Echo
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
-		SpriteRendererComponent(const glm::vec4& color, Ref<Texture2D> texture = nullptr, float tilingFactor = 1.0f)
-			: Color(color), Texture(texture), TilingFactor(tilingFactor)
-		{}
 		
 		operator glm::vec4& () { return Color; }
 		operator const glm::vec4& () const { return Color; }
@@ -81,6 +78,16 @@ namespace Echo
 
 		operator float& () { return TilingFactor; }
 		operator const float& () const { return TilingFactor; }
+	};
+
+	struct CircleRendererComponent
+	{
+		glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
+		float OutlineThickness = 0.1f;
+		float Fade = 0.0025f;
+
+		CircleRendererComponent() = default;
+		CircleRendererComponent(const CircleRendererComponent&) = default;
 	};
 
 	struct CameraComponent

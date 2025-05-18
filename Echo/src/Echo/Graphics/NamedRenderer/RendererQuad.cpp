@@ -21,7 +21,17 @@ namespace Echo
 		int InstanceID;
 	};
 
-	struct BatchUniformBuffer
+	struct CircleVertex
+	{
+		glm::vec3 WorldPosition;
+		glm::vec3 LocalPosition;
+		glm::vec4 Color;
+		float OutlineThickness;
+		float Fade;
+		int InstanceID;
+	};
+
+	struct CameraUniformBuffer
 	{
 		glm::mat4 ProjViewMatrix{};
 	};
@@ -35,17 +45,23 @@ namespace Echo
 		uint32_t MaxTextureSlots;
 
 		Ref<VertexBuffer> QuadVertexBuffer;
+		Ref<VertexBuffer> CircleVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
 
 		Ref<Shader> QuadShader;
 		Ref<Pipeline> QuadPipeline;
+		Ref<Shader> CircleShader;
+		Ref<Pipeline> CirclePipeline;
 
-		Ref<UniformBuffer> QuadUniformBuffer;
-		Ref<UniformBuffer> QuadHighlightBuffer;
+		Ref<UniformBuffer> CamUniformBuffer;
 
 		uint32_t QuadIndexCount = 0;
 		QuadVertex* QuadVertexBufferBase = nullptr;
 		QuadVertex* QuadVertexBufferPtr = nullptr;
+
+		uint32_t CircleIndexCount = 0;
+		CircleVertex* CircleVertexBufferBase = nullptr;
+		CircleVertex* CircleVertexBufferPtr = nullptr;
 
 		std::vector<Ref<Texture2D>> TextureSlots;
 		uint32_t TextureSlotIndex = 1;
@@ -81,15 +97,19 @@ namespace Echo
 
 		s_Data.QuadShader = Shader::Create("assets/shaders/quadShader.slang", true);
 		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader, pipelineSpec);
+		s_Data.CircleShader = Shader::Create("assets/shaders/circleShader.slang", true);
+		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader, pipelineSpec);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
+		s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex), true);
 
 		s_Data.TextureSlots.push_back(Texture2D::Create(1, 1, new uint32_t(0xffffffff)));
 
-		BatchUniformBuffer batchUniformBuffer{};
-		s_Data.QuadUniformBuffer = UniformBuffer::Create(&batchUniformBuffer, sizeof(BatchUniformBuffer));
+		CameraUniformBuffer batchUniformBuffer{};
+		s_Data.CamUniformBuffer = UniformBuffer::Create(&batchUniformBuffer, sizeof(CameraUniformBuffer));
 
 		s_Data.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
+		s_Data.CircleVertexBufferBase = new CircleVertex[s_Data.MaxVertices];
 
 		uint32_t* quadIndices = new uint32_t[s_Data.MaxIndices];
 
@@ -113,61 +133,89 @@ namespace Echo
 
 	void RendererQuad::BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform)
 	{
+		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
+
+		CameraUniformBuffer camUniformBuffer
+		{
+			.ProjViewMatrix = projView,
+		};
+		s_Data.CamUniformBuffer->SetData(&camUniformBuffer, sizeof(CameraUniformBuffer));
+
 		s_Data.Cmd = &cmd;
 
 		s_Data.QuadIndexCount = 0;
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
+		s_Data.CircleIndexCount = 0;
+		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
+
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
-		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
-
-		BatchUniformBuffer batchUniformBuffer
-		{
-			.ProjViewMatrix = projView,
-		};
-
-		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->BindResource(0, 0, s_Data.QuadUniformBuffer);
+		s_Data.QuadPipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
+
+		cmd.BindPipeline(s_Data.CirclePipeline);
+
+		s_Data.CirclePipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
+
+		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
+		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
+		
 	}
 
 	void RendererQuad::BeginScene(CommandList& cmd, const EditorCamera& camera)
 	{
+		CameraUniformBuffer camUniformBuffer
+		{
+			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix(),
+		};
+		s_Data.CamUniformBuffer->SetData(&camUniformBuffer, sizeof(CameraUniformBuffer));
+
 		s_Data.Cmd = &cmd;
 
 		s_Data.QuadIndexCount = 0;
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
 		s_Data.TextureSlotIndex = 1;
 
+		s_Data.CircleIndexCount = 0;
+		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
+
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
-		BatchUniformBuffer batchUniformBuffer
-		{
-			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix(),
-		};
-		s_Data.QuadUniformBuffer->SetData(&batchUniformBuffer, sizeof(BatchUniformBuffer));
-		s_Data.QuadPipeline->BindResource(0, 0, s_Data.QuadUniformBuffer);
+		s_Data.QuadPipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
+		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
+
+		cmd.BindPipeline(s_Data.CirclePipeline);
+
+		s_Data.CirclePipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
+
+		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
 	}
 
 	void RendererQuad::EndScene()
 	{
-		uint32_t dataSize = (uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase;
+		uint32_t quadDataSize = (uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase;
+		if (quadDataSize != 0)
+		{
+			s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, quadDataSize);
+		}
 
-		if (dataSize == 0)
-			return;
-
-		s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
-		Flush();
+		uint32_t circleDataSize = (uint8_t*)s_Data.CircleVertexBufferPtr - (uint8_t*)s_Data.CircleVertexBufferBase;
+		if (circleDataSize != 0)
+		{
+			s_Data.CircleVertexBuffer->SetData(s_Data.CircleVertexBufferBase, circleDataSize);
+		}
+		
+		if(quadDataSize != 0 || circleDataSize != 0) Flush();
 	}
 
-	void RendererQuad::DrawQuad(const VertexData& data)
+	void RendererQuad::DrawQuad(const VertexQuadData& data)
 	{
 
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
@@ -217,7 +265,7 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
-	void RendererQuad::DrawQuad(const VertexData& data, const glm::mat4& transform)
+	void RendererQuad::DrawQuad(const VertexQuadData& data, const glm::mat4& transform)
 	{
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
@@ -262,14 +310,62 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
+	void RendererQuad::DrawCircle(const VertexCircleData& data)
+	{
+		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
+			FlushAndReset();
+
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), data.Position)
+			* glm::scale(glm::mat4(1.0f), { data.Size.x, data.Size.y, 1.0f });
+
+		for (int i = 0; i < 4; i++)
+		{
+			s_Data.CircleVertexBufferPtr->WorldPosition = transform * s_Data.QuadVertexPositions[i];
+			s_Data.CircleVertexBufferPtr->LocalPosition = s_Data.QuadVertexPositions[i] * 2.0f;
+			s_Data.CircleVertexBufferPtr->Color = data.Color;
+			s_Data.CircleVertexBufferPtr->OutlineThickness = data.OutlineThickness;
+			s_Data.CircleVertexBufferPtr->Fade = data.Fade;
+			s_Data.CircleVertexBufferPtr->InstanceID = data.InstanceID;
+			s_Data.CircleVertexBufferPtr++;
+		}
+
+		s_Data.CircleIndexCount += 6;
+		s_Data.Stats.CircleCount++;
+	}
+
+	void RendererQuad::DrawCircle(const VertexCircleData& data, const glm::mat4& transform)
+	{
+		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
+			FlushAndReset();
+
+		for (int i = 0; i < 4; i++)
+		{
+			s_Data.CircleVertexBufferPtr->WorldPosition = transform * s_Data.QuadVertexPositions[i];
+			s_Data.CircleVertexBufferPtr->LocalPosition = s_Data.QuadVertexPositions[i] * 2.0f;
+			s_Data.CircleVertexBufferPtr->Color = data.Color;
+			s_Data.CircleVertexBufferPtr->OutlineThickness = data.OutlineThickness;
+			s_Data.CircleVertexBufferPtr->Fade = data.Fade;
+			s_Data.CircleVertexBufferPtr->InstanceID = data.InstanceID;
+			s_Data.CircleVertexBufferPtr++;
+		}
+
+		s_Data.CircleIndexCount += 6;
+		s_Data.Stats.CircleCount++;
+	}
+
 	void RendererQuad::Flush()
 	{
+		s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
 			s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
 		}
 
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
+		s_Data.Stats.DrawCalls++;
+
+		s_Data.Cmd->BindPipeline(s_Data.CirclePipeline);
+		s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
 		s_Data.Stats.DrawCalls++;
 	}
 
@@ -281,6 +377,9 @@ namespace Echo
 		s_Data.QuadIndexCount = 0;
 
 		s_Data.TextureSlotIndex = 1;
+
+		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
+		s_Data.CircleIndexCount = 0;
 	}
 
 	Statistics RendererQuad::GetStats()
@@ -296,14 +395,17 @@ namespace Echo
 	void RendererQuad::Destroy()
 	{
 		s_Data.QuadVertexBuffer.reset();
+		s_Data.CircleVertexBuffer.reset();
 		s_Data.QuadIndexBuffer.reset();
 		s_Data.QuadPipeline.reset();
-		s_Data.QuadUniformBuffer.reset();
-		s_Data.QuadHighlightBuffer.reset();
+		s_Data.CirclePipeline.reset();
+		s_Data.CamUniformBuffer.reset();
 		s_Data.QuadShader.reset();
+		s_Data.CircleShader.reset();
 		s_Data.TextureSlots[0]->Destroy();
 
 		delete[] s_Data.QuadVertexBufferBase;
+		delete[] s_Data.CircleVertexBufferBase;
 	}
 
 }

@@ -159,6 +159,16 @@ namespace Echo
 			out << YAML::Key << "Color" << YAML::Value << spriteRenderer.Color;
 			out << YAML::EndMap;
 		}
+		if (entity.HasComponent<CircleRendererComponent>())
+		{
+			out << YAML::Key << "CircleRendererComponent";
+			out << YAML::BeginMap;
+			auto& circleRenderer = entity.GetComponent<CircleRendererComponent>();
+			out << YAML::Key << "Color" << YAML::Value << circleRenderer.Color;
+			out << YAML::Key << "Thickness" << YAML::Value << circleRenderer.OutlineThickness;
+			out << YAML::Key << "Fade" << YAML::Value << circleRenderer.Fade;
+			out << YAML::EndMap;
+		}
 		if (entity.HasComponent<Rigidbody2DComponent>())
 		{
 			out << YAML::Key << "Rigidbody2DComponent";
@@ -269,6 +279,14 @@ namespace Echo
 				{
 					auto& spriteRenderer = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					spriteRenderer.Color = spriteRendererComponent["Color"].as<glm::vec4>();
+				}
+				auto circleRendererComponent = entity["CircleRendererComponent"];
+				if (circleRendererComponent)
+				{
+					auto& circleRenderer = deserializedEntity.AddComponent<CircleRendererComponent>();
+					circleRenderer.Color = circleRendererComponent["Color"].as<glm::vec4>();
+					circleRenderer.OutlineThickness = circleRendererComponent["Thickness"].as<float>();
+					circleRenderer.Fade = circleRendererComponent["Fade"].as<float>();
 				}
 				auto rigidBody2DComponent = entity["Rigidbody2DComponent"];
 				if (rigidBody2DComponent) 
