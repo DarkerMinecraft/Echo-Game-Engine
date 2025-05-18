@@ -75,14 +75,7 @@ namespace Echo
 		s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
 
 		PipelineSpecification pipelineSpec{};
-		pipelineSpec.EnableBlending = false;
-		pipelineSpec.EnableDepthTest = false;
-		pipelineSpec.EnableDepthWrite = false;
-		pipelineSpec.EnableCulling = false;
 		pipelineSpec.CullMode = Cull::None;
-		pipelineSpec.FillMode = Fill::Solid;
-		pipelineSpec.DepthCompareOp = CompareOp::Less;
-		pipelineSpec.GraphicsTopology = Topology::TriangleList;
 
 		pipelineSpec.RenderTarget = framebuffer;
 

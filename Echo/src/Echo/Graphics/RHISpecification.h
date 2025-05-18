@@ -164,7 +164,7 @@ namespace Echo
 		bool EnableDepthTest = false;
 		bool EnableDepthWrite = false;
 		bool EnableCulling = true;
-		Cull CullMode = Cull::Back;
+		Cull CullMode = Cull::Front;
 		Fill FillMode = Fill::Solid;
 
 		CompareOp DepthCompareOp = CompareOp::Less;

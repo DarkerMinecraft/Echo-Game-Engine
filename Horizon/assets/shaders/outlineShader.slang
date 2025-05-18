@@ -41,8 +41,7 @@ struct OutlineParams
     float outlineThickness;
 };
 
-[[vk::binding(0, 0)]] Texture2D colorTexture : register(t0);
-[[vk::binding(0, 1)]] SamplerState colorSampler : register(s0);
+[[vk::binding(0, 0)]] Sampler2D colorTexture : register(s0);
 [[vk::binding(1, 0)]] Texture2D<int> idTexture : register(t1);
 [[vk::binding(2, 0)]] ConstantBuffer<OutlineParams> params : register(b2);
 
@@ -64,7 +63,7 @@ PSOutput pixelMain(PSInput input) : SV_TARGET
     int2 pixelCoords = int2(input.uv * float2(width, height));
     int centerID = idTexture.Load(int3(pixelCoords, 0)).r;
 
-    float4 color = colorTexture.Sample(colorSampler, input.uv);
+    float4 color = colorTexture.Sample(input.uv);
     
     bool isSelected = (centerID == params.selectedEntityID);
     bool hasOutline = false;
@@ -96,7 +95,6 @@ PSOutput pixelMain(PSInput input) : SV_TARGET
         }
     }
 
-    //return hasOutline ? params.outlineColor : color;
     output.color = hasOutline ? params.outlineColor : color;
     return output;
 }

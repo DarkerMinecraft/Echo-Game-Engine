@@ -47,15 +47,13 @@ namespace Echo
 
 		m_OutlineShader = Shader::Create("assets/shaders/outlineShader.slang", true);
 
-		PipelineSpecification outlineSpec;
-		outlineSpec.EnableBlending = true;
-		outlineSpec.EnableDepthTest = false;
-		outlineSpec.EnableDepthWrite = false;
-		outlineSpec.EnableCulling = false;
+		PipelineSpecification outlineSpec{};
+		outlineSpec.CullMode = Cull::None;
+
 		outlineSpec.RenderTarget = m_FinalFramebuffer; 
 		m_OutlinePipeline = Pipeline::Create(m_OutlineShader, outlineSpec);
 
-		m_OutlineParams.selectedEntityID = -1;
+		m_OutlineParams.selectedEntityID = -2;
 		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); 
 		m_OutlineParams.outlineThickness = 2.0f;
 		m_OutlineBuffer = UniformBuffer::Create(&m_OutlineParams, sizeof(OutlineParams));
@@ -98,7 +96,7 @@ namespace Echo
 			else if (m_SceneState == Play)
 			{
 				m_GuizmoType = -1;
-				m_OutlineParams.selectedEntityID = -1;
+				m_OutlineParams.selectedEntityID = -2;
 				m_ActiveScene->OnUpdateRuntime(cmd, ts);
 			}
 			cmd.EndRendering();
@@ -112,11 +110,9 @@ namespace Echo
 			cmd.SetSourceFramebuffer(m_FinalFramebuffer);
 
 			cmd.Begin();
-			cmd.ClearColor(m_FinalFramebuffer, 0, { 0.0f, 0.0f, 0.0f, 0.0f });
 			cmd.BeginRendering(m_FinalFramebuffer);
 			cmd.BindPipeline(m_OutlinePipeline);
 			m_OutlinePipeline->BindResource(0, 0, m_MainFramebuffer, 0);
-			m_OutlinePipeline->BindResource(0, 1, m_MainFramebuffer, 0);
 			m_OutlinePipeline->BindResource(1, 0, m_MainFramebuffer, 1);
 			m_OutlinePipeline->BindResource(2, 0, m_OutlineBuffer);
 			cmd.Draw(3, 1, 0, 0);
@@ -157,11 +153,17 @@ namespace Echo
 					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
 					{
 						m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+						m_OutlineParams.selectedEntityID = entityID;
 					}
 				}
 				else
 				{
 					m_Window->SetCursor(Cursor::ARROW);
+					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+					{
+						m_SceneHierarchyPanel.SetSelectedEntity(-1);
+						m_OutlineParams.selectedEntityID = -2;
+					}
 				}
 			}
 		}
@@ -307,9 +309,15 @@ namespace Echo
 		if (ImGui::ImageButton("##type", icon, ImVec2(size, size)))
 		{
 			if (m_SceneState == SceneState::Edit)
+			{
+				m_ActiveScene->OnRuntimeStart();
 				m_SceneState = SceneState::Play;
+			}
 			else
+			{
+				m_ActiveScene->OnRuntimeStop();
 				m_SceneState = SceneState::Edit;
+			}
 		}
 
 		ImGui::PopStyleVar(2);

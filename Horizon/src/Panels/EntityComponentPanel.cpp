@@ -143,21 +143,37 @@ namespace Echo
 
 		if (ImGui::BeginPopup("AddComponent"))
 		{
-			if (ImGui::MenuItem("Sprite Renderer"))
+			if (!entity.HasComponent<SpriteRendererComponent>())
 			{
-				if (!entity.HasComponent<SpriteRendererComponent>())
+				if (ImGui::MenuItem("Sprite Renderer"))
 				{
 					entity.AddComponent<SpriteRendererComponent>();
+					ImGui::CloseCurrentPopup();
 				}
-				ImGui::CloseCurrentPopup();
 			}
-			if (ImGui::MenuItem("Camera"))
+			if (!entity.HasComponent<CameraComponent>())
 			{
-				if (!entity.HasComponent<CameraComponent>())
+				if (ImGui::MenuItem("Camera"))
 				{
 					entity.AddComponent<CameraComponent>();
+					ImGui::CloseCurrentPopup();
 				}
-				ImGui::CloseCurrentPopup();
+			}
+			if (!entity.HasComponent<Rigidbody2DComponent>())
+			{
+				if (ImGui::MenuItem("Rigidbody 2D"))
+				{
+					entity.AddComponent<Rigidbody2DComponent>();
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			if (!entity.HasComponent<BoxCollider2DComponent>())
+			{
+				if (ImGui::MenuItem("Box Collider 2D"))
+				{
+					entity.AddComponent<BoxCollider2DComponent>();
+					ImGui::CloseCurrentPopup();
+				}
 			}
 			ImGui::EndPopup();
 		}
@@ -191,6 +207,39 @@ namespace Echo
 			}
 
 			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
+		});
+
+		DrawComponent<Rigidbody2DComponent>("Rigidbody 2D", entity, [](auto& component)
+		{
+			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* currentBodyTypeString = bodyTypeStrings[(int)component.Type];
+
+			if (ImGui::BeginCombo("Type", currentBodyTypeString))
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					bool isSelected = currentBodyTypeString == bodyTypeStrings[i];
+					if (ImGui::Selectable(bodyTypeStrings[i], isSelected))
+					{
+						currentBodyTypeString = bodyTypeStrings[i];
+						component.Type = ((Rigidbody2DComponent::BodyType)i);
+					}
+					if (isSelected) ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::Checkbox("Fixed Rotation", &component.FixedRotation);
+		});
+
+		DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)
+		{
+			ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset));
+			ImGui::DragFloat2("Size", glm::value_ptr(component.Size));
+
+			ImGui::DragFloat("Density", &component.Density);
+			ImGui::DragFloat("Friction", &component.Friction);
+			ImGui::DragFloat("Restitution", &component.Restitution);
 		});
 
 		DrawComponent<CameraComponent>("Camera", entity, [](auto& component)
@@ -255,5 +304,4 @@ namespace Echo
 			ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio);
 		});
 	}
-
 }

@@ -8,6 +8,7 @@
 namespace Echo 
 {
 
+	class Physics2D;
 	class Entity;
 
 	class Scene 
@@ -22,6 +23,9 @@ namespace Echo
 
 		void DestroyEntity(Entity entity);
 
+		void OnRuntimeStart();
+		void OnRuntimeStop();
+
 		void OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts);
 		void OnUpdateRuntime(CommandList& cmd, Timestep ts);
 
@@ -32,6 +36,8 @@ namespace Echo
 	private:
 		entt::registry m_Registry;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+
+		Scope<Physics2D> m_Physics2D;
 
 		friend class Entity;
 		friend class SceneSerializer;

@@ -71,7 +71,7 @@ namespace Echo
 					m_CurrentDirectory /= path.filename();
 				}
 			}
-			ImGui::TextWrapped(filenameString.c_str());
+			ImGui::TextWrapped(relativePath.stem().string().c_str());
 
 			ImGui::NextColumn();
 

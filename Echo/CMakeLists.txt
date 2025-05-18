@@ -48,6 +48,7 @@ target_link_libraries(Echo PUBLIC
     slang
     yaml-cpp
     ImGuizmo
+    box2d
 )
 
 target_sources(Echo PRIVATE 

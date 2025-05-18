@@ -73,10 +73,9 @@ namespace Echo
 
 		struct OutlineParams
 		{
-			int selectedEntityID;
-			glm::vec4 outlineColor;
-			float outlineThickness;
-			float padding[3]; // For alignment
+			alignas(4) int selectedEntityID;
+			alignas(16) glm::vec4 outlineColor;
+			alignas(4) float outlineThickness;
 		};
 		OutlineParams m_OutlineParams;
 
