@@ -109,9 +109,6 @@ namespace Echo
 		VulkanFramebuffer* framebuffer = (VulkanFramebuffer*)targetFramebuffer;
 		for (uint32_t i = 0; i < m_ColorFormats.size(); i++)
 		{
-			if (GetImage(i).Samples || VK_SAMPLE_COUNT_1_BIT)
-				continue;
-
 			TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			framebuffer->TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
