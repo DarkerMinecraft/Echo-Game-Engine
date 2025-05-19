@@ -78,6 +78,13 @@ namespace Echo
 												  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 												  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 				}
+				else 
+				{
+					VulkanImages::TransitionImage(m_FrameData.CommandBuffer,
+												  m_Device->GetSwapchainImage(m_ImageIndex),
+												  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+												  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+				}
 			}
 		}
 

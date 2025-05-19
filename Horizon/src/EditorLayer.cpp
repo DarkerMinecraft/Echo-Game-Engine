@@ -70,6 +70,7 @@ namespace Echo
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
 		m_StopButton = Texture2D::Create("Resources/StopButton.png");

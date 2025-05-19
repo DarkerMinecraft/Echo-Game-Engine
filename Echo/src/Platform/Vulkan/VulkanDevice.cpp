@@ -192,7 +192,7 @@ namespace Echo
 
 		memcpy(uploadbuffer.Info.pMappedData, data, data_size);
 
-		AllocatedImage newImage = CreateImage(size, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		AllocatedImage newImage = CreateImageNoMSAA(size, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
 		ImmediateSubmit([&](VkCommandBuffer cmd)
 		{
