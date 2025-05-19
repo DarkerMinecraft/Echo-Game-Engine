@@ -1,5 +1,10 @@
 #pragma once
 
+#include "Reflections/ShaderReflection.h"
+
+#include "Core/UUID.h"
+#include "Serializer/Cache/ShaderCache.h"
+
 #include <slang.h>
 #include <slang-com-ptr.h>
 #include <slang-com-helper.h>
@@ -7,7 +12,6 @@
 #include <vulkan/vulkan.h>
 #include <filesystem>
 
-#include "Reflections/ShaderReflection.h"
 
 using namespace slang;
 namespace Echo
@@ -20,6 +24,9 @@ namespace Echo
 		~ShaderLibrary();
 
 		std::vector<VkShaderModule> AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection);
+
+		Ref<ShaderCache> LoadShaderCache(const std::filesystem::path& path, const UUID& shaderID) const;
+		bool SaveShaderCache(const std::filesystem::path& path, const Ref<ShaderCache>& cache) const;
 	private:		
 		void ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection);
 		void ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* entryPointMetadata, ShaderReflection* reflection);

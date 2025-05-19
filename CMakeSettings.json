@@ -1,8 +1,8 @@
 ﻿{
     "configurations": [
       {
-        "name": "x64-Debug",
-        "generator": "Visual Studio 17 2022 Win64",
+        "name": "Debug",
+        "generator": "Ninja",
         "configurationType": "Debug",
         "inheritEnvironments": [ "msvc_x64_x64" ],
         "buildRoot": "${projectDir}\\build\\${name}",
@@ -14,8 +14,8 @@
         "variables": []
       },
       {
-        "name": "x64-Release",
-        "generator": "Visual Studio 17 2022 Win64",
+        "name": "Release",
+        "generator": "Ninja",
         "configurationType": "Release",
         "inheritEnvironments": [ "msvc_x64_x64" ],
         "buildRoot": "${projectDir}\\build\\${name}",
@@ -27,8 +27,8 @@
         "variables": []
       },
       {
-        "name": "x64-Dist",
-        "generator": "Visual Studio 17 2022 Win64",
+        "name": "Dist",
+        "generator": "Ninja",
         "configurationType": "Dist",
         "inheritEnvironments": [ "msvc_x64_x64" ],
         "buildRoot": "${projectDir}\\build\\${name}",

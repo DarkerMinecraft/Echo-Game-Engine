@@ -4,40 +4,38 @@
 namespace Echo 
 {
 
-	bool ShaderCache::Serialize(std::ofstream& stream)
+	bool ShaderCache::Serialize(std::ostream& stream)
 	{
-		// Write header
 		stream.write(reinterpret_cast<const char*>(&SHADER_CACHE_MAGIC), sizeof(uint32_t));
 		uint32_t version = GetVersion();
 		stream.write(reinterpret_cast<const char*>(&version), sizeof(uint32_t));
 		uint64_t uuid = m_ShaderID;
 		stream.write(reinterpret_cast<const char*>(&uuid), sizeof(uint64_t));
 
-		// Write dependencies
-		uint32_t depCount = static_cast<uint32_t>(m_FileTimestamps.size());
-		stream.write(reinterpret_cast<const char*>(&depCount), sizeof(uint32_t));
-		for (const auto& [path, timestamp] : m_FileTimestamps)
-		{
-			std::string pathStr = path.string();
-			uint32_t pathLen = static_cast<uint32_t>(pathStr.length());
-			stream.write(reinterpret_cast<const char*>(&pathLen), sizeof(uint32_t));
-			stream.write(pathStr.c_str(), pathLen);
-			stream.write(reinterpret_cast<const char*>(&timestamp), sizeof(long long));
-		}
-
 		// Write shader modules
-		uint32_t moduleCount = static_cast<uint32_t>(m_ShaderModules.size());
+		uint32_t moduleCount = static_cast<uint32_t>(m_ShaderSpirvs.size());
 		stream.write(reinterpret_cast<const char*>(&moduleCount), sizeof(uint32_t));
-		for (size_t i = 0; i < moduleCount; i++)
-		{
-			uint32_t stage = static_cast<uint32_t>(m_ShaderStages[i]);
-			stream.write(reinterpret_cast<const char*>(&stage), sizeof(uint32_t));
 
-			const auto& spirv = m_ShaderModules[i];
-			uint32_t spirvSize = static_cast<uint32_t>(spirv.size() * sizeof(uint32_t));
-			stream.write(reinterpret_cast<const char*>(&spirvSize), sizeof(uint32_t));
-			stream.write(reinterpret_cast<const char*>(spirv.data()), spirvSize);
+		for (const auto& spirv : m_ShaderSpirvs)
+		{
+			// First verify the magic number in our data (debugging check)
+			if (spirv.Bytes && spirv.Size >= 4)
+			{
+				uint32_t magicNumber = spirv.Bytes[0];
+				if (magicNumber != 0x07230203)
+				{
+					EC_CORE_ERROR("Invalid SPIRV magic number when serializing: {0:x}", magicNumber);
+					return false;
+				}
+			}
+
+			// Write the size in bytes
+			stream.write(reinterpret_cast<const char*>(&spirv.Size), sizeof(size_t));
+
+			// Write the actual SPIRV data
+			stream.write(reinterpret_cast<const char*>(spirv.Bytes), spirv.Size);
 		}
+
 
 		// Write reflection data (buffer layout)
 		const auto& layout = m_Reflection.GetVertexLayout();
@@ -82,6 +80,22 @@ namespace Echo
 			stream.write(reinterpret_cast<const char*>(&type), sizeof(uint32_t));
 		}
 
+		const auto& entryPoints = m_Reflection.GetEntryPointData();
+		uint32_t entryPointCount = static_cast<uint32_t>(entryPoints.size());
+		stream.write(reinterpret_cast<const char*>(&entryPointCount), sizeof(uint32_t));
+
+		for (const auto& entryPoint : entryPoints)
+		{
+			// Write shader stage
+			uint32_t stage = static_cast<uint32_t>(entryPoint.Stage);
+			stream.write(reinterpret_cast<const char*>(&stage), sizeof(uint32_t));
+
+			// Write entry point name
+			uint32_t nameLen = static_cast<uint32_t>(entryPoint.EntryPointName.length());
+			stream.write(reinterpret_cast<const char*>(&nameLen), sizeof(uint32_t));
+			stream.write(entryPoint.EntryPointName.c_str(), nameLen);
+		}
+
 		return stream.good();
 	}
 
@@ -108,60 +122,56 @@ namespace Echo
 		stream.read(reinterpret_cast<char*>(&uuid), sizeof(uint64_t));
 		m_ShaderID = uuid;
 
-		// Read dependencies
-		uint32_t depCount;
-		stream.read(reinterpret_cast<char*>(&depCount), sizeof(uint32_t));
-
-		m_FileTimestamps.clear();
-		for (uint32_t i = 0; i < depCount; i++)
-		{
-			uint32_t pathLen;
-			stream.read(reinterpret_cast<char*>(&pathLen), sizeof(uint32_t));
-
-			std::string pathStr(pathLen, ' ');
-			stream.read(&pathStr[0], pathLen);
-
-			long long timestamp;
-			stream.read(reinterpret_cast<char*>(&timestamp), sizeof(long long));
-
-			m_FileTimestamps[std::filesystem::path(pathStr)] = timestamp;
-		}
-
 		// Read shader modules
 		uint32_t moduleCount;
 		stream.read(reinterpret_cast<char*>(&moduleCount), sizeof(uint32_t));
-
-		m_ShaderModules.clear();
-		m_ShaderStages.clear();
+		m_ShaderSpirvs.clear();
 
 		for (uint32_t i = 0; i < moduleCount; i++)
 		{
-			uint32_t stage;
-			stream.read(reinterpret_cast<char*>(&stage), sizeof(uint32_t));
-			m_ShaderStages.push_back(static_cast<ShaderStage>(stage));
+			// Read the size of the SPIRV data
+			size_t spirvSize;
+			stream.read(reinterpret_cast<char*>(&spirvSize), sizeof(size_t));
 
-			uint32_t spirvSize;
-			stream.read(reinterpret_cast<char*>(&spirvSize), sizeof(uint32_t));
+			// Calculate how many uint32_t elements we need
+			uint32_t wordCount = spirvSize / sizeof(uint32_t);
 
-			std::vector<uint32_t> spirv(spirvSize / sizeof(uint32_t));
-			stream.read(reinterpret_cast<char*>(spirv.data()), spirvSize);
+			// Allocate memory for the SPIRV data as uint32_t array
+			uint32_t* spirvData = new uint32_t[wordCount];
 
-			m_ShaderModules.push_back(std::move(spirv));
+			// Read the data into the allocated memory
+			stream.read(reinterpret_cast<char*>(spirvData), spirvSize);
+
+			// Validate the SPIRV magic number
+			if (spirvData[0] != 0x07230203)
+			{
+				EC_CORE_ERROR("Invalid SPIRV magic number in shader module {0}: {1:x}",
+							  i, spirvData[0]);
+				delete[] spirvData;
+				return false;
+			}
+
+			// Add to the collection
+			m_ShaderSpirvs.push_back({ spirvSize, spirvData });
 		}
 
-		// Read reflection data (buffer layout)
+		// Read buffer layout elements
 		uint32_t elementCount;
 		stream.read(reinterpret_cast<char*>(&elementCount), sizeof(uint32_t));
 
 		std::vector<BufferElement> elements;
 		for (uint32_t i = 0; i < elementCount; i++)
 		{
+			// Read name length
 			uint32_t nameLen;
 			stream.read(reinterpret_cast<char*>(&nameLen), sizeof(uint32_t));
 
-			std::string name(nameLen, ' ');
-			stream.read(&name[0], nameLen);
+			// Allocate space for the name and read it
+			std::vector<char> nameBuffer(nameLen + 1, 0);
+			stream.read(nameBuffer.data(), nameLen);
+			std::string name(nameBuffer.data(), nameLen);
 
+			// Read remaining element data
 			uint32_t type;
 			stream.read(reinterpret_cast<char*>(&type), sizeof(uint32_t));
 
@@ -183,7 +193,7 @@ namespace Echo
 
 		BufferLayout layout(elements);
 
-		// Read resource bindings
+		// Read resource bindings with the same string reading pattern
 		uint32_t bindingCount;
 		stream.read(reinterpret_cast<char*>(&bindingCount), sizeof(uint32_t));
 
@@ -193,9 +203,12 @@ namespace Echo
 			uint32_t nameLen;
 			stream.read(reinterpret_cast<char*>(&nameLen), sizeof(uint32_t));
 
-			std::string name(nameLen, ' ');
-			stream.read(&name[0], nameLen);
+			// Properly read string data
+			std::vector<char> nameBuffer(nameLen + 1, 0);
+			stream.read(nameBuffer.data(), nameLen);
+			std::string name(nameBuffer.data(), nameLen);
 
+			// Read remaining binding data
 			uint32_t binding, set, count;
 			stream.read(reinterpret_cast<char*>(&binding), sizeof(uint32_t));
 			stream.read(reinterpret_cast<char*>(&set), sizeof(uint32_t));
@@ -219,18 +232,36 @@ namespace Echo
 			bindings.push_back(resourceBinding);
 		}
 
+		uint32_t entryPointCount;
+		stream.read(reinterpret_cast<char*>(&entryPointCount), sizeof(uint32_t));
+
+		for (uint32_t i = 0; i < entryPointCount; i++)
+		{
+			// Read shader stage
+			uint32_t stage;
+			stream.read(reinterpret_cast<char*>(&stage), sizeof(uint32_t));
+
+			// Read entry point name
+			uint32_t nameLen;
+			stream.read(reinterpret_cast<char*>(&nameLen), sizeof(uint32_t));
+
+			std::vector<char> nameBuffer(nameLen + 1, 0);
+			stream.read(nameBuffer.data(), nameLen);
+			std::string name(nameBuffer.data(), nameLen);
+
+			// Add entry point to reflection
+			m_Reflection.AddEntryPointData({ static_cast<ShaderStage>(stage), name });
+		}
+
 		// Reconstruct ShaderReflection
-		ShaderReflection reflection;
-		reflection.SetBufferLayout(layout);
+		m_Reflection.SetBufferLayout(layout);
 
 		for (const auto& binding : bindings)
 		{
-			reflection.AddResourceBinding(binding);
+			m_Reflection.AddResourceBinding(binding);
 		}
 
-		m_Reflection = reflection;
-
-		return ValidateDependencies() && stream.good();
+		return stream.good();
 	}
 
 }

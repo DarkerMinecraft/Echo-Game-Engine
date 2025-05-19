@@ -7,6 +7,8 @@
 #include "Graphics/Material.h"
 #include "Graphics/Shader.h"
 
+#include "AssetManager/Assets/ShaderAsset.h"
+
 #include <glm/glm.hpp>
 
 namespace Echo
@@ -48,9 +50,9 @@ namespace Echo
 		Ref<VertexBuffer> CircleVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
 
-		Ref<Shader> QuadShader;
+		Ref<ShaderAsset> QuadShader;
 		Ref<Pipeline> QuadPipeline;
-		Ref<Shader> CircleShader;
+		Ref<ShaderAsset> CircleShader;
 		Ref<Pipeline> CirclePipeline;
 
 		Ref<UniformBuffer> CamUniformBuffer;
@@ -86,7 +88,7 @@ namespace Echo
 
 	static RendererQuadData s_Data;
 
-	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
+	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index, AssetRegistry* registry)
 	{
 		s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
 
@@ -95,10 +97,10 @@ namespace Echo
 		pipelineSpec.EnableBlending = true;
 		pipelineSpec.RenderTarget = framebuffer;
 
-		s_Data.QuadShader = Shader::Create("assets/shaders/quadShader.slang", true);
-		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader, pipelineSpec);
-		s_Data.CircleShader = Shader::Create("assets/shaders/circleShader.slang", true);
-		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader, pipelineSpec);
+		s_Data.QuadShader = registry->LoadAsset<ShaderAsset>("Resources/shaders/quadShader.slang");
+		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
+		s_Data.CircleShader = registry->LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
+		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 		s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex), true);

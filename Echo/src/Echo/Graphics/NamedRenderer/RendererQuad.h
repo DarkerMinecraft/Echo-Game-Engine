@@ -6,6 +6,8 @@
 #include "Graphics/EditorCamera.h"
 #include "Graphics/Texture.h"
 
+#include "AssetManager/AssetRegistry.h"
+
 #include <glm/glm.hpp>
 
 namespace Echo 
@@ -50,7 +52,7 @@ namespace Echo
 	class RendererQuad
 	{
 	public:
-		static void Init(Ref<Framebuffer> framebuffer, uint32_t index);
+		static void Init(Ref<Framebuffer> framebuffer, uint32_t index, AssetRegistry* registry);
 
 		static void BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform);
 		static void BeginScene(CommandList& cmd, const EditorCamera& camera);

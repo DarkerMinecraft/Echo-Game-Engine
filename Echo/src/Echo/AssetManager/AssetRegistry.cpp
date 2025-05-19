@@ -2,7 +2,6 @@
 #include "AssetRegistry.h"
 
 #include "Assets/ShaderAsset.h"
-#include "Assets/PipelineAsset.h"
 
 #include <fstream>
 
@@ -47,7 +46,6 @@ namespace Echo
 			metadata.Path = fullPath;
 			metadata.Type = GetAssetTypeFromExtension(path.extension().string());
 			metadata.LastModified = std::filesystem::last_write_time(fullPath);
-			metadata.CustomProps["Cache"] = (fullPath.string() + ".cache");
 			metadata.SerializeToFile(metaPath);
 		}
 
@@ -59,59 +57,6 @@ namespace Echo
 			m_PathToUUID[path] = metadata.ID;
 			m_AssetMetadataMap[metadata.ID] = metadata;
 			return Cast<ShaderAsset>(asset);
-		}
-	}
-
-	template<>
-	Ref<PipelineAsset> AssetRegistry::LoadAsset<PipelineAsset>(const std::filesystem::path& path)
-	{
-		std::filesystem::path fullPath = m_GlobalPath / path;
-
-		if (!std::filesystem::exists(fullPath))
-		{
-			EC_CORE_ERROR("Failed to load asset: file doesn't exist: {0}", fullPath.string());
-			return nullptr;
-		}
-
-		if (m_PathToUUID.contains(fullPath))
-		{
-			UUID id = m_PathToUUID[fullPath];
-			return Cast<PipelineAsset>(m_LoadedAssets[id]);
-		}
-
-		std::filesystem::path metaPath = fullPath.string() + ".meta";
-
-		AssetMetadata metadata;
-		if (std::filesystem::exists(metaPath))
-		{
-			metadata.DeserializeFromFile(metaPath);
-		}
-		else
-		{
-			metadata.Path = fullPath;
-			metadata.Type = GetAssetTypeFromExtension(path.extension().string());
-			metadata.LastModified = std::filesystem::last_write_time(fullPath);
-			metadata.CustomProps["EnableBlending"] = false;
-			metadata.CustomProps["BlendFactor"] = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-			metadata.CustomProps["EnableDepthTest"] = false;
-			metadata.CustomProps["EnableDepthWrite"] = false;
-			metadata.CustomProps["EnableCulling"] = true;
-			metadata.CustomProps["CullMode"] = 1;
-			metadata.CustomProps["FillMode"] = 0;
-			metadata.CustomProps["DepthCompareOp"] = 1;
-			metadata.CustomProps["GraphicsTopology"] = 0;
-
-			metadata.SerializeToFile(metaPath);
-		}
-
-		Ref<Asset> asset = CreateAsset(metadata);
-		if (asset)
-		{
-			asset->Load();
-			m_LoadedAssets[metadata.ID] = asset;
-			m_PathToUUID[path] = metadata.ID;
-			m_AssetMetadataMap[metadata.ID] = metadata;
-			return Cast<PipelineAsset>(asset);
 		}
 	}
 

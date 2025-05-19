@@ -68,6 +68,48 @@ namespace Echo
 	{
 		std::vector<VkShaderModule> modules;
 
+		UUID shaderID = UUID(); // You'll need to generate or retrieve a proper ID
+		Ref<ShaderCache> cache = LoadShaderCache(path, shaderID);
+
+		if (cache)
+		{
+			EC_CORE_INFO("Using cached shader: {0}", path.string());
+
+			// Copy reflection data
+			*reflection = cache->GetReflection();
+
+			// Create shader modules from cached SPIR-V
+			const auto& shaderSprivs = cache->GetShaderSpirv();
+
+			for (size_t i = 0; i < shaderSprivs.size(); i++)
+			{
+				const auto& spirv = shaderSprivs[i];
+
+				VkShaderModuleCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.codeSize = spirv.Size;
+				createInfo.pCode = spirv.Bytes;
+
+				VkShaderModule module;
+				if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
+				{
+					EC_CORE_CRITICAL("Failed to create shader module from cache!");
+				}
+				else
+				{
+					modules.push_back(module);
+				}
+			}
+
+			if (!modules.empty())
+			{
+				return modules;
+			}
+		}
+
+		EC_CORE_INFO("Compiling shader: {0}", path.string());
+
 		SessionDesc sessionDesc{};
 		TargetDesc targetDesc{};
 		targetDesc.format = SLANG_SPIRV;
@@ -102,6 +144,8 @@ namespace Echo
 				EC_CORE_CRITICAL("Failed to load shader: {0}", message);
 			}
 		}
+
+		cache = CreateRef<ShaderCache>(shaderID);
 
 		uint32_t entryPointCount = slangModule->getDefinedEntryPointCount();
 		for (int i = 0; i < entryPointCount; i++)
@@ -177,6 +221,20 @@ namespace Echo
 			createInfo.codeSize = spirvCode->getBufferSize();
 			createInfo.pCode = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
 
+			// Allocate new memory and make a deep copy of the SPIRV data
+			uint32_t* dataCopy = new uint32_t[spirvCode->getBufferSize() / sizeof(uint32_t)];
+
+			// Copy the data
+			std::memcpy(dataCopy, reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer()), spirvCode->getBufferSize());
+
+			// Validate the magic number
+			if (dataCopy[0] != 0x07230203)
+			{
+				EC_CORE_ERROR("Invalid SPIRV magic number when adding module: {0:x}", dataCopy[0]);
+				delete[] dataCopy;
+				return modules;
+			}
+
 			VkShaderModule module;
 			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
 			{
@@ -187,12 +245,14 @@ namespace Echo
 			slang::EntryPointReflection* entryPointReflection = layout->getEntryPointByIndex(0);
 			ShaderStage shaderStage = SlangStageToShaderStage(entryPointReflection->getStage());
 
-			reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
+			cache->AddShaderModule(spirvCode->getBufferSize(), dataCopy);
 
+			reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
 
 			EC_CORE_INFO("Shader Reflection: {0}", path.stem().string().c_str())
 			EC_CORE_INFO("  Entry Point: {0}", entryPointReflection->getName())
 			EC_CORE_INFO("  Stage: {0}", ShaderStageToString(shaderStage))
+
 			if (shaderStage == ShaderStage::Vertex)
 			{
 				ExtractVertexAttributes(entryPointReflection, reflection);
@@ -207,7 +267,46 @@ namespace Echo
 			modules.push_back(module);
 		}
 
+		cache->SetReflectionData(*reflection);
+		SaveShaderCache(path, cache);
 		return modules;
+	}
+
+	Ref<ShaderCache> ShaderLibrary::LoadShaderCache(const std::filesystem::path& path, const UUID& shaderID) const
+	{
+		std::filesystem::path cachePath = path.string() + ".cache";
+		if (!std::filesystem::exists(cachePath))
+			return nullptr;
+
+		Ref<ShaderCache> cache = CreateRef<ShaderCache>(shaderID);
+		std::ifstream stream(cachePath, std::ios::binary);
+
+		if (!stream.is_open() || !cache->Deserialize(stream))
+			return nullptr;
+
+		return cache;
+	}
+
+	bool ShaderLibrary::SaveShaderCache(const std::filesystem::path& path, const Ref<ShaderCache>& cache) const
+	{
+		std::filesystem::path cachePath = path.string() + ".cache";
+		std::filesystem::create_directories(cachePath.parent_path());
+
+		std::ofstream stream(cachePath, std::ios::binary);
+		if (!stream.is_open())
+		{
+			EC_CORE_ERROR("Failed to open shader cache file for writing: {0}", cachePath.string());
+			return false;
+		}
+
+		if (!cache->Serialize(stream))
+		{
+			EC_CORE_ERROR("Failed to serialize shader cache: {0}", cachePath.string());
+			return false;
+		}
+
+		EC_CORE_INFO("Shader cache saved: {0}", cachePath.string());
+		return true;
 	}
 
 	void ShaderLibrary::ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection)
@@ -286,7 +385,7 @@ namespace Echo
 			uint32_t    binding = field->getBindingIndex();
 			uint32_t    set = field->getBindingSpace();
 			auto        type = field->getTypeLayout()->getType();
-			
+
 			ShaderResourceBinding rbo;
 
 			if (type->getKind() == slang::TypeReflection::Kind::SamplerState)
@@ -298,7 +397,7 @@ namespace Echo
 				rbo.Count = 1;
 				rbo.Type = DescriptorType::SampledImage;
 				reflection->AddResourceBinding(rbo);
-			} 
+			}
 			else if (type->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
 			{
 				rbo.Name = name;

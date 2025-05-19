@@ -21,7 +21,7 @@ namespace Echo
 	struct EntryPointData 
 	{
 		ShaderStage Stage;
-		const char* EntryPointName;
+		std::string EntryPointName;
 	};
 
 	class ShaderReflection

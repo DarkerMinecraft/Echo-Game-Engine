@@ -22,8 +22,6 @@ namespace Echo
 	public:
 		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() { return m_ShaderStages; };
 	private:
-		void CompileOrGetVulkanBinary(const std::filesystem::path& shaderPath);
-
 		void CreateShaderModules(const std::filesystem::path& shaderPath);
 	private:
 		VulkanDevice* m_Device;

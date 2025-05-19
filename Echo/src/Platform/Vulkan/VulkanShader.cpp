@@ -8,19 +8,11 @@
 
 namespace Echo
 {
-	static long long GetFileTimestamp(const std::filesystem::path filepath)
-	{
-		std::filesystem::file_time_type timestamp = std::filesystem::last_write_time(filepath);
-		auto systemTime = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-			timestamp - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-		return systemTime.time_since_epoch().count();
-	}
 
 	VulkanShader::VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool useCurrentDirectory)
 		: m_Device((VulkanDevice*)device), m_Name(shaderPath.stem().string())
 	{
 		std::filesystem::path path = useCurrentDirectory ? std::filesystem::current_path() / shaderPath : shaderPath;
-		CompileOrGetVulkanBinary(path);
 		CreateShaderModules(path);
 	}
 
@@ -57,11 +49,6 @@ namespace Echo
 		return m_ShaderReflection.GetResourceBindings();
 	}
 
-	void VulkanShader::CompileOrGetVulkanBinary(const std::filesystem::path& shaderPath)
-	{
-		m_FileTimestamps[shaderPath] = GetFileTimestamp(shaderPath);
-	}
-
 	void VulkanShader::CreateShaderModules(const std::filesystem::path& shaderPath)
 	{
 		ShaderReflection reflections;
@@ -73,7 +60,7 @@ namespace Echo
 			VkPipelineShaderStageCreateInfo createInfo{ .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
 			createInfo.pNext = nullptr;
 			createInfo.module = m_ShaderModules[index];
-			createInfo.pName = entryPointData.EntryPointName;
+			createInfo.pName = entryPointData.EntryPointName.c_str();
 			switch (entryPointData.Stage)
 			{
 				case ShaderStage::Vertex:

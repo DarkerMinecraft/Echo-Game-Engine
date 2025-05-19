@@ -2,6 +2,8 @@
 
 #include "AssetManager/Asset.h"
 #include "Graphics/Shader.h"
+#include "Graphics/Pipeline.h"
+
 #include "Serializer/Cache/ShaderCache.h"
 
 namespace Echo 
@@ -26,20 +28,20 @@ namespace Echo
 
 		Ref<Shader> GetShader() { return m_Shader; }
 		bool CheckForChanges();
+
+		Ref<Pipeline> GetPipeline() { return m_Pipeline; }
+		void SetPipeline(Ref<Pipeline> pipeline) { m_Pipeline = pipeline; }
 	private:
 		AssetMetadata m_Metadata;
 		Ref<ShaderCache> m_ShaderCache;
+
+		Ref<Pipeline> m_Pipeline;
 
 		Ref<Shader> m_Shader;
 		const std::filesystem::path& path = "";
 		bool m_Dirty = true, m_Loaded = false;
 
 		float m_TimeSinceLastCheck = 0.0f;
-
-		bool CompileShader();
-		bool LoadFromCache();
-		void SaveToCache();
-		std::filesystem::path GetCachePath() const { return m_Metadata.CustomProps["Cache"]; };
 	};
 
 }

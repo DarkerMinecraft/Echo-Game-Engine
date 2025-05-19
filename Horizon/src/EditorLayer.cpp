@@ -75,7 +75,7 @@ namespace Echo
 		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
 		m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
-		RendererQuad::Init(m_MsaaFramebuffer, 0);
+		RendererQuad::Init(m_MsaaFramebuffer, 0, m_AssetRegistry);
 	}
 
 	void EditorLayer::OnDetach()
