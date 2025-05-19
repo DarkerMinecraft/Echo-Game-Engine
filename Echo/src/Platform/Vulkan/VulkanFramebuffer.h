@@ -20,8 +20,12 @@ namespace Echo
 		virtual void Resize(uint32_t width, uint32_t height) override;
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) override;
 
+		virtual void ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer) override;
+
 		virtual void Destroy() override;
 
+		virtual bool IsUsingSamples() override { return m_UseSamples; }
+		
 		void UpdateSize();
 
 		void TransitionImageLayout(VkCommandBuffer cmd, uint32_t index, VkImageLayout newLayout);
@@ -38,6 +42,7 @@ namespace Echo
 
 		AllocatedImage GetDepthImage() { return m_Framebuffers[m_DepthIndex]; }
 		bool HasDepthImage() { return m_DepthIndex != -1; }
+
 	private:
 		void CreateAllocatedFramebuffers(const FramebufferSpecification& specification);
 		void CreateImage(uint32_t index, uint32_t width, uint32_t height); 
@@ -53,6 +58,8 @@ namespace Echo
 
 		bool m_WindowExtent;
 		uint32_t m_Width, m_Height;
+
+		bool m_UseSamples;
 
 		VkDescriptorSet m_DescriptorSet = nullptr;
 	};

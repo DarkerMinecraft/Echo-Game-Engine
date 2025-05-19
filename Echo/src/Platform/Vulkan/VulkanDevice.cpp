@@ -106,8 +106,8 @@ namespace Echo
 
 		VkImageCreateInfo img_info = VulkanInitializers::ImageCreateInfo(format, usage, size);
 
-		//VkSampleCountFlagBits samples = VulkanRenderCaps::GetSampleCount();
-		img_info.samples = VK_SAMPLE_COUNT_1_BIT;
+		VkSampleCountFlagBits samples = VulkanRenderCaps::GetSampleCount();
+		img_info.samples = samples;
 
 		VmaAllocationCreateInfo allocinfo = {};
 		allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -137,7 +137,7 @@ namespace Echo
 		view_info.subresourceRange.levelCount = img_info.mipLevels;
 
 		vkCreateImageView(m_Device, &view_info, nullptr, &newImage.ImageView);
-		newImage.Samples = VK_SAMPLE_COUNT_1_BIT;
+		newImage.Samples = samples;
 
 		return newImage;
 	}

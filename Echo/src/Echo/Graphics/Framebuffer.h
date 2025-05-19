@@ -4,6 +4,7 @@
 
 namespace Echo
 {
+	class CommandBuffer;
 
 	enum FramebufferTextureFormat
 	{
@@ -16,7 +17,7 @@ namespace Echo
 		Depth24Stencil8 = 11
 	};
 
-	struct FramebufferTextureSpecification 
+	struct FramebufferTextureSpecification
 	{
 		FramebufferTextureSpecification() = default;
 		FramebufferTextureSpecification(FramebufferTextureFormat format) : TextureFormat(format) {}
@@ -24,11 +25,12 @@ namespace Echo
 		FramebufferTextureFormat TextureFormat;
 	};
 
-	struct FramebufferAttachmentSpecification 
+	struct FramebufferAttachmentSpecification
 	{
 		FramebufferAttachmentSpecification() = default;
-		FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments) 
-			: Attachments(attachments) {}
+		FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
+			: Attachments(attachments)
+		{}
 
 		std::vector<FramebufferTextureSpecification> Attachments;
 	};
@@ -37,6 +39,7 @@ namespace Echo
 	{
 		uint32_t Width, Height;
 		bool WindowExtent = false;
+		bool UseSamples = false;
 
 		FramebufferAttachmentSpecification Attachments;
 	};
@@ -48,12 +51,14 @@ namespace Echo
 
 		virtual uint32_t GetWidth() = 0;
 		virtual uint32_t GetHeight() = 0;
+		virtual void Resize(uint32_t width, uint32_t height) = 0;
 
 		virtual void* GetImGuiTexture(uint32_t index) = 0;
 
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) = 0;
+		virtual bool IsUsingSamples() = 0;
 
-		virtual void Resize(uint32_t width, uint32_t height) = 0;
+		virtual void ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer) = 0;
 
 		virtual void Destroy() = 0;
 

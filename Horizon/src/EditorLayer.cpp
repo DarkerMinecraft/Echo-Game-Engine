@@ -31,11 +31,17 @@ namespace Echo
 		m_ContentBrowserPanel.SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
 		m_SceneHierarchyPanel.GetEntityComponentPanel().SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
 
+		FramebufferSpecification msaaFramebufferSpec;
+		msaaFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
+		msaaFramebufferSpec.Width = 1280;
+		msaaFramebufferSpec.Height = 720;
+		msaaFramebufferSpec.UseSamples = true;
+		m_MsaaFramebuffer = Framebuffer::Create(msaaFramebufferSpec);
+
 		FramebufferSpecification mainFramebufferSpec;
 		mainFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
 		mainFramebufferSpec.Width = 1280;
 		mainFramebufferSpec.Height = 720;
-
 		m_MainFramebuffer = Framebuffer::Create(mainFramebufferSpec);
 
 		FramebufferSpecification finalFramebufferSpec;
@@ -66,7 +72,7 @@ namespace Echo
 		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
 		m_StopButton = Texture2D::Create("Resources/StopButton.png");
 
-		RendererQuad::Init(m_MainFramebuffer, 0);
+		RendererQuad::Init(m_MsaaFramebuffer, 0);
 	}
 
 	void EditorLayer::OnDetach()
@@ -86,12 +92,12 @@ namespace Echo
 
 		{
 			CommandList cmd;
-			cmd.SetSourceFramebuffer(m_MainFramebuffer);
+			cmd.SetSourceFramebuffer(m_MsaaFramebuffer);
 
 			cmd.Begin();
-			cmd.ClearColor(m_MainFramebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.3f });
-			cmd.ClearColor(m_MainFramebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
-			cmd.BeginRendering(m_MainFramebuffer);
+			cmd.ClearColor(m_MsaaFramebuffer, 0, { 0.3f, 0.3f, 0.3f, 0.0f });
+			cmd.ClearColor(m_MsaaFramebuffer, 1, { -1.0f, 0.0f, 0.0f, 0.0f });
+			cmd.BeginRendering(m_MsaaFramebuffer);
 			if (m_SceneState == Edit)
 			{
 				if (m_ViewportFocused)
@@ -107,6 +113,7 @@ namespace Echo
 				m_ActiveScene->OnUpdateRuntime(cmd, ts);
 			}
 			cmd.EndRendering();
+			m_MsaaFramebuffer->ResolveToFramebuffer(cmd.GetCommandBuffer().get(), m_MainFramebuffer.get());
 			cmd.Execute();
 		}
 
@@ -128,8 +135,9 @@ namespace Echo
 		}
 
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
-			&& (m_MainFramebuffer->GetWidth() != m_ViewportSize.x || m_MainFramebuffer->GetHeight() != m_ViewportSize.y))
+			&& (m_MsaaFramebuffer->GetWidth() != m_ViewportSize.x || m_MsaaFramebuffer->GetHeight() != m_ViewportSize.y))
 		{
+			m_MsaaFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_MainFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_FinalFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 
@@ -150,10 +158,10 @@ namespace Echo
 			int mouseY = (int)my;
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				int texX = (int)((mouseX / viewportSize.x) * m_MainFramebuffer->GetWidth());
-				int texY = (int)((mouseY / viewportSize.y) * m_MainFramebuffer->GetHeight());
+				int texX = (int)((mouseX / viewportSize.x) * m_MsaaFramebuffer->GetWidth());
+				int texY = (int)((mouseY / viewportSize.y) * m_MsaaFramebuffer->GetHeight());
 
-				int entityID = m_MainFramebuffer->ReadPixel(1, texX, texY);
+				int entityID = m_MsaaFramebuffer->ReadPixel(1, texX, texY);
 				if (entityID != -1)
 				{
 					m_Window->SetCursor(Cursor::HAND);

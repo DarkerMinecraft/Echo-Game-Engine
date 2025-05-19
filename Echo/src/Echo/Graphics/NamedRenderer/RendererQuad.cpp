@@ -92,7 +92,7 @@ namespace Echo
 
 		PipelineSpecification pipelineSpec{};
 		pipelineSpec.CullMode = Cull::None;
-
+		pipelineSpec.EnableBlending = true;
 		pipelineSpec.RenderTarget = framebuffer;
 
 		s_Data.QuadShader = Shader::Create("assets/shaders/quadShader.slang", true);
@@ -360,11 +360,12 @@ namespace Echo
 		{
 			s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
 		}
-
+		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
 		s_Data.Stats.DrawCalls++;
 
 		s_Data.Cmd->BindPipeline(s_Data.CirclePipeline);
+		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
 		s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
 		s_Data.Stats.DrawCalls++;
 	}

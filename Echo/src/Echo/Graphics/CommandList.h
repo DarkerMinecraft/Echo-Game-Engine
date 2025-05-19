@@ -45,6 +45,8 @@ namespace Echo
 		void SetDrawToSwapchain(bool drawToSwapchain) { m_CommandBuffer->SetDrawToSwapchain(drawToSwapchain); }
 
 		void Execute(bool isLastPass = false);
+
+		Ref<CommandBuffer> GetCommandBuffer() { return m_CommandBuffer; }
 	private:
 		void RecordCommand(Ref<ICommand> command);
 	private:

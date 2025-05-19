@@ -43,6 +43,7 @@ namespace Echo
 		void ToolbarUI();
 		void ViewportUI();
 	private:
+		Ref<Framebuffer> m_MsaaFramebuffer;
 		Ref<Framebuffer> m_MainFramebuffer;
 		Ref<Framebuffer> m_FinalFramebuffer;
 

@@ -2,6 +2,8 @@
 #include "VulkanFramebuffer.h"
 #include "Vulkan/Utils/VulkanInitializers.h"
 
+#include "VulkanCommandBuffer.h"
+
 #include "backends/imgui_impl_vulkan.h"
 #include "Utils/VulkanDescriptors.h"
 #include "Utils/VulkanImages.h"
@@ -99,6 +101,44 @@ namespace Echo
 		return pixel;
 	}
 
+	void VulkanFramebuffer::ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer)
+	{
+		if (!m_UseSamples) return;
+
+		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
+		VulkanFramebuffer* framebuffer = (VulkanFramebuffer*)targetFramebuffer;
+		for (uint32_t i = 0; i < m_ColorFormats.size(); i++) 
+		{
+			if (GetImage(i).Samples == VK_SAMPLE_COUNT_1_BIT)
+				continue;
+
+			TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			framebuffer->TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			VkImageResolve resolveRegion{};
+			resolveRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			resolveRegion.srcSubresource.mipLevel = 0;
+			resolveRegion.srcSubresource.baseArrayLayer = 0;
+			resolveRegion.srcSubresource.layerCount = 1;
+
+			resolveRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			resolveRegion.dstSubresource.mipLevel = 0;
+			resolveRegion.dstSubresource.baseArrayLayer = 0;
+			resolveRegion.dstSubresource.layerCount = 1;
+
+			resolveRegion.srcOffset = { 0, 0, 0 };
+			resolveRegion.dstOffset = { 0, 0, 0 };
+			resolveRegion.extent = { m_Width, m_Height, 1 };
+
+			vkCmdResolveImage(
+				commandBuffer,
+				m_Framebuffers[i].Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				framebuffer->GetImage(i).Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &resolveRegion
+			);
+		}
+	}
+
 	void VulkanFramebuffer::TransitionImageLayout(VkCommandBuffer cmd, uint32_t index, VkImageLayout newLayout)
 	{
 		VulkanImages::TransitionImage(cmd, m_Framebuffers[index].Image, m_Framebuffers[index].ImageLayout, newLayout);
@@ -141,6 +181,7 @@ namespace Echo
 		m_WindowExtent = spec.WindowExtent;
 		m_Width = spec.Width;
 		m_Height = spec.Height;
+		m_UseSamples = spec.UseSamples;
 		
 		for (int i = 0; i < spec.Attachments.Attachments.size(); i++) 
 		{
@@ -184,12 +225,20 @@ namespace Echo
 			VkImageUsageFlags attachmentUsage;
 			if (attachment.TextureFormat >= 10)
 				attachmentUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-			else 
+			else
 				attachmentUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
-			AllocatedImage image = m_Device->CreateImage(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT 
-														 | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
-
+			AllocatedImage image;
+			if (spec.UseSamples && attachment.TextureFormat != RedInt)
+			{
+				m_Device->CreateImage(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
+									  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+			}
+			else 
+			{
+				m_Device->CreateImageNoMSAA(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
+									  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+			}
 			if (attachment.TextureFormat >= 10)
 			{
 				image.DepthTexture = true;
