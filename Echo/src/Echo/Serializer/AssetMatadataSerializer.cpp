@@ -22,7 +22,6 @@ namespace Echo
 			case AssetType::Shader: out << "Shader"; break;
 			case AssetType::Material: out << "Material"; break;
 			case AssetType::Scene: out << "Scene"; break;
-			// Add other asset types here
 		}
 
 		out << YAML::Key << "Path" << YAML::Value << Path.string();

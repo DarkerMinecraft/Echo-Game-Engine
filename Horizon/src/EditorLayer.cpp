@@ -53,13 +53,13 @@ namespace Echo
 
 		m_FinalFramebuffer = Framebuffer::Create(finalFramebufferSpec);
 
-		m_OutlineShader = Shader::Create("assets/shaders/outlineShader.slang", true);
+		m_OutlineShader = m_AssetRegistry->LoadAsset<ShaderAsset>("Resources/shaders/outlineShader.slang");
 
 		PipelineSpecification outlineSpec{};
 		outlineSpec.CullMode = Cull::None;
 
 		outlineSpec.RenderTarget = m_FinalFramebuffer; 
-		m_OutlinePipeline = Pipeline::Create(m_OutlineShader, outlineSpec);
+		m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec);
 
 		m_OutlineParams.selectedEntityID = -2;
 		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); 

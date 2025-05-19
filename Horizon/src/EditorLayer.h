@@ -47,7 +47,7 @@ namespace Echo
 		Ref<Framebuffer> m_MainFramebuffer;
 		Ref<Framebuffer> m_FinalFramebuffer;
 
-		Ref<Shader> m_OutlineShader;
+		Ref<ShaderAsset> m_OutlineShader;
 		Ref<Pipeline> m_OutlinePipeline;
 
 		Ref<UniformBuffer> m_OutlineBuffer;

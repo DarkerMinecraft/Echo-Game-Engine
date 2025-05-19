@@ -96,4 +96,10 @@ namespace Echo
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
+	template<typename T, typename U>
+	constexpr Ref<T> Cast(const Ref<U>& other)
+	{
+		return std::dynamic_pointer_cast<T>(other);
+	}
 }

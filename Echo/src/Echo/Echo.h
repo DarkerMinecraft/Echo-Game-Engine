@@ -23,3 +23,4 @@
 #include "Graphics/NamedRenderer/RendererQuad.h"
 
 #include "AssetManager/AssetRegistry.h"
+#include "AssetManager/Assets/ShaderAsset.h"

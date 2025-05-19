@@ -6,6 +6,7 @@
 
 namespace Echo
 {
+
 	Ref<CommandBuffer> CommandBuffer::Create()
 	{
 		Device* device = Application::Get().GetWindow().GetDevice();
@@ -17,4 +18,5 @@ namespace Echo
 		}
 		return nullptr;
 	}
+
 }
