@@ -27,6 +27,7 @@ namespace Echo
 
 	void VulkanVertexBuffer::Bind(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 
 		VkBuffer vertexBuffers[] = { m_Buffer.Buffer };
@@ -36,6 +37,7 @@ namespace Echo
 
 	void VulkanVertexBuffer::SetData(void* data, uint32_t size)
 	{
+		EC_PROFILE_FUNCTION();
 		VkMemoryRequirements memReqs;
 		vkGetBufferMemoryRequirements(m_Device->GetDevice(), m_Buffer.Buffer, &memReqs);
 
@@ -75,6 +77,7 @@ namespace Echo
 
 	void VulkanVertexBuffer::CreateBuffer(float* data, uint32_t size, bool isDynamic)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Buffer = m_Device->CreateBuffer(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 										  isDynamic ? VMA_MEMORY_USAGE_GPU_ONLY : VMA_MEMORY_USAGE_CPU_TO_GPU);
 
@@ -121,6 +124,7 @@ namespace Echo
 
 	void VulkanIndexBuffer::Bind(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 
 		vkCmdBindIndexBuffer(commandBuffer, m_Buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -138,6 +142,7 @@ namespace Echo
 
 	void VulkanIndexBuffer::CreateBuffer(std::vector<uint32_t> indices)
 	{
+		EC_PROFILE_FUNCTION();
 		const size_t bufferSize = indices.size() * sizeof(uint32_t);
 
 		m_Buffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -164,6 +169,7 @@ namespace Echo
 
 	void VulkanIndexBuffer::CreateBuffer(uint32_t* indices, uint32_t count)
 	{
+		EC_PROFILE_FUNCTION();
 		const size_t bufferSize = count * sizeof(uint32_t);
 
 		m_Buffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -201,6 +207,7 @@ namespace Echo
 
 	void VulkanIndirectBuffer::AddToIndirectBuffer(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance)
 	{
+		EC_PROFILE_FUNCTION();
 		VkDrawIndexedIndirectCommand cmd{};
 		cmd.indexCount = indexCount;
 		cmd.instanceCount = instanceCount;
@@ -214,6 +221,7 @@ namespace Echo
 
 	void VulkanIndirectBuffer::ClearIndirectBuffer()
 	{
+		EC_PROFILE_FUNCTION();
 		m_IndirectCommands.clear();
 
 		AllocatedBuffer oldBuffer = m_Buffer;
@@ -224,6 +232,7 @@ namespace Echo
 
 	void VulkanIndirectBuffer::CreateBuffer()
 	{
+		EC_PROFILE_FUNCTION();
 		uint32_t bufferSize = sizeof(VkDrawIndexedIndirectCommand) * 100;
 
 		m_Buffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -251,6 +260,7 @@ namespace Echo
 
 	void VulkanIndirectBuffer::UpdateIndirectBufferGPU()
 	{
+		EC_PROFILE_FUNCTION();
 		uint32_t bufferSize = sizeof(VkDrawIndexedIndirectCommand) * m_IndirectCommands.size();
 
 		AllocatedBuffer stagingBuffer = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
@@ -282,8 +292,8 @@ namespace Echo
 
 	void VulkanUniformBuffer::SetData(void* data, uint32_t size)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Size = size;
-
 		AllocatedBuffer oldBuffer = m_Buffer;
 
 		m_Buffer = m_Device->CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -309,6 +319,7 @@ namespace Echo
 
 	void VulkanUniformBuffer::CreateBuffer(void* data, uint32_t size)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Buffer = m_Device->CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 										  VMA_MEMORY_USAGE_CPU_TO_GPU);
 

@@ -90,6 +90,8 @@ namespace Echo
 
 	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index, AssetRegistry* registry)
 	{
+		EC_PROFILE_FUNCTION();
+
 		s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
 
 		PipelineSpecification pipelineSpec{};
@@ -135,6 +137,7 @@ namespace Echo
 
 	void RendererQuad::BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform)
 	{
+		EC_PROFILE_FUNCTION();
 		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
 
 		CameraUniformBuffer camUniformBuffer
@@ -170,6 +173,7 @@ namespace Echo
 
 	void RendererQuad::BeginScene(CommandList& cmd, const EditorCamera& camera)
 	{
+		EC_PROFILE_FUNCTION();
 		CameraUniformBuffer camUniformBuffer
 		{
 			.ProjViewMatrix = camera.GetProjection() * camera.GetViewMatrix(),
@@ -202,6 +206,7 @@ namespace Echo
 
 	void RendererQuad::EndScene()
 	{
+		EC_PROFILE_FUNCTION();
 		uint32_t quadDataSize = (uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase;
 		if (quadDataSize != 0)
 		{
@@ -219,7 +224,7 @@ namespace Echo
 
 	void RendererQuad::DrawQuad(const VertexQuadData& data)
 	{
-
+		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
@@ -269,6 +274,7 @@ namespace Echo
 
 	void RendererQuad::DrawQuad(const VertexQuadData& data, const glm::mat4& transform)
 	{
+		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
@@ -314,6 +320,7 @@ namespace Echo
 
 	void RendererQuad::DrawCircle(const VertexCircleData& data)
 	{
+		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
@@ -337,6 +344,7 @@ namespace Echo
 
 	void RendererQuad::DrawCircle(const VertexCircleData& data, const glm::mat4& transform)
 	{
+		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
@@ -357,6 +365,7 @@ namespace Echo
 
 	void RendererQuad::Flush()
 	{
+		EC_PROFILE_FUNCTION();
 		s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
@@ -374,6 +383,7 @@ namespace Echo
 
 	void RendererQuad::FlushAndReset()
 	{
+		EC_PROFILE_FUNCTION();
 		EndScene();
 
 		s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
@@ -397,6 +407,7 @@ namespace Echo
 
 	void RendererQuad::Destroy()
 	{
+		EC_PROFILE_FUNCTION();
 		s_Data.QuadVertexBuffer.reset();
 		s_Data.CircleVertexBuffer.reset();
 		s_Data.QuadIndexBuffer.reset();

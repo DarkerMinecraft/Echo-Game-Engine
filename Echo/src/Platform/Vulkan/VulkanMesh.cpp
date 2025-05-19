@@ -44,6 +44,7 @@ namespace Echo
 
 	void VulkanMesh::LoadModel(const std::string& path)
 	{
+		EC_PROFILE_FUNCTION();
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
@@ -89,6 +90,7 @@ namespace Echo
 
 	void VulkanMesh::CreateVertexBuffer(const std::vector<Vertex>& vertices)
 	{
+		EC_PROFILE_FUNCTION();
 		const size_t floatsPerVertex = 8; // 3 + 2 + 3
 		std::vector<float> bufferData(vertices.size() * floatsPerVertex);
 

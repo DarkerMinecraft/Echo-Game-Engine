@@ -24,3 +24,5 @@
 
 #include "AssetManager/AssetRegistry.h"
 #include "AssetManager/Assets/ShaderAsset.h"
+
+#include "Debug/Instrumentor.h"

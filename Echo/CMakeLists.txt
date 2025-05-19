@@ -55,17 +55,6 @@ target_sources(Echo PRIVATE
     ${SRC_FILES} 
 )
 
-# Platform-specific definitions
-if(WIN32)
-    target_compile_definitions(Echo PRIVATE USING_DIRECTX_HEADERS)
-    target_compile_definitions(Echo PRIVATE EC_PLATFORM_WINDOWS)
-endif()
-
-# Build type definitions
-foreach(CONFIG Debug Release Dist)
-    target_compile_definitions(Echo PRIVATE $<$<CONFIG:${CONFIG}>:ECHO_${CONFIG}>)
-endforeach()
-
 # Output directories
 set_target_properties(Echo PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}/Echo

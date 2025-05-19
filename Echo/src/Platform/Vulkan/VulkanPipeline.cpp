@@ -51,6 +51,7 @@ namespace Echo
 
 	void VulkanPipeline::Bind(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 
 		if (m_PipelineType == PipelineType::Graphics)
@@ -95,6 +96,7 @@ namespace Echo
 
 	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> texture)
 	{
+		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
 			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
@@ -110,6 +112,7 @@ namespace Echo
 
 	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Framebuffer> framebuffer, uint32_t index)
 	{
+		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
 			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
@@ -133,6 +136,7 @@ namespace Echo
 
 	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> tex, uint32_t index)
 	{
+		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
 			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
@@ -148,6 +152,7 @@ namespace Echo
 
 	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Ref<UniformBuffer> uniformBuffer)
 	{
+		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
 			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
@@ -163,6 +168,7 @@ namespace Echo
 
 	void VulkanPipeline::Destroy()
 	{
+		EC_PROFILE_FUNCTION();
 		if (m_Destroyed) return;
 
 		for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
@@ -182,6 +188,7 @@ namespace Echo
 
 	void VulkanPipeline::CreateComputePipeline(Ref<Shader> computeShader, const PipelineSpecification& spec)
 	{
+		EC_PROFILE_FUNCTION();
 		std::vector<DescriptionSetLayout> layouts = CreateLayout(computeShader);
 		CreatePipelineLayout(layouts);
 		CreateDescriptorSet(layouts);
@@ -199,6 +206,7 @@ namespace Echo
 
 	void VulkanPipeline::CreateGraphicsPipeline(Ref<Shader> graphicsShader, const PipelineSpecification& spec)
 	{
+		EC_PROFILE_FUNCTION();
 		std::vector<DescriptionSetLayout> layouts = CreateLayout(graphicsShader);
 		CreatePipelineLayout(layouts);
 		CreateDescriptorSet(layouts);
@@ -400,6 +408,7 @@ namespace Echo
 
 	void VulkanPipeline::CreatePipelineLayout(std::vector<DescriptionSetLayout> descriptorSetLayout)
 	{
+		EC_PROFILE_FUNCTION();
 		auto MapDescriptorType = [](DescriptorType type) -> VkDescriptorType
 		{
 			switch (type)
@@ -477,8 +486,10 @@ namespace Echo
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
 	}
+
 	std::vector<DescriptionSetLayout> VulkanPipeline::CreateLayout(Ref<Shader> shader)
 	{
+		EC_PROFILE_FUNCTION();
 		std::vector<DescriptionSetLayout> descriptorSetLayout;
 
 		for (auto rbo : shader->GetResourceBindings())
@@ -491,6 +502,7 @@ namespace Echo
 
 	void VulkanPipeline::CreateDescriptorSet(std::vector<DescriptionSetLayout> descriptorSetLayout)
 	{
+		EC_PROFILE_FUNCTION();
 		if (descriptorSetLayout.empty()) return;
 
 		for (auto& allocator : m_DescriptorAllocators)

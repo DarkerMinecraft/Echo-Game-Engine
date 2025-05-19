@@ -1,5 +1,7 @@
 #include "EntityComponentPanel.h"
 
+#include <Debug/Instrumentor.h>
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -15,6 +17,7 @@ namespace Echo
 
 	static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValues = 0.0f, float colWidth = 100)
 	{
+		EC_PROFILE_FUNCTION();
 		ImGuiIO& io = ImGui::GetIO();
 		auto boldFont = io.Fonts->Fonts[0];
 
@@ -78,6 +81,7 @@ namespace Echo
 	template<typename T, typename UIFunction>
 	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
 	{
+		EC_PROFILE_FUNCTION();
 		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_SpanAvailWidth
 			| ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding;
 		if (entity.HasComponent<T>())
@@ -118,6 +122,7 @@ namespace Echo
 
 	void EntityComponentPanel::OnImGuiRenderEntityNode(Entity entity)
 	{
+		EC_PROFILE_FUNCTION();
 		if (entity.GetHandle() == entt::null) return;
 
 		if (entity.HasComponent<TagComponent>())

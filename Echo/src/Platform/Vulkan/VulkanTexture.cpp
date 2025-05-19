@@ -41,6 +41,7 @@ namespace Echo
 
 	void VulkanTexture2D::Destroy()
 	{
+		EC_PROFILE_FUNCTION();
 		if (m_IsDestroyed)
 			return;
 
@@ -58,6 +59,7 @@ namespace Echo
 
 	void VulkanTexture2D::LoadTexture(const std::string& path)
 	{
+		EC_PROFILE_FUNCTION();
 		int width, height, channels;
 		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
 		if (!data)
@@ -102,6 +104,7 @@ namespace Echo
 
 	void VulkanTexture2D::LoadTexture(void* pixels)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Texture = m_Device->CreateImageTex(pixels, { m_Width, m_Height, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
 		VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };

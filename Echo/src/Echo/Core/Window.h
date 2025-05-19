@@ -5,7 +5,7 @@
 
 #include "Graphics/Device.h"
 
-#ifdef EC_PLATFORM_WINDOWS
+#ifdef ECHO_PLATFORM_WIN
 	#define VK_USE_PLATFORM_WIN32_KHR
 	#include <vulkan/vulkan.h>
 #endif
@@ -61,7 +61,7 @@ namespace Echo
 
 		virtual void SetCursor(Cursor cursor) = 0;
 
-#ifdef EC_PLATFORM_WINDOWS
+#ifdef ECHO_PLATFORM_WIN
 		virtual VkSurfaceKHR SetWindowSurface(VkInstance instance) = 0;
 #endif
 		virtual void Wait() = 0;

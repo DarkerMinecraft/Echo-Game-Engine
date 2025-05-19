@@ -9,7 +9,8 @@ namespace Echo
 
 	Application::Application(unsigned int width, unsigned int height, const char* title)
 	{
-		EC_CORE_ASSERT(!s_Instance, "Application already exists!")
+		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
+		EC_PROFILE_FUNCTION();
 		s_Instance = this;
 
 		WindowProps props{};
@@ -27,8 +28,9 @@ namespace Echo
 
 	Application::Application(const char* title /*= "Echo Engine Game"*/)
 	{
-		EC_CORE_ASSERT(!s_Instance, "Application already exists!")
-			s_Instance = this;
+		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
+		EC_PROFILE_FUNCTION();
+		s_Instance = this;
 
 		WindowProps props{};
 		props.Width = -1;
@@ -45,6 +47,7 @@ namespace Echo
 
 	void Application::Run()
 	{
+		EC_PROFILE_FUNCTION();
 		Device* device = GetWindow().GetDevice();
 
 		while(m_Running)
@@ -126,7 +129,6 @@ namespace Echo
 		}
 
 		m_Minimized = false;
-
 		return false;
 	}
 

@@ -14,7 +14,6 @@
 #include <imgui.h>
 
 #include <ImGuizmo.h>
-
 #include <filesystem>
 
 namespace Echo

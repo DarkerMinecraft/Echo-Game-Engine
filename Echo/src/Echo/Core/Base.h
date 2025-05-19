@@ -2,6 +2,10 @@
 
 #include <memory>
 
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define ECHO_DEBUG
+#endif
+
 // Windows
 #if defined(_WIN32) || defined(_WIN64)
 #define ECHO_PLATFORM_WIN

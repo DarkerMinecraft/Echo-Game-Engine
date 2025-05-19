@@ -35,6 +35,7 @@ namespace Echo
 
 	void* VulkanFramebuffer::GetImGuiTexture(uint32_t index)
 	{
+		EC_PROFILE_FUNCTION();
 		if (GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 		{
 			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
@@ -61,6 +62,7 @@ namespace Echo
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Width = width;
 		m_Height = height;
 
@@ -80,6 +82,7 @@ namespace Echo
 
 	int VulkanFramebuffer::ReadPixel(uint32_t index, uint32_t x, uint32_t y)
 	{
+		EC_PROFILE_FUNCTION();
 		AllocatedBuffer stagingBuffer = m_Device->CreateBuffer(sizeof(int32_t), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
@@ -103,6 +106,7 @@ namespace Echo
 
 	void VulkanFramebuffer::ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer)
 	{
+		EC_PROFILE_FUNCTION();
 		if (!m_UseSamples) return;
 
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
@@ -138,12 +142,14 @@ namespace Echo
 
 	void VulkanFramebuffer::TransitionImageLayout(VkCommandBuffer cmd, uint32_t index, VkImageLayout newLayout)
 	{
+		EC_PROFILE_FUNCTION();
 		VulkanImages::TransitionImage(cmd, m_Framebuffers[index].Image, m_Framebuffers[index].ImageLayout, newLayout);
 		m_Framebuffers[index].ImageLayout = newLayout;
 	}
 
 	void VulkanFramebuffer::Destroy()
 	{
+		EC_PROFILE_FUNCTION();
 		for (auto& framebuffer : m_Framebuffers)
 		{
 			if (framebuffer.Destroyed)
@@ -164,6 +170,7 @@ namespace Echo
 
 	void VulkanFramebuffer::UpdateSize()
 	{
+		EC_PROFILE_FUNCTION();
 		for (int i = 0; i < m_Framebuffers.size(); i++)
 		{
 			if (m_WindowExtent)
@@ -175,6 +182,7 @@ namespace Echo
 
 	void VulkanFramebuffer::CreateAllocatedFramebuffers(const FramebufferSpecification& spec)
 	{
+		EC_PROFILE_FUNCTION();
 		m_WindowExtent = spec.WindowExtent;
 		m_Width = spec.Width;
 		m_Height = spec.Height;
@@ -263,6 +271,7 @@ namespace Echo
 
 	void VulkanFramebuffer::CreateImage(uint32_t index, uint32_t width, uint32_t height)
 	{
+		EC_PROFILE_FUNCTION();
 		AllocatedImage oldImage = m_Framebuffers[index];
 		VkImageUsageFlags attachmentUsage;
 		if (m_Attachments[index] >= 10)

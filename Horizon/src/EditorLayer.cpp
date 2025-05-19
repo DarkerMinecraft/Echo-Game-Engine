@@ -27,6 +27,7 @@ namespace Echo
 
 	void EditorLayer::OnAttach()
 	{
+		EC_PROFILE_FUNCTION();
 		m_AssetRegistry = new AssetRegistry("C:\\Dev\\Echo Projects\\Testing");
 		m_ContentBrowserPanel.SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
 		m_SceneHierarchyPanel.GetEntityComponentPanel().SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
@@ -85,6 +86,7 @@ namespace Echo
 
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
+		EC_PROFILE_FUNCTION();
 		RendererQuad::ResetStats();
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
@@ -94,6 +96,7 @@ namespace Echo
 		}
 
 		{
+			EC_PROFILE_SCOPE("MultiSample Render");
 			CommandList cmd;
 			cmd.SetSourceFramebuffer(m_MsaaFramebuffer);
 
@@ -121,6 +124,7 @@ namespace Echo
 		}
 
 		{
+			EC_PROFILE_SCOPE("No Samples Render");
 			m_OutlineBuffer->SetData(&m_OutlineParams, sizeof(OutlineParams));
 
 			CommandList cmd;
@@ -198,7 +202,7 @@ namespace Echo
 
 	void EditorLayer::OnImGuiRender()
 	{
-
+		EC_PROFILE_FUNCTION();
 		static bool opt_fullscreen = true;
 		static bool opt_padding = false;
 		static bool dockspace_open = true;
@@ -303,6 +307,7 @@ namespace Echo
 
 	void EditorLayer::ToolbarUI()
 	{
+		EC_PROFILE_FUNCTION();
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
@@ -338,6 +343,7 @@ namespace Echo
 
 	void EditorLayer::ViewportUI()
 	{
+		EC_PROFILE_FUNCTION();
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 		ImGui::Begin("Viewport");
 		auto viewportOffset = ImGui::GetCursorPos();
@@ -479,6 +485,7 @@ namespace Echo
 
 	void EditorLayer::NewScene()
 	{
+		EC_PROFILE_FUNCTION();
 		m_ActiveScene = CreateRef<Scene>();
 		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -486,15 +493,18 @@ namespace Echo
 
 	void EditorLayer::OpenScene()
 	{
+		EC_PROFILE_FUNCTION();
 		std::string filePath = FileDialogs::OpenFile("Echo Scene (*.echo)\0*.echo\0");
 		if (!filePath.empty())
 		{
 			OpenScene(filePath);
+			m_CurrentScenePath = filePath;
 		}
 	}
 
 	void EditorLayer::OpenScene(const std::filesystem::path& path)
 	{
+		EC_PROFILE_FUNCTION();
 		m_CurrentScenePath = path;
 
 		m_EditorScene = CreateRef<Scene>();
@@ -509,6 +519,7 @@ namespace Echo
 
 	void EditorLayer::SaveSceneAs()
 	{
+		EC_PROFILE_FUNCTION();
 		std::string filePath = FileDialogs::SaveFile("Echo Scene (*.echo)\0*.echo\0");
 		if (!filePath.empty())
 		{
@@ -519,6 +530,7 @@ namespace Echo
 
 	void EditorLayer::SaveScene()
 	{
+		EC_PROFILE_FUNCTION();
 		if (m_CurrentScenePath.empty())
 			SaveSceneAs();
 		else
@@ -530,6 +542,7 @@ namespace Echo
 
 	void EditorLayer::OnScenePlay()
 	{
+		EC_PROFILE_FUNCTION();
 		m_ActiveScene = Scene::Copy(m_EditorScene);
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -539,6 +552,7 @@ namespace Echo
 
 	void EditorLayer::OnSceneEdit()
 	{
+		EC_PROFILE_FUNCTION();
 		m_ActiveScene->OnRuntimeStop();
 		m_SceneState = SceneState::Edit;
 

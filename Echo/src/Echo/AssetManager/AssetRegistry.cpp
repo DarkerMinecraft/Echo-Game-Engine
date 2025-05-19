@@ -20,6 +20,7 @@ namespace Echo
 	template<>
 	Ref<ShaderAsset> AssetRegistry::LoadAsset<ShaderAsset>(const std::filesystem::path& path)
 	{
+		EC_PROFILE_FUNCTION();
 		std::filesystem::path fullPath = m_GlobalPath / path;
 
 		if (!std::filesystem::exists(fullPath))

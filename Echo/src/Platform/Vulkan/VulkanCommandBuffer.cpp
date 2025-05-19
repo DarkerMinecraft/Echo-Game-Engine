@@ -26,6 +26,7 @@ namespace Echo
 
 	void VulkanCommandBuffer::Start()
 	{
+		EC_PROFILE_FUNCTION();
 		m_FrameData = m_Device->GetFrameData();
 
 		vkWaitForFences(m_Device->GetDevice(), 1, &m_FrameData.RenderFence, VK_TRUE, UINT64_MAX);
@@ -60,6 +61,7 @@ namespace Echo
 
 	void VulkanCommandBuffer::End()
 	{
+		EC_PROFILE_FUNCTION();
 		if (m_ShouldPresent)
 		{
 			if (m_DrawToSwapchain)
@@ -93,6 +95,7 @@ namespace Echo
 
 	void VulkanCommandBuffer::Submit(bool isLastPass)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBufferSubmitInfo cmdInfo = VulkanInitializers::CommandBufferSubmitInfo(m_FrameData.CommandBuffer);
 
 		if (!m_ShouldPresent || !isLastPass)

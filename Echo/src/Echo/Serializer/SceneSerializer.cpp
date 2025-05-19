@@ -108,7 +108,7 @@ namespace Echo
 
 	static void SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
-		EC_CORE_ASSERT(entity.HasComponent<IDComponent>());
+		EC_PROFILE_FUNCTION();
 
 		out << YAML::BeginMap;
 		out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
@@ -195,6 +195,8 @@ namespace Echo
 
 	void SceneSerializer::Serialize(const std::string& filepath)
 	{
+		EC_PROFILE_FUNCTION();
+
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Entities";
@@ -221,6 +223,8 @@ namespace Echo
 
 	bool SceneSerializer::Deserialize(const std::string& filepath)
 	{
+		EC_PROFILE_FUNCTION();
+		
 		std::ifstream stream(filepath);
 		if (!stream.is_open())
 		{

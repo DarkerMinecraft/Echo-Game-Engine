@@ -3,6 +3,8 @@
 #include "Core/Base.h"
 #include "Core/Log.h"
 
+#include "Debug/Instrumentor.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>

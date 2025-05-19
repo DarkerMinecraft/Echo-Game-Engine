@@ -15,7 +15,7 @@ namespace Echo
 			: m_X(x), m_Y(y), m_Z(z)
 		{}
 
-		virtual void Execute(CommandBuffer* cmd) override { vkCmdDispatch(((VulkanCommandBuffer*)cmd)->GetCommandBuffer(), m_X, m_Y, m_Z ); };
+		virtual void Execute(CommandBuffer* cmd) override;
 	private:
 		float m_X, m_Y, m_Z;
 	};

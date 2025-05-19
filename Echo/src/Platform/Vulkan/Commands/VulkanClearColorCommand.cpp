@@ -11,6 +11,7 @@ namespace Echo
 
 	void VulkanClearColorCommand::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)m_Framebuffer.get();
 

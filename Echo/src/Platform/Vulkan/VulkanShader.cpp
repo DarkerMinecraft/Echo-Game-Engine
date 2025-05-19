@@ -23,6 +23,7 @@ namespace Echo
 
 	void VulkanShader::Unload()
 	{
+		EC_PROFILE_FUNCTION();
 		for (auto& module : m_ShaderModules)
 		{
 			vkDestroyShaderModule(m_Device->GetDevice(), module, nullptr);
@@ -32,6 +33,7 @@ namespace Echo
 
 	void VulkanShader::Destroy()
 	{
+		EC_PROFILE_FUNCTION();
 		if (m_Destroyed)
 			return;
 
@@ -51,6 +53,7 @@ namespace Echo
 
 	void VulkanShader::CreateShaderModules(const std::filesystem::path& shaderPath)
 	{
+		EC_PROFILE_FUNCTION();
 		ShaderReflection reflections;
 		m_ShaderModules = m_Device->GetShaderLibrary().AddSpirvShader(shaderPath, &m_ShaderReflection);
 

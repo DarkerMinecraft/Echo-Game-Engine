@@ -78,6 +78,7 @@ namespace Echo
 
 	AllocatedBuffer VulkanDevice::CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
 	{
+		EC_PROFILE_FUNCTION();
 		VkBufferCreateInfo bufferInfo = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferInfo.pNext = nullptr;
 		bufferInfo.size = allocSize;
@@ -100,6 +101,7 @@ namespace Echo
 
 	AllocatedImage VulkanDevice::CreateImage(VkExtent3D size, VkFormat format, VkImageUsageFlags usage)
 	{
+		EC_PROFILE_FUNCTION();
 		AllocatedImage newImage;
 		newImage.ImageFormat = format;
 		newImage.ImageExtent = size;
@@ -144,6 +146,7 @@ namespace Echo
 
 	AllocatedImage VulkanDevice::CreateImageNoMSAA(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped /*= false*/)
 	{
+		EC_PROFILE_FUNCTION();
 		AllocatedImage newImage;
 		newImage.ImageFormat = format;
 		newImage.ImageExtent = size;
@@ -187,6 +190,7 @@ namespace Echo
 
 	AllocatedImage VulkanDevice::CreateImageTex(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped /*= false*/)
 	{
+		EC_PROFILE_FUNCTION();
 		size_t data_size = size.depth * size.width * size.height * 4;
 		AllocatedBuffer uploadbuffer = CreateBuffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
@@ -223,12 +227,14 @@ namespace Echo
 
 	void VulkanDevice::DestroyImage(const AllocatedImage& image)
 	{
+		EC_PROFILE_FUNCTION();
 		vkDestroyImageView(m_Device, image.ImageView, nullptr);
 		vmaDestroyImage(m_Allocator, image.Image, image.Allocation);
 	}
 
 	void VulkanDevice::ImmediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function)
 	{
+		EC_PROFILE_FUNCTION();
 		vkResetFences(m_Device, 1, &m_ImmFence);
 		vkResetCommandBuffer(m_ImmCommandBuffer, 0);
 
@@ -256,6 +262,7 @@ namespace Echo
 
 	void VulkanDevice::InitVulkan()
 	{
+		EC_PROFILE_FUNCTION();
 		vkb::InstanceBuilder builder;
 
 		auto inst_ret = builder.set_app_name("Echo Engine")
@@ -319,6 +326,7 @@ namespace Echo
 
 	void VulkanDevice::InitSwapchain()
 	{
+		EC_PROFILE_FUNCTION();
 		m_Swapchain = CreateScope<VulkanSwapchain>(this, m_Width, m_Height);
 		m_DrawExtent =
 		{
@@ -329,6 +337,7 @@ namespace Echo
 
 	void VulkanDevice::RecreateSwapchain(int width, int height, VulkanSwapchain* oldSwapchain)
 	{
+		EC_PROFILE_FUNCTION();
 		vkDeviceWaitIdle(m_Device);
 
 		m_Swapchain = CreateScope<VulkanSwapchain>(this, oldSwapchain, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
@@ -347,6 +356,7 @@ namespace Echo
 
 	void VulkanDevice::InitSyncStructures()
 	{
+		EC_PROFILE_FUNCTION();
 		VkSemaphoreCreateInfo semaphoreCreateInfo = VulkanInitializers::SemaphoreCreateInfo();
 		VkFenceCreateInfo fenceCreateInfo = VulkanInitializers::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
@@ -363,6 +373,7 @@ namespace Echo
 
 	void VulkanDevice::InitCommands()
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandPoolCreateInfo poolCreateInfo = VulkanInitializers::CommandPoolCreateInfo(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, m_GraphicsQueueFamily);
 		
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -381,6 +392,7 @@ namespace Echo
 
 	void VulkanDevice::CreateImGuiDescriptorPool()
 	{
+		EC_PROFILE_FUNCTION();
 		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
 		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },

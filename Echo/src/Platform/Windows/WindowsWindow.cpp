@@ -382,6 +382,7 @@ namespace Echo
 
 	VkSurfaceKHR WindowsWindow::SetWindowSurface(VkInstance instance)
 	{
+		EC_PROFILE_FUNCTION();
 		VkWin32SurfaceCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 		createInfo.hwnd = m_Window;
@@ -414,6 +415,7 @@ namespace Echo
 
 	void WindowsWindow::Init(const WindowProps& props)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Data.Width = props.Width;
 		m_Data.Height = props.Height;
 		m_Data.Title = props.Title;
@@ -464,11 +466,11 @@ namespace Echo
 
 		ShowWindow(m_Window, SW_SHOW);
 		UpdateWindow(m_Window);
-
 	}
 
 	void WindowsWindow::Shutdown()
 	{
+		EC_PROFILE_FUNCTION();
 		m_Device.reset();
 		DestroyWindow(m_Window);
 		UnregisterClassA("EchoWindowClass", GetModuleHandle(NULL));

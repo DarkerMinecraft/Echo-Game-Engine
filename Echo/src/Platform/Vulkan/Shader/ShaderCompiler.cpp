@@ -66,6 +66,7 @@ namespace Echo
 
 	std::vector<VkShaderModule> ShaderLibrary::AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection)
 	{
+		EC_PROFILE_FUNCTION();
 		std::vector<VkShaderModule> modules;
 
 		UUID shaderID = UUID(); // You'll need to generate or retrieve a proper ID
@@ -274,6 +275,7 @@ namespace Echo
 
 	Ref<ShaderCache> ShaderLibrary::LoadShaderCache(const std::filesystem::path& path, const UUID& shaderID) const
 	{
+		EC_PROFILE_FUNCTION();
 		std::filesystem::path cachePath = path.string() + ".cache";
 		if (!std::filesystem::exists(cachePath))
 			return nullptr;
@@ -289,6 +291,7 @@ namespace Echo
 
 	bool ShaderLibrary::SaveShaderCache(const std::filesystem::path& path, const Ref<ShaderCache>& cache) const
 	{
+		EC_PROFILE_FUNCTION();
 		std::filesystem::path cachePath = path.string() + ".cache";
 		std::filesystem::create_directories(cachePath.parent_path());
 
@@ -311,6 +314,7 @@ namespace Echo
 
 	void ShaderLibrary::ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection)
 	{
+		EC_PROFILE_FUNCTION();
 		EC_CORE_INFO("  Vertex Attributes:");
 		BufferLayout layout;
 
@@ -344,6 +348,7 @@ namespace Echo
 
 	void ShaderLibrary::ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* metadata, ShaderReflection* reflection)
 	{
+		EC_PROFILE_FUNCTION();
 		EC_CORE_INFO("  Resource Bindings:");
 		// 1) Get the program layout so we can fetch the *global* scope:
 		auto globalParamsVarLayout = layout->getGlobalParamsVarLayout();

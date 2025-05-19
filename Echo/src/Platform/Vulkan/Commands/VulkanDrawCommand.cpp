@@ -8,18 +8,21 @@ namespace Echo
 {
 	void VulkanDrawCommand::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		vkCmdDraw(commandBuffer, m_VertexCount, m_InstanceCount, m_FirstVertex, m_FirstInstance);
 	}
 
 	void VulkanDrawIndexedCommand::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		vkCmdDrawIndexed(commandBuffer, m_IndexCount, m_InstanceCount, m_FirstIndex, m_VertexOffset, m_FirstInstance);
 	}
 
 	void VulkanDrawIndexedIndirect::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		AllocatedBuffer buffer = ((VulkanIndirectBuffer*)m_Buffer.get())->GetBuffer();
 

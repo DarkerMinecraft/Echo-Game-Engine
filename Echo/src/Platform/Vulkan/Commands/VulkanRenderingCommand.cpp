@@ -14,6 +14,7 @@ namespace Echo
 
 	void VulkanBeginRenderingCommand::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VulkanCommandBuffer* commandBuffer = ((VulkanCommandBuffer*)cmd);
 		VulkanFramebuffer* fb = (VulkanFramebuffer*)m_Framebuffer.get();
 		VulkanDevice* device = (VulkanDevice*)Application::Get().GetWindow().GetDevice();
@@ -85,6 +86,7 @@ namespace Echo
 
 	void VulkanEndRenderingCommand::Execute(CommandBuffer* cmd)
 	{
+		EC_PROFILE_FUNCTION();
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		vkCmdEndRendering(commandBuffer);
 	}

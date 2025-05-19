@@ -8,6 +8,7 @@ namespace Echo
 {
 	bool AssetMetadata::SerializeToFile(const std::filesystem::path& filepath)
 	{
+		EC_PROFILE_FUNCTION();
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 
@@ -85,6 +86,7 @@ namespace Echo
 
 	bool AssetMetadata::DeserializeFromFile(const std::filesystem::path& filepath)
 	{
+		EC_PROFILE_FUNCTION();
 		if (!std::filesystem::exists(filepath))
 			return false;
 

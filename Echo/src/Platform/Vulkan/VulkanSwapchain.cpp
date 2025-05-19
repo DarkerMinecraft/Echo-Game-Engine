@@ -21,6 +21,7 @@ namespace Echo
 
 	void VulkanSwapchain::CreateSwapchain()
 	{
+		EC_PROFILE_FUNCTION();
 		vkb::SwapchainBuilder swapchainBuilder{ m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetSurface()};
 
 		m_Format = VK_FORMAT_B8G8R8A8_UNORM;
@@ -42,6 +43,7 @@ namespace Echo
 
 	uint32_t VulkanSwapchain::AcquireNextImage(VkSemaphore semaphore)
 	{
+		EC_PROFILE_FUNCTION();
 		uint32_t imageIndex;
 		vkAcquireNextImageKHR(m_Device->GetDevice(), m_Swapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
 
@@ -50,6 +52,7 @@ namespace Echo
 
 	void VulkanSwapchain::DestroySwapchain()
 	{
+		EC_PROFILE_FUNCTION();
 		vkDestroySwapchainKHR(m_Device->GetDevice(), m_Swapchain, nullptr);
 
 		for (int i = 0; i < m_ImageViews.size(); i++)
@@ -60,6 +63,7 @@ namespace Echo
 
 	void VulkanSwapchain::CreateSwapchain(VulkanSwapchain* oldSwapchain)
 	{
+		EC_PROFILE_FUNCTION();
 		vkb::SwapchainBuilder swapchainBuilder{ m_Device->GetPhysicalDevice(), m_Device->GetDevice(), m_Device->GetSurface() };
 
 		m_Format = VK_FORMAT_B8G8R8A8_UNORM;

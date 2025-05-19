@@ -16,6 +16,7 @@ namespace Echo
 
 	void VulkanRenderCaps::Init(VulkanDevice* device)
 	{
+		EC_PROFILE_FUNCTION();
 		VkPhysicalDevice physicalDevice = device->GetPhysicalDevice();
 		VkPhysicalDeviceProperties physicalDeviceProperties;
 		vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -44,6 +45,7 @@ namespace Echo
 
 	void VulkanRenderCaps::GetSampleCount(VkPhysicalDevice physicalDevice)
 	{
+		EC_PROFILE_FUNCTION();
 		VkPhysicalDeviceProperties physicalDeviceProperties;
 		vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 

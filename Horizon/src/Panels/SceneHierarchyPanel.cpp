@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 #include "Scene/Components.h"
 
+#include <Debug/Instrumentor.h>
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include <imgui.h>
@@ -29,6 +31,7 @@ namespace Echo
 
 	void SceneHierarchyPanel::OnImGuiRender()
 	{
+		EC_PROFILE_FUNCTION();
 		ImGui::Begin("Scene Hierarchy");
 
 		if (m_Context)
@@ -61,6 +64,7 @@ namespace Echo
 
 	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
 	{
+		EC_PROFILE_FUNCTION();
 		auto& tag = entity.GetComponent<TagComponent>().Tag;
 
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0)  | ImGuiTreeNodeFlags_OpenOnArrow;

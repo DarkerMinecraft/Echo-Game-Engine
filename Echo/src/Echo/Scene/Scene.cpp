@@ -52,6 +52,7 @@ namespace Echo
 
 	Ref<Scene> Scene::Copy(Ref<Scene> srcScene)
 	{
+		EC_PROFILE_FUNCTION();
 		Ref<Scene> newScene = CreateRef<Scene>();
 
 		newScene->m_ViewportWidth = srcScene->m_ViewportWidth;
@@ -124,6 +125,7 @@ namespace Echo
 
 	void Scene::OnRuntimeStart()
 	{
+		EC_PROFILE_FUNCTION();
 		b2WorldDef worldDef = b2DefaultWorldDef();
 		worldDef.gravity.y = -9.89f;
 		worldDef.gravity.x = 0.0f;
@@ -167,6 +169,7 @@ namespace Echo
 
 	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts)
 	{
+		EC_PROFILE_FUNCTION();
 		RendererQuad::BeginScene(cmd, camera);
 
 		{
@@ -192,6 +195,7 @@ namespace Echo
 
 	void Scene::OnUpdateRuntime(CommandList& cmd, Timestep ts)
 	{
+		EC_PROFILE_FUNCTION();
 		m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc)
 		{
 			if (!nsc.Instance)

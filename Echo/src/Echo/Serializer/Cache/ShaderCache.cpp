@@ -6,6 +6,7 @@ namespace Echo
 
 	bool ShaderCache::Serialize(std::ostream& stream)
 	{
+		EC_PROFILE_FUNCTION();
 		stream.write(reinterpret_cast<const char*>(&SHADER_CACHE_MAGIC), sizeof(uint32_t));
 		uint32_t version = GetVersion();
 		stream.write(reinterpret_cast<const char*>(&version), sizeof(uint32_t));
@@ -101,6 +102,7 @@ namespace Echo
 
 	bool ShaderCache::Deserialize(std::ifstream& stream)
 	{
+		EC_PROFILE_FUNCTION();
 		// Read and validate header
 		uint32_t magic;
 		stream.read(reinterpret_cast<char*>(&magic), sizeof(uint32_t));

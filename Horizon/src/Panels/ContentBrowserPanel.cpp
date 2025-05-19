@@ -1,5 +1,7 @@
 #include "ContentBrowserPanel.h"
 
+#include <Debug/Instrumentor.h>
+
 #include <imgui.h>
 #include <Core/Log.h>
 
@@ -22,6 +24,7 @@ namespace Echo
 
 	void ContentBrowserPanel::OnImGuiRender()
 	{
+		EC_PROFILE_FUNCTION();
 		ImGui::Begin("Content Browser");
 		
 		if (m_CurrentDirectory != std::filesystem::path(m_CurrentDirectory))
