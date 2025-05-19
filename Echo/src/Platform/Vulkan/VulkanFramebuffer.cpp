@@ -89,7 +89,7 @@ namespace Echo
 				TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			}
 
-			VulkanImages::CopyBufferToImage(cmd, stagingBuffer.Buffer, m_Framebuffers[index].Image, { x, y });
+			VulkanImages::CopyImageToBuffer(cmd, stagingBuffer.Buffer, m_Framebuffers[index].Image, { x, y });
 		});
 
 		int32_t pixel;
@@ -107,9 +107,9 @@ namespace Echo
 
 		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		VulkanFramebuffer* framebuffer = (VulkanFramebuffer*)targetFramebuffer;
-		for (uint32_t i = 0; i < m_ColorFormats.size(); i++) 
+		for (uint32_t i = 0; i < m_ColorFormats.size(); i++)
 		{
-			if (GetImage(i).Samples == VK_SAMPLE_COUNT_1_BIT)
+			if (GetImage(i).Samples || VK_SAMPLE_COUNT_1_BIT)
 				continue;
 
 			TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -157,7 +157,7 @@ namespace Echo
 				ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
 				m_DescriptorSet = nullptr;
 			}
-			
+
 			vkDestroySampler(m_Device->GetDevice(), framebuffer.Sampler, nullptr);
 			m_Device->DestroyImage(framebuffer);
 
@@ -182,8 +182,8 @@ namespace Echo
 		m_Width = spec.Width;
 		m_Height = spec.Height;
 		m_UseSamples = spec.UseSamples;
-		
-		for (int i = 0; i < spec.Attachments.Attachments.size(); i++) 
+
+		for (int i = 0; i < spec.Attachments.Attachments.size(); i++)
 		{
 			m_Attachments.push_back(spec.Attachments.Attachments[i].TextureFormat);
 		}
@@ -229,16 +229,17 @@ namespace Echo
 				attachmentUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
 			AllocatedImage image;
-			if (spec.UseSamples && attachment.TextureFormat != RedInt)
+			if (spec.UseSamples)
 			{
-				m_Device->CreateImage(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
-									  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+				image = m_Device->CreateImage(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
+											  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
 			}
-			else 
+			else
 			{
-				m_Device->CreateImageNoMSAA(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
-									  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+				image = m_Device->CreateImageNoMSAA(drawImageExtent, MapFramebufferFormat(attachment.TextureFormat), VK_IMAGE_USAGE_TRANSFER_DST_BIT
+													| VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
 			}
+
 			if (attachment.TextureFormat >= 10)
 			{
 				image.DepthTexture = true;
@@ -271,8 +272,19 @@ namespace Echo
 			attachmentUsage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		else
 			attachmentUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-		AllocatedImage image = m_Device->CreateImage({ width, height, 1 }, oldImage.ImageFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT
-												| VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+		AllocatedImage image;
+			
+		if (m_UseSamples)
+		{
+			image = m_Device->CreateImage({ width, height, 1 }, oldImage.ImageFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT
+										  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+		}
+		else 
+		{
+			image = m_Device->CreateImageNoMSAA({ width, height, 1 }, oldImage.ImageFormat, VK_IMAGE_USAGE_TRANSFER_DST_BIT
+										  | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | attachmentUsage);
+		}
+
 		m_Width = width;
 		m_Height = height;
 

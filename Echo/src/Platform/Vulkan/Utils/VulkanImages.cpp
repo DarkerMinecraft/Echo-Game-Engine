@@ -69,7 +69,7 @@ namespace Echo
 		vkCmdBlitImage2(cmd, &blitInfo);
 	}
 
-	void VulkanImages::CopyBufferToImage(VkCommandBuffer cmd, VkBuffer buffer, VkImage image, const glm::vec2& size)
+	void VulkanImages::CopyImageToBuffer(VkCommandBuffer cmd, VkBuffer buffer, VkImage image, const glm::vec2& size)
 	{
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
@@ -80,7 +80,7 @@ namespace Echo
 		region.imageSubresource.baseArrayLayer = 0;
 		region.imageSubresource.layerCount = 1;
 		region.imageOffset = { static_cast<int32_t>(size.x), static_cast<int32_t>(size.y), 0 };
-		region.imageExtent = { 1, 1, 1 }; // Just one pixel
+		region.imageExtent = { 1, 1, 1 };
 
 		vkCmdCopyImageToBuffer(
 			cmd,
@@ -89,6 +89,40 @@ namespace Echo
 			buffer,
 			1,
 			&region
+		);
+	}
+
+	void VulkanImages::ResolveImageToImage(VkCommandBuffer cmd, VkImage source, VkImage destination, VkExtent2D srcSize, VkExtent2D dstSize)
+	{
+		VkImageResolve resolveRegion{};
+
+		// Source subresource
+		resolveRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		resolveRegion.srcSubresource.mipLevel = 0;
+		resolveRegion.srcSubresource.baseArrayLayer = 0;
+		resolveRegion.srcSubresource.layerCount = 1;
+		resolveRegion.srcOffset = { 0, 0, 0 };
+
+		// Destination subresource
+		resolveRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		resolveRegion.dstSubresource.mipLevel = 0;
+		resolveRegion.dstSubresource.baseArrayLayer = 0;
+		resolveRegion.dstSubresource.layerCount = 1;
+		resolveRegion.dstOffset = { 0, 0, 0 };
+
+		// Extent defines the size of the region to resolve
+		resolveRegion.extent = {
+			std::min(srcSize.width, dstSize.width),
+			std::min(srcSize.height, dstSize.height),
+			1
+		};
+
+		// Perform the resolve operation
+		vkCmdResolveImage(
+			cmd,
+			source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			destination, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1, &resolveRegion
 		);
 	}
 

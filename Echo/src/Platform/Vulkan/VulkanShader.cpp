@@ -20,7 +20,7 @@ namespace Echo
 		: m_Device((VulkanDevice*)device), m_Name(shaderPath.stem().string())
 	{
 		std::filesystem::path path = useCurrentDirectory ? std::filesystem::current_path() / shaderPath : shaderPath;
-		//CompileOrGetVulkanBinary(path);
+		CompileOrGetVulkanBinary(path);
 		CreateShaderModules(path);
 	}
 

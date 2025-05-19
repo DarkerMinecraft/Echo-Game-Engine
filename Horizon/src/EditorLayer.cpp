@@ -36,12 +36,14 @@ namespace Echo
 		msaaFramebufferSpec.Width = 1280;
 		msaaFramebufferSpec.Height = 720;
 		msaaFramebufferSpec.UseSamples = true;
+
 		m_MsaaFramebuffer = Framebuffer::Create(msaaFramebufferSpec);
 
 		FramebufferSpecification mainFramebufferSpec;
 		mainFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
 		mainFramebufferSpec.Width = 1280;
 		mainFramebufferSpec.Height = 720;
+
 		m_MainFramebuffer = Framebuffer::Create(mainFramebufferSpec);
 
 		FramebufferSpecification finalFramebufferSpec;
@@ -158,10 +160,10 @@ namespace Echo
 			int mouseY = (int)my;
 			if (mouseX >= 0 && mouseY >= 0 && mouseX < (int)viewportSize.x && mouseY < (int)viewportSize.y)
 			{
-				int texX = (int)((mouseX / viewportSize.x) * m_MsaaFramebuffer->GetWidth());
-				int texY = (int)((mouseY / viewportSize.y) * m_MsaaFramebuffer->GetHeight());
+				int texX = (int)((mouseX / viewportSize.x) * m_MainFramebuffer->GetWidth());
+				int texY = (int)((mouseY / viewportSize.y) * m_MainFramebuffer->GetHeight());
 
-				int entityID = m_MsaaFramebuffer->ReadPixel(1, texX, texY);
+				int entityID = m_MainFramebuffer->ReadPixel(1, texX, texY);
 				if (entityID != -1)
 				{
 					m_Window->SetCursor(Cursor::HAND);
