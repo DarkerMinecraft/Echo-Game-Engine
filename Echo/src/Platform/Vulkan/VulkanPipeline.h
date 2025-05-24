@@ -24,6 +24,8 @@ namespace Echo
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<UniformBuffer> buffer) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) override;
 
+		virtual void ReconstructPipeline(Ref<Shader> shader) override;
+
 		void Destroy();
 	private:
 		void CreateComputePipeline(Ref<Shader> computeShader, const PipelineSpecification& spec);
@@ -44,6 +46,8 @@ namespace Echo
 		std::vector<VkDescriptorSet> m_DescriptorSets;
 		std::vector<DescriptorAllocatorGrowable> m_DescriptorAllocators;
 		VkDescriptorPool m_DescriptorPool;
+
+		PipelineSpecification m_PipelineSpecification;
 
 		bool m_Destroyed = false;
 

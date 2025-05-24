@@ -88,7 +88,7 @@ namespace Echo
 
 	static RendererQuadData s_Data;
 
-	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index, AssetRegistry* registry)
+	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
 	{
 		EC_PROFILE_FUNCTION();
 
@@ -99,10 +99,13 @@ namespace Echo
 		pipelineSpec.EnableBlending = true;
 		pipelineSpec.RenderTarget = framebuffer;
 
-		s_Data.QuadShader = registry->LoadAsset<ShaderAsset>("Resources/shaders/quadShader.slang");
+		s_Data.QuadShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/quadShader.slang");
 		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
-		s_Data.CircleShader = registry->LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
+		s_Data.CircleShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
 		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
+
+		s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline);
+		s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 		s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex), true);
@@ -411,11 +414,11 @@ namespace Echo
 		s_Data.QuadVertexBuffer.reset();
 		s_Data.CircleVertexBuffer.reset();
 		s_Data.QuadIndexBuffer.reset();
+		s_Data.CircleShader.reset();
+		s_Data.QuadShader.reset();
 		s_Data.QuadPipeline.reset();
 		s_Data.CirclePipeline.reset();
 		s_Data.CamUniformBuffer.reset();
-		s_Data.QuadShader.reset();
-		s_Data.CircleShader.reset();
 		s_Data.TextureSlots[0]->Destroy();
 
 		delete[] s_Data.QuadVertexBufferBase;

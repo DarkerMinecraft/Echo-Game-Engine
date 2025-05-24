@@ -7,6 +7,8 @@
 #include "Events/WindowEvents.h"
 #include "Log.h"
 
+#include "AssetManager/AssetWatcher.h"
+
 #include <chrono>
 
 namespace Echo
@@ -44,6 +46,8 @@ namespace Echo
 		bool m_Minimized = false;
 
 		ImGuiLayer* m_ImGuiLayer;
+
+		AssetWatcher* m_AssetWatcher;
 
 		LayerStack m_LayerStack;
 

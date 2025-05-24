@@ -20,14 +20,14 @@ namespace Echo
 		virtual void Reload() override;
 		virtual void Destroy() override;
 
-		virtual bool IsDirty() override { return m_Dirty; };
 		virtual bool IsLoaded() override { return m_Loaded; };
+
+		virtual bool CheckForChanges() override;
 
 		virtual AssetMetadata GetMetadata() override { return m_Metadata; }
 		virtual const AssetMetadata GetMetadata() const { return m_Metadata; }
 
 		Ref<Shader> GetShader() { return m_Shader; }
-		bool CheckForChanges();
 
 		Ref<Pipeline> GetPipeline() { return m_Pipeline; }
 		void SetPipeline(Ref<Pipeline> pipeline) { m_Pipeline = pipeline; }
@@ -38,8 +38,7 @@ namespace Echo
 		Ref<Pipeline> m_Pipeline;
 
 		Ref<Shader> m_Shader;
-		const std::filesystem::path& path = "";
-		bool m_Dirty = true, m_Loaded = false;
+		bool m_Loaded = false;
 
 		float m_TimeSinceLastCheck = 0.0f;
 	};

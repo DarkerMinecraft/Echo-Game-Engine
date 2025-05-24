@@ -6,6 +6,10 @@
 #define ECHO_DEBUG
 #endif
 
+#if defined(_RELEASE) || !defined(NRELEASE)
+#define ECHO_RELEASE
+#endif
+
 // Windows
 #if defined(_WIN32) || defined(_WIN64)
 #define ECHO_PLATFORM_WIN

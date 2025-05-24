@@ -23,7 +23,7 @@ namespace Echo
 		ShaderLibrary(VkDevice device);
 		~ShaderLibrary();
 
-		std::vector<VkShaderModule> AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection);
+		std::vector<VkShaderModule> AddSpirvShader(const std::filesystem::path& path, bool shouldRecompile, ShaderReflection* reflection, bool* didCompile);
 
 		Ref<ShaderCache> LoadShaderCache(const std::filesystem::path& path, const UUID& shaderID) const;
 		bool SaveShaderCache(const std::filesystem::path& path, const Ref<ShaderCache>& cache) const;

@@ -64,7 +64,7 @@ namespace Echo
 
 	}
 
-	std::vector<VkShaderModule> ShaderLibrary::AddSpirvShader(const std::filesystem::path& path, ShaderReflection* reflection)
+	std::vector<VkShaderModule> ShaderLibrary::AddSpirvShader(const std::filesystem::path& path, bool shouldRecompile, ShaderReflection* reflection, bool* didCompile)
 	{
 		EC_PROFILE_FUNCTION();
 		std::vector<VkShaderModule> modules;
@@ -72,7 +72,7 @@ namespace Echo
 		UUID shaderID = UUID(); // You'll need to generate or retrieve a proper ID
 		Ref<ShaderCache> cache = LoadShaderCache(path, shaderID);
 
-		if (cache)
+		if (cache && !shouldRecompile)
 		{
 			EC_CORE_INFO("Using cached shader: {0}", path.string());
 
@@ -109,6 +109,7 @@ namespace Echo
 			}
 		}
 
+		if (didCompile) *didCompile = false;
 		EC_CORE_INFO("Compiling shader: {0}", path.string());
 
 		SessionDesc sessionDesc{};
@@ -143,6 +144,7 @@ namespace Echo
 			{
 				std::string message = (char*)diagnosticBlob->getBufferPointer();
 				EC_CORE_CRITICAL("Failed to load shader: {0}", message);
+				if (didCompile) *didCompile = false;
 			}
 		}
 
@@ -157,6 +159,7 @@ namespace Echo
 				if (!entryPoint)
 				{
 					EC_CORE_CRITICAL("Failed to find entry point in {0}: ", path.string().c_str());
+					if (didCompile) *didCompile = false;
 				}
 			}
 
@@ -179,6 +182,7 @@ namespace Echo
 				{
 					std::string message = (char*)diagnosticBlob->getBufferPointer();
 					EC_CORE_CRITICAL("Failed to create composite component type: {0}", message);
+					if (didCompile) *didCompile = false;
 				}
 			}
 
@@ -193,6 +197,7 @@ namespace Echo
 				{
 					std::string message = (char*)diagnosticsBlob->getBufferPointer();
 					EC_CORE_CRITICAL("Failed to link program: {0}", message);
+					if (didCompile) *didCompile = false;
 				}
 			}
 			Slang::ComPtr<slang::IBlob> spirvCode;
@@ -208,12 +213,14 @@ namespace Echo
 				{
 					std::string message = (char*)diagnosticsBlob->getBufferPointer();
 					EC_CORE_CRITICAL("Failed to get entry point code: {0}", message);
+					if (didCompile) *didCompile = false;
 				}
 			}
 
 			if (!spirvCode || spirvCode->getBufferSize() == 0)
 			{
 				EC_CORE_CRITICAL("Empty SPIR-V code generated");
+				if (didCompile) *didCompile = false;
 			}
 
 			VkShaderModuleCreateInfo createInfo{};
@@ -233,13 +240,14 @@ namespace Echo
 			{
 				EC_CORE_ERROR("Invalid SPIRV magic number when adding module: {0:x}", dataCopy[0]);
 				delete[] dataCopy;
-				return modules;
+				if (didCompile) *didCompile = false;
 			}
 
 			VkShaderModule module;
 			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
 			{
 				EC_CORE_CRITICAL("Failed to create shader module!");
+				if (didCompile) *didCompile = false;
 			}
 
 			slang::ProgramLayout* layout = linkedProgram->getLayout();
@@ -270,6 +278,7 @@ namespace Echo
 
 		cache->SetReflectionData(*reflection);
 		SaveShaderCache(path, cache);
+		if (didCompile) *didCompile = true;
 		return modules;
 	}
 

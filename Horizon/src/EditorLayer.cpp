@@ -28,9 +28,9 @@ namespace Echo
 	void EditorLayer::OnAttach()
 	{
 		EC_PROFILE_FUNCTION();
-		m_AssetRegistry = new AssetRegistry("C:\\Dev\\Echo Projects\\Testing");
-		m_ContentBrowserPanel.SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
-		m_SceneHierarchyPanel.GetEntityComponentPanel().SetCurrentDirectory(m_AssetRegistry->GetGlobalPath());
+
+		m_ContentBrowserPanel.SetGlobalDirectory(AssetRegistry::GetGlobalPath());
+		m_SceneHierarchyPanel.GetEntityComponentPanel().SetGlobalDirectory(AssetRegistry::GetGlobalPath());
 
 		FramebufferSpecification msaaFramebufferSpec;
 		msaaFramebufferSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RedInt };
@@ -54,7 +54,7 @@ namespace Echo
 
 		m_FinalFramebuffer = Framebuffer::Create(finalFramebufferSpec);
 
-		m_OutlineShader = m_AssetRegistry->LoadAsset<ShaderAsset>("Resources/shaders/outlineShader.slang");
+		m_OutlineShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/outlineShader.slang");
 
 		PipelineSpecification outlineSpec{};
 		outlineSpec.CullMode = Cull::None;
@@ -67,16 +67,18 @@ namespace Echo
 		m_OutlineParams.outlineThickness = 2.0f;
 		m_OutlineBuffer = UniformBuffer::Create(&m_OutlineParams, sizeof(OutlineParams));
 
+		m_OutlineShader->SetPipeline(m_OutlinePipeline);
+
 		m_Window = &Application::Get().GetWindow();
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		m_PlayButton = Texture2D::Create("Resources/PlayButton.png");
-		m_StopButton = Texture2D::Create("Resources/StopButton.png");
+		m_PlayButton = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/PlayButton.png");
+		m_StopButton = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/StopButton.png");
 
-		RendererQuad::Init(m_MsaaFramebuffer, 0, m_AssetRegistry);
+		RendererQuad::Init(m_MsaaFramebuffer, 0);
 	}
 
 	void EditorLayer::OnDetach()
@@ -320,7 +322,7 @@ namespace Echo
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
 		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		ImTextureID icon = m_SceneState == Edit ? (ImTextureID)m_PlayButton->GetResourceID() : (ImTextureID)m_StopButton->GetResourceID();
+		ImTextureID icon = m_SceneState == Edit ? (ImTextureID)m_PlayButton->GetImGuiResourceID() : (ImTextureID)m_StopButton->GetImGuiResourceID();
 
 		float size = ImGui::GetWindowHeight() - 4.0f;
 		ImGui::SameLine((ImGui::GetWindowWidth() - size) * 0.5f);
@@ -364,7 +366,7 @@ namespace Echo
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
 				const wchar_t* path = (const wchar_t*)payload->Data;
-				OpenScene(m_AssetRegistry->GetGlobalPath() / path);
+				OpenScene(AssetRegistry::GetGlobalPath() / path);
 			}
 			ImGui::EndDragDropTarget();
 		}

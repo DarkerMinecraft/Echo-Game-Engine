@@ -1,7 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <Graphics/Texture.h>
+#include <AssetManager/Assets/TextureAsset.h>
 
 namespace Echo 
 {
@@ -14,11 +14,12 @@ namespace Echo
 
 		void OnImGuiRender();
 
-		void SetCurrentDirectory(const std::filesystem::path currentDirectory) { m_CurrentDirectory = currentDirectory; }
+		void SetGlobalDirectory(const std::filesystem::path globalDirectory) { m_GlobalDirectory = globalDirectory; m_CurrentDirectory = globalDirectory; }
 	private:
 		std::filesystem::path m_CurrentDirectory;
+		std::filesystem::path m_GlobalDirectory;
 
-		Ref<Texture2D> m_DirectoryIcon, m_FileIcon;
+		Ref<TextureAsset> m_DirectoryIcon, m_FileIcon;
 	};
 
 }

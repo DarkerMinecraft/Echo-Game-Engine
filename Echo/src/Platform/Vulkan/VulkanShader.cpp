@@ -9,11 +9,15 @@
 namespace Echo
 {
 
-	VulkanShader::VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool useCurrentDirectory)
+	VulkanShader::VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool shouldRecompile, bool* didCompile)
 		: m_Device((VulkanDevice*)device), m_Name(shaderPath.stem().string())
 	{
-		std::filesystem::path path = useCurrentDirectory ? std::filesystem::current_path() / shaderPath : shaderPath;
-		CreateShaderModules(path);
+		bool compile = CreateShaderModules(shaderPath, shouldRecompile);
+
+		if (didCompile != nullptr)
+		{
+			didCompile = &compile;
+		}
 	}
 
 	VulkanShader::~VulkanShader()
@@ -51,11 +55,17 @@ namespace Echo
 		return m_ShaderReflection.GetResourceBindings();
 	}
 
-	void VulkanShader::CreateShaderModules(const std::filesystem::path& shaderPath)
+	bool VulkanShader::CreateShaderModules(const std::filesystem::path& shaderPath, bool shouldRecompile)
 	{
 		EC_PROFILE_FUNCTION();
-		ShaderReflection reflections;
-		m_ShaderModules = m_Device->GetShaderLibrary().AddSpirvShader(shaderPath, &m_ShaderReflection);
+
+		bool didCompile;
+		m_ShaderModules = m_Device->GetShaderLibrary().AddSpirvShader(shaderPath, shouldRecompile, &m_ShaderReflection, &didCompile);
+
+		if (didCompile == false) 
+		{
+			return false;
+		}
 
 		uint32_t index = 0;
 		for (auto& entryPointData : m_ShaderReflection.GetEntryPointData())
@@ -85,5 +95,6 @@ namespace Echo
 			index++;
 			m_ShaderStages.push_back(createInfo);
 		}
+		return true;
 	}
 }

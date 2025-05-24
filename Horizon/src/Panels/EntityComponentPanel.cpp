@@ -2,6 +2,9 @@
 
 #include <Debug/Instrumentor.h>
 
+#include <AssetManager/AssetRegistry.h>
+#include <AssetManager/Assets/TextureAsset.h>
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -214,7 +217,7 @@ namespace Echo
 					const wchar_t* path = (const wchar_t*)payload->Data;
 					std::filesystem::path texturePath = m_CurrentDirectory / path;
 
-					component.Texture = Texture2D::Create(texturePath.string());
+					component.Texture = AssetRegistry::LoadAsset<TextureAsset>(texturePath.string());
 				}
 				ImGui::EndDragDropTarget();
 			}

@@ -8,7 +8,6 @@
 #include "VkBootstrap.h"
 #include "VulkanSwapchain.h"
 
-//#define VMA_DEBUG_LOG(str) EC_CORE_TRACE(str) 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
@@ -25,6 +24,7 @@ namespace Echo
 	VulkanDevice::VulkanDevice(Window* window, unsigned int width, unsigned int height)
 		: m_Window(window), m_WindowHandle((HWND)window->GetNativeWindow()), m_Width(width), m_Height(height), m_ShaderLibrary(nullptr)
 	{
+		EC_PROFILE_FUNCTION();
 		InitVulkan();
 		VulkanRenderCaps::Init(this);
 
@@ -38,6 +38,7 @@ namespace Echo
 
 	VulkanDevice::~VulkanDevice()
 	{
+		EC_PROFILE_FUNCTION();
 		vkDeviceWaitIdle(m_Device);
 
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -78,7 +79,7 @@ namespace Echo
 
 	AllocatedBuffer VulkanDevice::CreateBuffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
 	{
-		EC_PROFILE_FUNCTION();
+		
 		VkBufferCreateInfo bufferInfo = { .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferInfo.pNext = nullptr;
 		bufferInfo.size = allocSize;
@@ -96,6 +97,7 @@ namespace Echo
 
 	void VulkanDevice::DestroyBuffer(const AllocatedBuffer& buffer)
 	{
+		EC_PROFILE_FUNCTION();
 		vmaDestroyBuffer(m_Allocator, buffer.Buffer, buffer.Allocation);
 	}
 
@@ -276,8 +278,8 @@ namespace Echo
 		m_Instance = vkb_inst.instance;
 		m_DebugMessenger = vkb_inst.debug_messenger;
 
-		m_Surface = m_Window->SetWindowSurface(m_Instance);
-
+			m_Surface = m_Window->SetWindowSurface(m_Instance);
+	
 		VkPhysicalDeviceVulkan13Features features{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 		features.dynamicRendering = true;
 		features.synchronization2 = true;
@@ -393,17 +395,17 @@ namespace Echo
 	void VulkanDevice::CreateImGuiDescriptorPool()
 	{
 		EC_PROFILE_FUNCTION();
-		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
+		VkDescriptorPoolSize pool_sizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 } };
 
 		VkDescriptorPoolCreateInfo pool_info = {};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

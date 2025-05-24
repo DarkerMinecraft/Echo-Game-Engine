@@ -13,14 +13,14 @@ namespace Echo
 	class VulkanTexture2D : public Texture2D
 	{
 	public:
-		VulkanTexture2D(Device* device, const std::string& path);
+		VulkanTexture2D(Device* device, const std::filesystem::path& path, const Texture2DSpecification& spec);
 		VulkanTexture2D(Device* device, uint32_t width, uint32_t height, void* pixels);
 		virtual ~VulkanTexture2D();
 
 		virtual uint32_t GetWidth() override { return m_Width; }
 		virtual uint32_t GetHeight() override { return m_Height; }
 
-		virtual void* GetResourceID() override;
+		virtual void* GetImGuiResourceID() override;
 
 		virtual void Destroy() override;
 
@@ -29,8 +29,8 @@ namespace Echo
 
 		virtual bool operator==(const Texture& other) const override { return m_UUID == ((VulkanTexture2D&)other).m_UUID; }
 	private:
-		void LoadTexture(const std::string& path);
-		void LoadTexture(void* pixels);
+		void LoadTexture(const std::filesystem::path& path, const Texture2DSpecification& spec);
+		void LoadTexture(void* pixels, bool generateSampler = false);
 	private:
 		VulkanDevice* m_Device;
 		AllocatedImage m_Texture;

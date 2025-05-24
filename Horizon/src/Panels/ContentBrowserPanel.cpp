@@ -1,6 +1,7 @@
 #include "ContentBrowserPanel.h"
 
 #include <Debug/Instrumentor.h>
+#include <AssetManager/AssetRegistry.h>
 
 #include <imgui.h>
 #include <Core/Log.h>
@@ -8,18 +9,18 @@
 namespace Echo 
 {
 	
-	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path currentDirectory)
-		: m_CurrentDirectory(currentDirectory)
+	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path globalDirectory)
+		: m_CurrentDirectory(globalDirectory), m_GlobalDirectory(globalDirectory)
 	{
-		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
-		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
+		m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_CurrentDirectory("")
 	{
-		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
-		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
+		m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()
@@ -27,7 +28,7 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		ImGui::Begin("Content Browser");
 		
-		if (m_CurrentDirectory != std::filesystem::path(m_CurrentDirectory))
+		if (m_CurrentDirectory != std::filesystem::path(m_GlobalDirectory))
 		{
 			if (ImGui::Button("<-"))
 			{
@@ -52,11 +53,17 @@ namespace Echo
 			std::string pathName = directoryEntry.path().string();
 			auto relativePath = std::filesystem::relative(path, m_CurrentDirectory);
 			std::string filenameString = relativePath.filename().string();
+			std::string fileExtension = path.has_extension() ? path.extension().string() : "";
+
+			if (fileExtension == ".cache" || fileExtension == ".meta")
+			{
+				continue;
+			}
 
 			ImGui::PushID(filenameString.c_str());
-			Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+			ImTextureID icon = directoryEntry.is_directory() ? (ImTextureID) m_DirectoryIcon->GetImGuiResourceID() : (ImTextureID) m_FileIcon->GetImGuiResourceID();
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-			ImGui::ImageButton(filenameString.c_str(), (ImTextureID)icon->GetResourceID(), { thumbnailSize, thumbnailSize });
+			ImGui::ImageButton(filenameString.c_str(), icon, { thumbnailSize, thumbnailSize });
 
 			if (ImGui::BeginDragDropSource()) 
 			{

@@ -30,7 +30,7 @@ namespace Echo
 	}
 
 	VulkanPipeline::VulkanPipeline(Device* device, Ref<Shader> shader, const PipelineSpecification& spec)
-		: m_Device((VulkanDevice*)device)
+		: m_Device((VulkanDevice*)device), m_PipelineSpecification(spec)
 	{
 		if (shader->IsCompute())
 		{
@@ -580,6 +580,22 @@ namespace Echo
 				m_DescriptorSetLayouts[setIndex]
 			);
 		}
+	}
+
+	void VulkanPipeline::ReconstructPipeline(Ref<Shader> shader)
+	{
+		if (shader->IsCompute()) 
+		{
+			Destroy();
+			CreateComputePipeline(shader, m_PipelineSpecification);
+		}
+		else 
+		{
+			Destroy();
+			CreateGraphicsPipeline(shader, m_PipelineSpecification);
+		}
+
+		m_Destroyed = false;
 	}
 
 }

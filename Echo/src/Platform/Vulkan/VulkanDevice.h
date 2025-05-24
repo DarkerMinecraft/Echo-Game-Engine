@@ -7,11 +7,7 @@
 #include "vk_mem_alloc.h"
 #include "Utils/VulkanTypes.h"
 #include "Shader/ShaderCompiler.h"
-
-#ifdef EC_PLATFORM_WINDOWS
-	#define VK_USE_PLATFORM_WIN32_KHR
-	#include <vulkan/vulkan.h>
-#endif
+#include "Windows/WindowsWindow.h"
 
 namespace Echo
 {
@@ -27,7 +23,6 @@ namespace Echo
 		uint32_t ImageIndex;
 		bool IsFirstPass = true;
 	};
-
 
 	class VulkanSwapchain;
 	class VulkanFramebuffer;

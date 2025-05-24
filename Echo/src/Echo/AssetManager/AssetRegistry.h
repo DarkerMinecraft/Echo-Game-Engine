@@ -11,23 +11,26 @@ namespace Echo
 	class AssetRegistry
 	{
 	public:
-		AssetRegistry(const std::filesystem::path& globalPath);
+		static void SetGlobalPath(const std::filesystem::path& globalPath);
 
 		template<typename T>
-		Ref<T> LoadAsset(const std::filesystem::path& path);
-		void UnloadAsset(const std::filesystem::path& path);
+		static Ref<T> LoadAsset(const std::filesystem::path& path);
+		static void UnloadAsset(const std::filesystem::path& path);
 
-		const std::filesystem::path GetGlobalPath() const { return m_GlobalPath; }
-		std::filesystem::path GetGlobalPath() { return m_GlobalPath; }
+		static void UnloadAllAssets();
+
+		static std::vector<Ref<Asset>> GetAllLoadedAssets();
+
+		static std::filesystem::path GetGlobalPath() { return s_GlobalPath; }
 	private:
-		AssetType GetAssetTypeFromExtension(const std::string& extension);
+		static AssetType GetAssetTypeFromExtension(const std::string& extension);
 
-		Ref<Asset> CreateAsset(const AssetMetadata& metadata);
+		static Ref<Asset> CreateAsset(const AssetMetadata& metadata);
 	private:
-		std::unordered_map<UUID, AssetMetadata> m_AssetMetadataMap;
-		std::unordered_map<std::filesystem::path, UUID> m_PathToUUID;
-		std::unordered_map<UUID, Ref<Asset>> m_LoadedAssets;
+		static std::unordered_map<UUID, AssetMetadata> s_AssetMetadataMap;
+		static std::unordered_map<std::filesystem::path, UUID> s_PathToUUID;
+		static std::unordered_map<UUID, Ref<Asset>> s_LoadedAssets;
 
-		std::filesystem::path m_GlobalPath;
+		static std::filesystem::path s_GlobalPath;
 	};
 }

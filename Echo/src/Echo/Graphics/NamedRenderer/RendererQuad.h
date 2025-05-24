@@ -52,7 +52,7 @@ namespace Echo
 	class RendererQuad
 	{
 	public:
-		static void Init(Ref<Framebuffer> framebuffer, uint32_t index, AssetRegistry* registry);
+		static void Init(Ref<Framebuffer> framebuffer, uint32_t index);
 
 		static void BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform);
 		static void BeginScene(CommandList& cmd, const EditorCamera& camera);

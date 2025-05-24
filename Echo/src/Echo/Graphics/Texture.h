@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Core/Base.h"
+#include "RHISpecification.h"
+
+#include <filesystem>
 
 namespace Echo 
 {
@@ -23,9 +26,9 @@ namespace Echo
 	public:
 		virtual ~Texture2D() = default;
 
-		virtual void* GetResourceID() = 0;
+		virtual void* GetImGuiResourceID() = 0;
 
-		static Ref<Texture2D> Create(const std::string& path);
+		static Ref<Texture2D> Create(const std::filesystem::path& path, const Texture2DSpecification& spec);
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, void* data);
 	};
 

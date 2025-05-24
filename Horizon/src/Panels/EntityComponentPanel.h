@@ -18,7 +18,7 @@ namespace Echo
 
 		void OnImGuiRenderEntityNode(Entity entity);
 
-		void SetCurrentDirectory(const std::filesystem::path currentDirectory) { m_CurrentDirectory = currentDirectory; }
+		void SetGlobalDirectory(const std::filesystem::path currentDirectory) { m_CurrentDirectory = currentDirectory; }
 	private:
 		Ref<Scene> m_Context = nullptr;
 

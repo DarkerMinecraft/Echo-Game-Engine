@@ -4,6 +4,9 @@
 #include "Scene/Entity.h"
 #include "Scene/Components.h"
 
+#include "AssetManager/AssetRegistry.h"
+#include "AssetManager/Assets/TextureAsset.h"
+
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 
@@ -157,6 +160,7 @@ namespace Echo
 			out << YAML::BeginMap;
 			auto& spriteRenderer = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteRenderer.Color;
+			out << YAML::Key << "Texture" << YAML::Value << spriteRenderer.Texture->GetMetadata().Path.string();
 			out << YAML::EndMap;
 		}
 		if (entity.HasComponent<CircleRendererComponent>())
@@ -283,6 +287,7 @@ namespace Echo
 				{
 					auto& spriteRenderer = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					spriteRenderer.Color = spriteRendererComponent["Color"].as<glm::vec4>();
+					spriteRenderer.Texture = AssetRegistry::LoadAsset<TextureAsset>(spriteRendererComponent["Texture"].as<std::string>());
 				}
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)

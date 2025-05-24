@@ -51,7 +51,7 @@ namespace Echo
 	private:
 		HWND m_Window;
 		WindowData m_Data;
-		
+
 		Scope<Device> m_Device;
 	};
 

@@ -22,6 +22,6 @@ namespace Echo
 		virtual const std::string& GetName() const = 0;
 		virtual bool IsCompute() = 0;
 
-		static Ref<Shader> Create(const std::filesystem::path shaderPath, bool useCurrentDirectory = false);
+		static Ref<Shader> Create(const std::filesystem::path shaderPath, bool shouldRecompile = false, bool* didCompiler = nullptr);
 	};
 }

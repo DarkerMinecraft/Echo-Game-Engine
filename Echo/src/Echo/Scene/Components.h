@@ -11,6 +11,8 @@
 #include "Core/Timestep.h"
 #include "Core/UUID.h"
 
+#include "AssetManager/Assets/TextureAsset.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Echo 
@@ -64,20 +66,11 @@ namespace Echo
 	struct SpriteRendererComponent
 	{
 		glm::vec4 Color{1.0f, 1.0f, 1.0f, 1.0f};
-		Ref<Texture2D> Texture = nullptr;
+		Ref<TextureAsset> Texture = nullptr;
 		float TilingFactor = 1.0f;
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
-		
-		operator glm::vec4& () { return Color; }
-		operator const glm::vec4& () const { return Color; }
-
-		operator Ref<Texture2D>& () { return Texture; }
-		operator const Ref<Texture2D>& () const { return Texture; }
-
-		operator float& () { return TilingFactor; }
-		operator const float& () const { return TilingFactor; }
 	};
 
 	struct CircleRendererComponent

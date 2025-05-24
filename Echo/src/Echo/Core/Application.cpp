@@ -3,6 +3,8 @@
 
 #include "ImGui/ImGuiLayer.h"
 
+#include "AssetManager/AssetRegistry.h"
+
 namespace Echo
 {
 	Application* Application::s_Instance = nullptr;
@@ -11,6 +13,7 @@ namespace Echo
 	{
 		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
 		EC_PROFILE_FUNCTION();
+		AssetRegistry::SetGlobalPath("C:/Dev/Echo Projects/Testing");
 		s_Instance = this;
 
 		WindowProps props{};
@@ -30,6 +33,8 @@ namespace Echo
 	{
 		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
 		EC_PROFILE_FUNCTION();
+		AssetRegistry::SetGlobalPath("C:/Dev/Echo Projects/Testing");
+		m_AssetWatcher = new AssetWatcher();
 		s_Instance = this;
 
 		WindowProps props{};
@@ -116,6 +121,7 @@ namespace Echo
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
+		delete m_AssetWatcher;
 		m_Running = false;
 		return true;
 	}

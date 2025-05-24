@@ -124,7 +124,7 @@ namespace Echo
 
 }
 
-#ifdef ECHO_DEBUG
+#if defined(ECHO_DEBUG) || defined(ECHO_RELEASE)
 	#define EC_PROFILE_BEGIN_SESSION(name, filepath) ::Echo::Instrumentor::Get().BeginSession(name, filepath)
 	#define EC_PROFILE_END_SESSION() ::Echo::Instrumentor::Get().EndSession();
 	#define EC_PROFILE_SCOPE(name) ::Echo::InstrumentationTimer timer##__LINE__(name);
@@ -133,5 +133,5 @@ namespace Echo
 	#define EC_PROFILE_BEGIN_SESSION(name, filepath)
 	#define EC_PROFILE_END_SESSION()
 	#define EC_PROFILE_SCOPE(name)
-	#define EC_PROFILE_FUCTION()
+	#define EC_PROFILE_FUNCTION()
 #endif

@@ -5,13 +5,13 @@
 #include "Events/KeyEvents.h"
 #include "Events/MouseEvents.h"
 
+#include "AssetManager/AssetRegistry.h"
+
 #include <cassert>
 #include <chrono>
 
 #include <windows.h>
 #include <imgui.h>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -170,25 +170,6 @@ namespace Echo
 		WindowsWindow::WindowData& pData = *(reinterpret_cast<WindowsWindow::WindowData*>(GetWindowLongPtr(hwnd, GWLP_USERDATA)));
 		switch (msg)
 		{
-			case WM_SIZE:
-			{
-				if (pData.StartUp)
-				{
-					pData.StartUp = false;
-					return true;
-				}
-
-				if (wParam != SIZE_MINIMIZED)
-				{
-					pData.Width = LOWORD(lParam);
-					pData.Height = HIWORD(lParam);
-					pData.FrameBufferResized = true;
-
-					WindowResizeEvent e(pData.Width, pData.Height);
-					pData.EventCallback(e);
-				}
-				return true;
-			}
 			case WM_CLOSE:
 			{
 				WindowCloseEvent e;
@@ -222,13 +203,13 @@ namespace Echo
 			}
 			case WM_LBUTTONDOWN:
 			{
-				MouseButtonPressedEvent e(0); 
+				MouseButtonPressedEvent e(0);
 				pData.EventCallback(e);
 				return true;
 			}
 			case WM_RBUTTONDOWN:
 			{
-				MouseButtonPressedEvent e(1); 
+				MouseButtonPressedEvent e(1);
 				pData.EventCallback(e);
 				return true;
 			}
@@ -416,10 +397,13 @@ namespace Echo
 	void WindowsWindow::Init(const WindowProps& props)
 	{
 		EC_PROFILE_FUNCTION();
+
+		// Basic setup - same as your original code
 		m_Data.Width = props.Width;
 		m_Data.Height = props.Height;
 		m_Data.Title = props.Title;
 
+		// Window class registration (consider moving to static init)
 		WNDCLASSEXA wc = {};
 		wc.cbSize = sizeof(WNDCLASSEX);
 		wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -427,16 +411,14 @@ namespace Echo
 		wc.hInstance = GetModuleHandle(NULL);
 		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wc.lpszClassName = "EchoWindowClass";
-
 		RegisterClassEx(&wc);
 
+		// Get screen dimensions and position window
 		if (m_Data.Width == -1 && m_Data.Height == -1)
 		{
 			m_Data.Width = GetSystemMetrics(SM_CXSCREEN);
 			m_Data.Height = GetSystemMetrics(SM_CYSCREEN);
 		}
-
-		EC_CORE_INFO("Creating window ({0} x {1})", m_Data.Width, m_Data.Height);
 
 		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
 		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -446,33 +428,35 @@ namespace Echo
 		RECT windowRect = { 0, 0, static_cast<LONG>(m_Data.Width), static_cast<LONG>(m_Data.Height) };
 		AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_APPWINDOW);
 
+		// Create window
 		m_Window = CreateWindowExA(
 			WS_EX_APPWINDOW,
 			"EchoWindowClass",
 			m_Data.Title,
 			WS_OVERLAPPEDWINDOW,
-			posX,
-			posY,
+			posX, posY,
 			windowRect.right - windowRect.left,
 			windowRect.bottom - windowRect.top,
-			nullptr,
-			nullptr,
+			nullptr, nullptr,
 			GetModuleHandle(NULL),
-			&m_Data 
+			&m_Data
 		);
 
 		EC_CORE_ASSERT(m_Window, "Could not create Win32 window!");
-		m_Device = Device::Create(DeviceType::Vulkan, (WindowsWindow*)this, (int)m_Data.Width, (int)m_Data.Height);
+		UpdateWindow(m_Window);
+
+		m_Device = Device::Create(DeviceType::Vulkan, this, m_Data.Width, m_Data.Height);
 
 		ShowWindow(m_Window, SW_SHOW);
-		UpdateWindow(m_Window);
 	}
 
 	void WindowsWindow::Shutdown()
 	{
 		EC_PROFILE_FUNCTION();
+		AssetRegistry::UnloadAllAssets();
 		m_Device.reset();
 		DestroyWindow(m_Window);
 		UnregisterClassA("EchoWindowClass", GetModuleHandle(NULL));
 	}
+
 }

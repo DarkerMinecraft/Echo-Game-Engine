@@ -17,6 +17,7 @@ namespace Echo
 		None = 0,
 
 		Shader,
+		Texture,
 		Material,
 		Scene
 	};

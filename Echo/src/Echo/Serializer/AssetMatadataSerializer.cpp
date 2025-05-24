@@ -23,6 +23,7 @@ namespace Echo
 			case AssetType::Shader: out << "Shader"; break;
 			case AssetType::Material: out << "Material"; break;
 			case AssetType::Scene: out << "Scene"; break;
+			case AssetType::Texture: out << "Texture"; break;
 		}
 
 		out << YAML::Key << "Path" << YAML::Value << Path.string();
@@ -124,6 +125,8 @@ namespace Echo
 			Type = AssetType::Material;
 		else if (typeStr == "Scene")
 			Type = AssetType::Scene;
+		else if (typeStr == "Texture")
+			Type = AssetType::Texture;
 		// Add other types here
 
 		// Read path

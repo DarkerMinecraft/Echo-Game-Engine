@@ -69,8 +69,6 @@ namespace Echo
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
 
-		AssetRegistry* m_AssetRegistry;
-
 		enum SceneState 
 		{
 			Edit = 0, Play = 1
@@ -86,8 +84,8 @@ namespace Echo
 
 		SceneState m_SceneState = SceneState::Edit;
 
-		Ref<Texture2D> m_PlayButton;
-		Ref<Texture2D> m_StopButton; 
+		Ref<TextureAsset> m_PlayButton;
+		Ref<TextureAsset> m_StopButton; 
 
 		std::filesystem::path m_CurrentScenePath;
 

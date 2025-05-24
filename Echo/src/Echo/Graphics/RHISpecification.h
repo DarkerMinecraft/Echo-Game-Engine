@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Log.h"
+
 #include "Framebuffer.h"
 
 namespace Echo 
@@ -171,6 +173,17 @@ namespace Echo
 		Topology GraphicsTopology = Topology::TriangleList;
 
 		Ref<Framebuffer> RenderTarget;
+	};
+
+	enum TextureFilter
+	{
+		Linear = 0,
+		Nearest
+	};
+
+	struct Texture2DSpecification 
+	{
+		TextureFilter MinFilter = Nearest, MagFilter = Nearest;
 	};
 
 }

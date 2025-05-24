@@ -8,7 +8,7 @@ namespace Echo
 	class VulkanShader : public Shader
 	{
 	public:
-		VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool useCurrentDirectory);
+		VulkanShader(Device* device, const std::filesystem::path& shaderPath, bool shouldRecompile, bool* didCompile);
 		virtual ~VulkanShader();
 
 		virtual void Unload() override;
@@ -22,7 +22,7 @@ namespace Echo
 	public:
 		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() { return m_ShaderStages; };
 	private:
-		void CreateShaderModules(const std::filesystem::path& shaderPath);
+		bool CreateShaderModules(const std::filesystem::path& shaderPath, bool shouldRecompile);
 	private:
 		VulkanDevice* m_Device;
 		std::string m_Name;

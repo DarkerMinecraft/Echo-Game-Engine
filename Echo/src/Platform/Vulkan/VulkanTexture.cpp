@@ -10,16 +10,25 @@
 namespace Echo
 {
 
-	VulkanTexture2D::VulkanTexture2D(Device* device, const std::string& path)
+	static VkFilter TextureFilterToVkFilter(TextureFilter filter) 
+	{
+		switch(filter) 
+		{
+			case TextureFilter::Linear: return VK_FILTER_LINEAR;
+			case TextureFilter::Nearest: return VK_FILTER_NEAREST;
+		}
+	}
+
+	VulkanTexture2D::VulkanTexture2D(Device* device, const std::filesystem::path& path, const Texture2DSpecification& spec)
 		: m_Device((VulkanDevice*)device)
 	{
-		LoadTexture(path);
+		LoadTexture(path, spec);
 	}
 
 	VulkanTexture2D::VulkanTexture2D(Device* device, uint32_t width, uint32_t height, void* pixels)
 		: m_Device((VulkanDevice*)device), m_Width(width), m_Height(height)
 	{
-		LoadTexture(pixels);
+		LoadTexture(pixels, true);
 	}
 
 	VulkanTexture2D::~VulkanTexture2D()
@@ -27,12 +36,11 @@ namespace Echo
 		Destroy();
 	}
 
-	void* VulkanTexture2D::GetResourceID()
+	void* VulkanTexture2D::GetImGuiResourceID()
 	{
 		if (m_DescriptorSet == nullptr)
 		{
 			m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Texture.Sampler, m_Texture.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
 			m_Device->AddImGuiTexture(this);
 		}
 
@@ -57,14 +65,14 @@ namespace Echo
 		m_IsDestroyed = true;
 	}
 
-	void VulkanTexture2D::LoadTexture(const std::string& path)
+	void VulkanTexture2D::LoadTexture(const std::filesystem::path& path, const Texture2DSpecification& spec)
 	{
 		EC_PROFILE_FUNCTION();
 		int width, height, channels;
-		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+		stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, 0);
 		if (!data)
 		{
-			EC_CORE_ERROR("Failed to load texture: {0}", path);
+			EC_CORE_ERROR("Failed to load texture: {0}", path.string());
 			EC_CORE_ERROR("Loading error texture instead!");
 
 			m_Width = 16;
@@ -96,23 +104,26 @@ namespace Echo
 
 		VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 
-		sampl.magFilter = VK_FILTER_NEAREST;
-		sampl.minFilter = VK_FILTER_NEAREST;
+		sampl.magFilter = TextureFilterToVkFilter(spec.MagFilter);
+		sampl.minFilter = TextureFilterToVkFilter(spec.MinFilter);
 
 		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Texture.Sampler);
 	}
 
-	void VulkanTexture2D::LoadTexture(void* pixels)
+	void VulkanTexture2D::LoadTexture(void* pixels, bool generateSampler)
 	{
 		EC_PROFILE_FUNCTION();
 		m_Texture = m_Device->CreateImageTex(pixels, { m_Width, m_Height, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+		
+		if (generateSampler)
+		{
+			VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 
-		VkSamplerCreateInfo sampl = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+			sampl.magFilter = VK_FILTER_NEAREST;
+			sampl.minFilter = VK_FILTER_NEAREST;
 
-		sampl.magFilter = VK_FILTER_NEAREST;
-		sampl.minFilter = VK_FILTER_NEAREST;
-
-		vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Texture.Sampler);
+			vkCreateSampler(m_Device->GetDevice(), &sampl, nullptr, &m_Texture.Sampler);
+		}
 	}
 
 }
