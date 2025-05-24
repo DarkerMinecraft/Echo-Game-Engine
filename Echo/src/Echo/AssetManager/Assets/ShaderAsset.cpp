@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ShaderAsset.h"
 
+#include "AssetManager/AssetRegistry.h"
 #include <fstream>
 
 namespace Echo 
@@ -33,6 +34,10 @@ namespace Echo
 			m_Shader = tempShader;
 			m_Pipeline->ReconstructPipeline(m_Shader);
 
+			std::filesystem::file_time_type pathLastModified = std::filesystem::last_write_time(m_Metadata.Path);
+			m_Metadata.LastModified = pathLastModified;
+			AssetRegistry::UpdateAssetMetadata(m_Metadata);
+
 			m_Loaded = true;
 		}
 		else
@@ -42,9 +47,6 @@ namespace Echo
 				tempShader->Destroy();
 			}
 		}
-
-		std::filesystem::file_time_type pathLastModified = std::filesystem::last_write_time(m_Metadata.Path);
-		m_Metadata.LastModified = pathLastModified;
 	}
 
 	void ShaderAsset::Destroy()

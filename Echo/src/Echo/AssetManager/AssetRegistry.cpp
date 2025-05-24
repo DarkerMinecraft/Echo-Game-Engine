@@ -131,6 +131,10 @@ namespace Echo
 			s_AssetMetadataMap[uuid].SerializeToFile(s_AssetMetadataMap[uuid].Path.string() + ".meta");
 			asset->Destroy();
 		}
+		
+		s_LoadedAssets.clear();
+		s_PathToUUID.clear();
+		s_AssetMetadataMap.clear();
 	}
 
 	std::vector<Ref<Asset>> AssetRegistry::GetAllLoadedAssets()
@@ -141,6 +145,13 @@ namespace Echo
 			loadedAssets.push_back(s_LoadedAssets[uuid]);
 		}
 		return loadedAssets;
+	}
+
+	void AssetRegistry::UpdateAssetMetadata(AssetMetadata& metadata)
+	{
+		s_AssetMetadataMap[metadata.ID] = metadata;
+		std::filesystem::path metaPath = metadata.Path.string() + ".meta";
+		metadata.SerializeToFile(metaPath);
 	}
 
 	AssetType AssetRegistry::GetAssetTypeFromExtension(const std::string& extension)

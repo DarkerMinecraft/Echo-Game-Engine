@@ -20,7 +20,7 @@
 #include "Events/MouseEvents.h"
 #include "Events/Event.h"
 
-#include "Graphics/NamedRenderer/RendererQuad.h"
+#include "Graphics/NamedRenderer/Renderer2D.h"
 
 #include "AssetManager/AssetRegistry.h"
 #include "AssetManager/Assets/ShaderAsset.h"

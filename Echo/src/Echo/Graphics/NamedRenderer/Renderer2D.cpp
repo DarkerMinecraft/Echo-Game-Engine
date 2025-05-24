@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "RendererQuad.h"
+#include "Renderer2D.h"
 
 #include "Graphics/Buffer.h"
 #include "Graphics/Pipeline.h"
@@ -88,7 +88,7 @@ namespace Echo
 
 	static RendererQuadData s_Data;
 
-	void RendererQuad::Init(Ref<Framebuffer> framebuffer, uint32_t index)
+	void Renderer2D::Init(Ref<Framebuffer> framebuffer, uint32_t index)
 	{
 		EC_PROFILE_FUNCTION();
 
@@ -138,7 +138,7 @@ namespace Echo
 		delete[] quadIndices;
 	}
 
-	void RendererQuad::BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform)
+	void Renderer2D::BeginScene(CommandList& cmd, const Camera& camera, const glm::mat4& transform)
 	{
 		EC_PROFILE_FUNCTION();
 		glm::mat4 projView = camera.GetProjection() * glm::inverse(transform);
@@ -174,7 +174,7 @@ namespace Echo
 		
 	}
 
-	void RendererQuad::BeginScene(CommandList& cmd, const EditorCamera& camera)
+	void Renderer2D::BeginScene(CommandList& cmd, const EditorCamera& camera)
 	{
 		EC_PROFILE_FUNCTION();
 		CameraUniformBuffer camUniformBuffer
@@ -207,7 +207,7 @@ namespace Echo
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
 	}
 
-	void RendererQuad::EndScene()
+	void Renderer2D::EndScene()
 	{
 		EC_PROFILE_FUNCTION();
 		uint32_t quadDataSize = (uint8_t*)s_Data.QuadVertexBufferPtr - (uint8_t*)s_Data.QuadVertexBufferBase;
@@ -225,7 +225,7 @@ namespace Echo
 		if(quadDataSize != 0 || circleDataSize != 0) Flush();
 	}
 
-	void RendererQuad::DrawQuad(const VertexQuadData& data)
+	void Renderer2D::DrawQuad(const VertexQuadData& data)
 	{
 		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
@@ -275,7 +275,7 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
-	void RendererQuad::DrawQuad(const VertexQuadData& data, const glm::mat4& transform)
+	void Renderer2D::DrawQuad(const VertexQuadData& data, const glm::mat4& transform)
 	{
 		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
@@ -321,7 +321,7 @@ namespace Echo
 		s_Data.Stats.QuadCount++;
 	}
 
-	void RendererQuad::DrawCircle(const VertexCircleData& data)
+	void Renderer2D::DrawCircle(const VertexCircleData& data)
 	{
 		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
@@ -345,7 +345,7 @@ namespace Echo
 		s_Data.Stats.CircleCount++;
 	}
 
-	void RendererQuad::DrawCircle(const VertexCircleData& data, const glm::mat4& transform)
+	void Renderer2D::DrawCircle(const VertexCircleData& data, const glm::mat4& transform)
 	{
 		EC_PROFILE_FUNCTION();
 		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
@@ -366,7 +366,7 @@ namespace Echo
 		s_Data.Stats.CircleCount++;
 	}
 
-	void RendererQuad::Flush()
+	void Renderer2D::Flush()
 	{
 		EC_PROFILE_FUNCTION();
 		s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
@@ -384,7 +384,7 @@ namespace Echo
 		s_Data.Stats.DrawCalls++;
 	}
 
-	void RendererQuad::FlushAndReset()
+	void Renderer2D::FlushAndReset()
 	{
 		EC_PROFILE_FUNCTION();
 		EndScene();
@@ -398,17 +398,17 @@ namespace Echo
 		s_Data.CircleIndexCount = 0;
 	}
 
-	Statistics RendererQuad::GetStats()
+	Statistics Renderer2D::GetStats()
 	{
 		return s_Data.Stats;
 	}
 
-	void RendererQuad::ResetStats()
+	void Renderer2D::ResetStats()
 	{
 		memset(&s_Data.Stats, 0, sizeof(Statistics));
 	}
 
-	void RendererQuad::Destroy()
+	void Renderer2D::Destroy()
 	{
 		EC_PROFILE_FUNCTION();
 		s_Data.QuadVertexBuffer.reset();

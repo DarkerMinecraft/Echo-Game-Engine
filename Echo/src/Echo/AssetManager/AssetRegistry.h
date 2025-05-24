@@ -17,6 +17,8 @@ namespace Echo
 		static Ref<T> LoadAsset(const std::filesystem::path& path);
 		static void UnloadAsset(const std::filesystem::path& path);
 
+		static void UpdateAssetMetadata(AssetMetadata& metadata);
+
 		static void UnloadAllAssets();
 
 		static std::vector<Ref<Asset>> GetAllLoadedAssets();

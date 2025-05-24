@@ -49,7 +49,7 @@ namespace Echo
 		uint32_t GetTotalCircleIndexCount() { return CircleCount * 6; }
 	};
 
-	class RendererQuad
+	class Renderer2D
 	{
 	public:
 		static void Init(Ref<Framebuffer> framebuffer, uint32_t index);

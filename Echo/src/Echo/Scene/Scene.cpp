@@ -3,7 +3,7 @@
 
 #include "Components.h"
 
-#include "Graphics/NamedRenderer/RendererQuad.h"
+#include "Graphics/NamedRenderer/Renderer2D.h"
 
 #include "Entity.h"
 #include "ScriptableEntity.h"
@@ -72,6 +72,7 @@ namespace Echo
 
 		CopyComponent<TransformComponent>(srcRegistry, dstRegistry, enttMap);
 		CopyComponent<SpriteRendererComponent>(srcRegistry, dstRegistry, enttMap);
+		CopyComponent<CircleRendererComponent>(srcRegistry, dstRegistry, enttMap);
 		CopyComponent<CameraComponent>(srcRegistry, dstRegistry, enttMap);
 		CopyComponent<MeshComponent>(srcRegistry, dstRegistry, enttMap);
 		CopyComponent<NativeScriptComponent>(srcRegistry, dstRegistry, enttMap);
@@ -170,14 +171,14 @@ namespace Echo
 	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts)
 	{
 		EC_PROFILE_FUNCTION();
-		RendererQuad::BeginScene(cmd, camera);
+		Renderer2D::BeginScene(cmd, camera);
 
 		{
 			auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
 			for (auto entity : view)
 			{
 				auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-				RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite.Color, .Texture = sprite.Texture->GetTexture(), .TilingFactor = sprite.TilingFactor}, transform.GetTransform());
+				Renderer2D::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite.Color, .Texture = sprite.Texture ? sprite.Texture->GetTexture() : nullptr, .TilingFactor = sprite.TilingFactor}, transform.GetTransform());
 			}
 		}
 
@@ -186,11 +187,11 @@ namespace Echo
 			for (auto entity : view)
 			{
 				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
-				RendererQuad::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
+				Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 			}
 		}
 
-		RendererQuad::EndScene();
+		Renderer2D::EndScene();
 	}
 
 	void Scene::OnUpdateRuntime(CommandList& cmd, Timestep ts)
@@ -249,14 +250,14 @@ namespace Echo
 
 		if (mainCamera != nullptr)
 		{
-			RendererQuad::BeginScene(cmd, *mainCamera, cameraTransform);
+			Renderer2D::BeginScene(cmd, *mainCamera, cameraTransform);
 
 			{
 				auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
 				for (auto entity : view)
 				{
 					auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-					RendererQuad::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite.Color, .Texture = sprite.Texture->GetTexture(), .TilingFactor = sprite.TilingFactor}, transform.GetTransform());
+					Renderer2D::DrawQuad({ .InstanceID = (int)(uint32_t)entity, .Color = sprite.Color, .Texture = sprite.Texture ? sprite.Texture->GetTexture() : nullptr, .TilingFactor = sprite.TilingFactor}, transform.GetTransform());
 				}
 			}
 
@@ -265,11 +266,11 @@ namespace Echo
 				for (auto entity : view)
 				{
 					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
-					RendererQuad::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
+					Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 				}
 			}
 
-			RendererQuad::EndScene();
+			Renderer2D::EndScene();
 		}
 	}
 

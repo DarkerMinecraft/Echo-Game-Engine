@@ -160,7 +160,8 @@ namespace Echo
 			out << YAML::BeginMap;
 			auto& spriteRenderer = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Color" << YAML::Value << spriteRenderer.Color;
-			out << YAML::Key << "Texture" << YAML::Value << spriteRenderer.Texture->GetMetadata().Path.string();
+			std::string texturePath = spriteRenderer.Texture ? spriteRenderer.Texture->GetMetadata().Path.string() : "";
+			out << YAML::Key << "Texture" << YAML::Value << texturePath;
 			out << YAML::EndMap;
 		}
 		if (entity.HasComponent<CircleRendererComponent>())
@@ -287,7 +288,8 @@ namespace Echo
 				{
 					auto& spriteRenderer = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					spriteRenderer.Color = spriteRendererComponent["Color"].as<glm::vec4>();
-					spriteRenderer.Texture = AssetRegistry::LoadAsset<TextureAsset>(spriteRendererComponent["Texture"].as<std::string>());
+					std::string texturePath = spriteRendererComponent["Texture"].as<std::string>();
+					spriteRenderer.Texture = texturePath != "" ? AssetRegistry::LoadAsset<TextureAsset>(spriteRendererComponent["Texture"].as<std::string>()) : nullptr;
 				}
 				auto circleRendererComponent = entity["CircleRendererComponent"];
 				if (circleRendererComponent)

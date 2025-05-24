@@ -99,7 +99,6 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
-			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
 			return;
 		}
 
@@ -115,7 +114,6 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
-			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
 			return;
 		}
 
@@ -139,7 +137,6 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
-			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
 			return;
 		}
 
@@ -155,7 +152,6 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		if (set >= m_DescriptorSets.size())
 		{
-			EC_CORE_ERROR("Trying to bind to non-existent descriptor set {0}", set);
 			return;
 		}
 
@@ -171,17 +167,31 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		if (m_Destroyed) return;
 
+		vkDeviceWaitIdle(m_Device->GetDevice());
+
 		for (uint32_t i = 0; i < m_DescriptorSets.size(); i++)
 		{
-			if (m_DescriptorSets[i] != nullptr)
+			if (i < m_DescriptorSetLayouts.size() && m_DescriptorSetLayouts[i] != VK_NULL_HANDLE)
 			{
 				vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayouts[i], nullptr);
+			}
+			if (i < m_DescriptorAllocators.size())
+			{
 				m_DescriptorAllocators[i].DestroyPools(m_Device->GetDevice());
 			}
 		}
 
-		vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
-		vkDestroyPipeline(m_Device->GetDevice(), m_Pipeline, nullptr);
+		if (m_PipelineLayout != VK_NULL_HANDLE)
+		{
+			vkDestroyPipelineLayout(m_Device->GetDevice(), m_PipelineLayout, nullptr);
+			m_PipelineLayout = VK_NULL_HANDLE;
+		}
+
+		if (m_Pipeline != VK_NULL_HANDLE)
+		{
+			vkDestroyPipeline(m_Device->GetDevice(), m_Pipeline, nullptr);
+			m_Pipeline = VK_NULL_HANDLE;
+		}
 
 		m_Destroyed = true;
 	}
@@ -260,7 +270,7 @@ namespace Echo
 			vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 			vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 		}
-		else 
+		else
 		{
 			vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 			vertexInputInfo.vertexBindingDescriptionCount = 0;
@@ -584,18 +594,65 @@ namespace Echo
 
 	void VulkanPipeline::ReconstructPipeline(Ref<Shader> shader)
 	{
-		if (shader->IsCompute()) 
+		// Store old resources to destroy later (copy, don't move)
+		VkPipeline oldPipeline = m_Pipeline;
+		VkPipelineLayout oldPipelineLayout = m_PipelineLayout;
+		std::vector<VkDescriptorSetLayout> oldDescriptorSetLayouts = m_DescriptorSetLayouts;
+		std::vector<DescriptorAllocatorGrowable> oldDescriptorAllocators = m_DescriptorAllocators;
+
+		// Clear current resources 
+		m_DescriptorSetLayouts.clear();
+		m_DescriptorSets.clear();
+		m_DescriptorAllocators.clear();
+
+		// Create new resources
+		if (shader->IsCompute())
 		{
-			Destroy();
 			CreateComputePipeline(shader, m_PipelineSpecification);
 		}
-		else 
+		else
 		{
-			Destroy();
 			CreateGraphicsPipeline(shader, m_PipelineSpecification);
 		}
 
+		// Destroy old resources after new ones are ready
+		DestroyOldPipelineResources(oldPipeline, oldPipelineLayout, oldDescriptorSetLayouts, oldDescriptorAllocators);
+
 		m_Destroyed = false;
+	}
+
+	void VulkanPipeline::DestroyOldPipelineResources(
+		VkPipeline oldPipeline,
+		VkPipelineLayout oldPipelineLayout,
+		const std::vector<VkDescriptorSetLayout>& oldDescriptorSetLayouts,
+		std::vector<DescriptorAllocatorGrowable>& oldDescriptorAllocators)
+	{
+		// Destroy old descriptor allocators first
+		for (auto& allocator : oldDescriptorAllocators)
+		{
+			allocator.DestroyPools(m_Device->GetDevice());
+		}
+
+		// Destroy old descriptor set layouts
+		for (VkDescriptorSetLayout layout : oldDescriptorSetLayouts)
+		{
+			if (layout != VK_NULL_HANDLE)
+			{
+				vkDestroyDescriptorSetLayout(m_Device->GetDevice(), layout, nullptr);
+			}
+		}
+
+		// Destroy old pipeline layout
+		if (oldPipelineLayout != VK_NULL_HANDLE)
+		{
+			vkDestroyPipelineLayout(m_Device->GetDevice(), oldPipelineLayout, nullptr);
+		}
+
+		// Destroy old pipeline
+		if (oldPipeline != VK_NULL_HANDLE)
+		{
+			vkDestroyPipeline(m_Device->GetDevice(), oldPipeline, nullptr);
+		}
 	}
 
 }

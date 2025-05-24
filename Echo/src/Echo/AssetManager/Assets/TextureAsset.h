@@ -33,7 +33,7 @@ namespace Echo
 		AssetMetadata m_Metadata;
 		bool m_Loaded = false;
 
-		Ref<Texture2D> m_Texture;
+		Ref<Texture2D> m_Texture = nullptr;
 	};
 
 }

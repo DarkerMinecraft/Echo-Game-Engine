@@ -149,137 +149,144 @@ namespace Echo
 		}
 
 		cache = CreateRef<ShaderCache>(shaderID);
-
-		uint32_t entryPointCount = slangModule->getDefinedEntryPointCount();
-		for (int i = 0; i < entryPointCount; i++)
+		if (slangModule)
 		{
-			IEntryPoint* entryPoint;
+			uint32_t entryPointCount = slangModule->getDefinedEntryPointCount();
+			for (int i = 0; i < entryPointCount; i++)
 			{
-				slangModule->getDefinedEntryPoint(i, &entryPoint);
-				if (!entryPoint)
+				IEntryPoint* entryPoint;
 				{
-					EC_CORE_CRITICAL("Failed to find entry point in {0}: ", path.string().c_str());
+					slangModule->getDefinedEntryPoint(i, &entryPoint);
+					if (!entryPoint)
+					{
+						EC_CORE_CRITICAL("Failed to find entry point in {0}: ", path.string().c_str());
+						if (didCompile) *didCompile = false;
+					}
+				}
+
+				std::vector<IComponentType*> componentTypes =
+				{
+					slangModule,
+				};
+				componentTypes.push_back(entryPoint);
+
+				Slang::ComPtr<IComponentType> composedProgram;
+				{
+					Slang::ComPtr<IBlob> diagnosticBlob;
+					session->createCompositeComponentType(
+						componentTypes.data(),
+						componentTypes.size(),
+						composedProgram.writeRef(),
+						diagnosticBlob.writeRef());
+
+					if (diagnosticBlob)
+					{
+						std::string message = (char*)diagnosticBlob->getBufferPointer();
+						EC_CORE_CRITICAL("Failed to create composite component type: {0}", message);
+						if (didCompile) *didCompile = false;
+					}
+				}
+
+				Slang::ComPtr<slang::IComponentType> linkedProgram;
+				{
+					Slang::ComPtr<slang::IBlob> diagnosticsBlob;
+					SlangResult result = composedProgram->link(
+						linkedProgram.writeRef(),
+						diagnosticsBlob.writeRef());
+
+					if (diagnosticsBlob)
+					{
+						std::string message = (char*)diagnosticsBlob->getBufferPointer();
+						EC_CORE_CRITICAL("Failed to link program: {0}", message);
+						if (didCompile) *didCompile = false;
+					}
+				}
+				Slang::ComPtr<slang::IBlob> spirvCode;
+				{
+					Slang::ComPtr<slang::IBlob> diagnosticsBlob;
+					SlangResult result = linkedProgram->getEntryPointCode(
+						0, // entryPointIndex
+						0, // targetIndex
+						spirvCode.writeRef(),
+						diagnosticsBlob.writeRef());
+
+					if (diagnosticsBlob)
+					{
+						std::string message = (char*)diagnosticsBlob->getBufferPointer();
+						EC_CORE_CRITICAL("Failed to get entry point code: {0}", message);
+						if (didCompile) *didCompile = false;
+					}
+				}
+
+				if (!spirvCode || spirvCode->getBufferSize() == 0)
+				{
+					EC_CORE_CRITICAL("Empty SPIR-V code generated");
 					if (didCompile) *didCompile = false;
 				}
-			}
 
-			std::vector<IComponentType*> componentTypes =
-			{
-				slangModule,
-			};
-			componentTypes.push_back(entryPoint);
+				VkShaderModuleCreateInfo createInfo{};
+				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+				createInfo.pNext = nullptr;
+				createInfo.codeSize = spirvCode->getBufferSize();
+				createInfo.pCode = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
 
-			Slang::ComPtr<IComponentType> composedProgram;
-			{
-				Slang::ComPtr<IBlob> diagnosticBlob;
-				session->createCompositeComponentType(
-					componentTypes.data(),
-					componentTypes.size(),
-					composedProgram.writeRef(),
-					diagnosticBlob.writeRef());
+				// Allocate new memory and make a deep copy of the SPIRV data
+				uint32_t* dataCopy = new uint32_t[spirvCode->getBufferSize() / sizeof(uint32_t)];
 
-				if (diagnosticBlob)
+				// Copy the data
+				std::memcpy(dataCopy, reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer()), spirvCode->getBufferSize());
+
+				// Validate the magic number
+				if (dataCopy[0] != 0x07230203)
 				{
-					std::string message = (char*)diagnosticBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to create composite component type: {0}", message);
+					EC_CORE_ERROR("Invalid SPIRV magic number when adding module: {0:x}", dataCopy[0]);
+					delete[] dataCopy;
 					if (didCompile) *didCompile = false;
 				}
-			}
 
-			Slang::ComPtr<slang::IComponentType> linkedProgram;
-			{
-				Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-				SlangResult result = composedProgram->link(
-					linkedProgram.writeRef(),
-					diagnosticsBlob.writeRef());
-
-				if (diagnosticsBlob)
+				VkShaderModule module;
+				if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
 				{
-					std::string message = (char*)diagnosticsBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to link program: {0}", message);
+					EC_CORE_CRITICAL("Failed to create shader module!");
 					if (didCompile) *didCompile = false;
 				}
-			}
-			Slang::ComPtr<slang::IBlob> spirvCode;
-			{
-				Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-				SlangResult result = linkedProgram->getEntryPointCode(
-					0, // entryPointIndex
-					0, // targetIndex
-					spirvCode.writeRef(),
-					diagnosticsBlob.writeRef());
 
-				if (diagnosticsBlob)
-				{
-					std::string message = (char*)diagnosticsBlob->getBufferPointer();
-					EC_CORE_CRITICAL("Failed to get entry point code: {0}", message);
-					if (didCompile) *didCompile = false;
-				}
-			}
+				slang::ProgramLayout* layout = linkedProgram->getLayout();
+				slang::EntryPointReflection* entryPointReflection = layout->getEntryPointByIndex(0);
+				ShaderStage shaderStage = SlangStageToShaderStage(entryPointReflection->getStage());
 
-			if (!spirvCode || spirvCode->getBufferSize() == 0)
-			{
-				EC_CORE_CRITICAL("Empty SPIR-V code generated");
-				if (didCompile) *didCompile = false;
-			}
+				cache->AddShaderModule(spirvCode->getBufferSize(), dataCopy);
 
-			VkShaderModuleCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.codeSize = spirvCode->getBufferSize();
-			createInfo.pCode = reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer());
+				reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
 
-			// Allocate new memory and make a deep copy of the SPIRV data
-			uint32_t* dataCopy = new uint32_t[spirvCode->getBufferSize() / sizeof(uint32_t)];
+				EC_CORE_INFO("Shader Reflection: {0}", path.stem().string().c_str())
+					EC_CORE_INFO("  Entry Point: {0}", entryPointReflection->getName())
+					EC_CORE_INFO("  Stage: {0}", ShaderStageToString(shaderStage))
 
-			// Copy the data
-			std::memcpy(dataCopy, reinterpret_cast<const uint32_t*>(spirvCode->getBufferPointer()), spirvCode->getBufferSize());
+					if (shaderStage == ShaderStage::Vertex)
+					{
+						ExtractVertexAttributes(entryPointReflection, reflection);
+					}
+				IMetadata* metadata;
+				linkedProgram->getEntryPointMetadata(
+					0,
+					0,
+					&metadata);
+				ExtractBuffers(shaderStage, layout, metadata, reflection);
 
-			// Validate the magic number
-			if (dataCopy[0] != 0x07230203)
-			{
-				EC_CORE_ERROR("Invalid SPIRV magic number when adding module: {0:x}", dataCopy[0]);
-				delete[] dataCopy;
-				if (didCompile) *didCompile = false;
+				modules.push_back(module);
 			}
 
-			VkShaderModule module;
-			if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &module) != VK_SUCCESS)
-			{
-				EC_CORE_CRITICAL("Failed to create shader module!");
-				if (didCompile) *didCompile = false;
-			}
-
-			slang::ProgramLayout* layout = linkedProgram->getLayout();
-			slang::EntryPointReflection* entryPointReflection = layout->getEntryPointByIndex(0);
-			ShaderStage shaderStage = SlangStageToShaderStage(entryPointReflection->getStage());
-
-			cache->AddShaderModule(spirvCode->getBufferSize(), dataCopy);
-
-			reflection->AddEntryPointData({ shaderStage, entryPointReflection->getName() });
-
-			EC_CORE_INFO("Shader Reflection: {0}", path.stem().string().c_str())
-			EC_CORE_INFO("  Entry Point: {0}", entryPointReflection->getName())
-			EC_CORE_INFO("  Stage: {0}", ShaderStageToString(shaderStage))
-
-			if (shaderStage == ShaderStage::Vertex)
-			{
-				ExtractVertexAttributes(entryPointReflection, reflection);
-			}
-			IMetadata* metadata;
-			linkedProgram->getEntryPointMetadata(
-				0,
-				0,
-				&metadata);
-			ExtractBuffers(shaderStage, layout, metadata, reflection);
-
-			modules.push_back(module);
+			cache->SetReflectionData(*reflection);
+			SaveShaderCache(path, cache);
+			if (didCompile) *didCompile = true;
+			return modules;
 		}
-
-		cache->SetReflectionData(*reflection);
-		SaveShaderCache(path, cache);
-		if (didCompile) *didCompile = true;
-		return modules;
+		else
+		{
+			if (didCompile) *didCompile = false;
+			return modules;
+		}
 	}
 
 	Ref<ShaderCache> ShaderLibrary::LoadShaderCache(const std::filesystem::path& path, const UUID& shaderID) const

@@ -34,6 +34,11 @@ namespace Echo
 		std::vector<DescriptionSetLayout> CreateLayout(Ref<Shader> shader);
 		void CreatePipelineLayout(std::vector<DescriptionSetLayout> descriptorSetLayout);
 		void CreateDescriptorSet(std::vector<DescriptionSetLayout> descriptorSetLayout);
+			
+		void DestroyOldPipelineResources(VkPipeline oldPipeline,
+										 VkPipelineLayout oldPipelineLayout,
+										 const std::vector<VkDescriptorSetLayout>& oldDescriptorSetLayouts,
+										 std::vector<DescriptorAllocatorGrowable>& oldDescriptorAllocators);
 
 		bool HasDescriptorSet() { return !m_DescriptorSets.empty(); }
 	private:

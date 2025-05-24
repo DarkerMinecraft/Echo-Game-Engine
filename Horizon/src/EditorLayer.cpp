@@ -78,7 +78,7 @@ namespace Echo
 		m_PlayButton = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/PlayButton.png");
 		m_StopButton = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/StopButton.png");
 
-		RendererQuad::Init(m_MsaaFramebuffer, 0);
+		Renderer2D::Init(m_MsaaFramebuffer, 0);
 	}
 
 	void EditorLayer::OnDetach()
@@ -89,7 +89,7 @@ namespace Echo
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		EC_PROFILE_FUNCTION();
-		RendererQuad::ResetStats();
+		Renderer2D::ResetStats();
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 		if (selectedEntity && m_OutlineParams.selectedEntityID != (int)(uint32_t)selectedEntity)
@@ -293,7 +293,7 @@ namespace Echo
 		ImGui::End();
 
 		ImGui::Begin("RendererQuad::Stats");
-		auto stats = RendererQuad::GetStats();
+		auto stats = Renderer2D::GetStats();
 		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
 		ImGui::Text("Quad Count: %d", stats.QuadCount);
 		ImGui::Text("Vertex Count: %d", stats.GetTotalQuadVertexCount());
@@ -424,7 +424,7 @@ namespace Echo
 
 	void EditorLayer::Destroy()
 	{
-		RendererQuad::Destroy();
+		Renderer2D::Destroy();
 	}
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
