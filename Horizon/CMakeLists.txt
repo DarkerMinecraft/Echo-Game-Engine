@@ -3,7 +3,6 @@ project(Horizon)
 set(CMAKE_CXX_STANDARD 20)
 
 set(ASSETS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-set(RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Resources)
 set(TARGET_DIR $<TARGET_FILE_DIR:Horizon>)
 
 # Create the executable
@@ -13,12 +12,10 @@ set_target_properties(Horizon PROPERTIES OUTPUT_NAME "Horizon")
 # Find all source files
 file(GLOB_RECURSE SRC_FILES "src/**.h" "src/**.cpp")
 file(GLOB_RECURSE ASSET_FILES "${ASSETS_DIR}/**/*")
-file(GLOB_RECURSE RESOURCE_FILES "${RESOURCE_DIR}/**/*")
 
 # Preserve exact source folder structure in the IDE
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source" FILES ${SRC_FILES})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/assets" PREFIX "Assets" FILES ${ASSET_FILES})
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/Resources" PREFIX "Resources" FILES ${RESOURCE_FILES})
 
 # Include directories
 target_include_directories(Horizon PRIVATE 
@@ -45,7 +42,6 @@ set_target_properties(Horizon PROPERTIES
 # Copy assets and resources to output directory
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${ASSETS_DIR} ${TARGET_DIR}/assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR} ${TARGET_DIR}/Resources
 )
 
 # Copy slang after build

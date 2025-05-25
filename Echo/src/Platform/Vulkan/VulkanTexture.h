@@ -15,19 +15,21 @@ namespace Echo
 	public:
 		VulkanTexture2D(Device* device, const std::filesystem::path& path, const Texture2DSpecification& spec);
 		VulkanTexture2D(Device* device, uint32_t width, uint32_t height, void* pixels);
+		VulkanTexture2D(Device* device, const AllocatedImage& allocatedImage);
 		virtual ~VulkanTexture2D();
 
 		virtual uint32_t GetWidth() override { return m_Width; }
 		virtual uint32_t GetHeight() override { return m_Height; }
 
-		virtual void* GetImGuiResourceID() override;
-
 		virtual void Destroy() override;
+		
+		int GetImGuiResourceID() override;
 
 		VkSampler GetSampler() { return m_Texture.Sampler; }
 		AllocatedImage GetTexture() { return m_Texture; }
 
 		virtual bool operator==(const Texture& other) const override { return m_UUID == ((VulkanTexture2D&)other).m_UUID; }
+
 	private:
 		void LoadTexture(const std::filesystem::path& path, const Texture2DSpecification& spec);
 		void LoadTexture(void* pixels, bool generateSampler = false);
@@ -36,8 +38,7 @@ namespace Echo
 		AllocatedImage m_Texture;
 
 		UUID m_UUID;
-
-		VkDescriptorSet m_DescriptorSet = nullptr;
+		int m_ImGuiID = -1;
 
 		uint32_t m_Width, m_Height, m_Channels;
 		bool m_IsError = false;

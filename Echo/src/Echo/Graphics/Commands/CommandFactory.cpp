@@ -6,7 +6,6 @@
 #include "Vulkan/Commands/VulkanBindBufferCommand.h"
 #include "Vulkan/Commands/VulkanRenderingCommand.h"
 #include "Vulkan/Commands/VulkanDrawCommand.h"
-#include "Vulkan/Commands/VulkanRenderImGuiCommand.h"
 #include "Vulkan/Commands/VulkanClearColorCommand.h"
 
 namespace Echo 
@@ -124,15 +123,4 @@ namespace Echo
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
 	}
-
-	Ref<ICommand> CommandFactory::RenderImGuiCommand()
-	{
-		switch (GetDeviceType())
-		{
-			case DeviceType::Vulkan: return CreateRef<VulkanRenderImGuiCommand>();
-		}
-		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
-
 }

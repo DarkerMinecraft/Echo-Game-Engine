@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <backends/imgui_impl_vulkan.h>
+#include "../../Echo/ImGui/ImGuiTextureRegistry.h"
 
 namespace Echo
 {
@@ -31,20 +32,25 @@ namespace Echo
 		LoadTexture(pixels, true);
 	}
 
+	VulkanTexture2D::VulkanTexture2D(Device* device, const AllocatedImage& allocatedImage)
+		: m_Device((VulkanDevice*)device), m_Texture(allocatedImage)
+	{
+		m_Width = allocatedImage.ImageExtent.width;
+		m_Height = allocatedImage.ImageExtent.height;
+		m_Channels = 4; // Assume RGBA
+		m_UUID = UUID(); // Generate new UUID
+	}
+
 	VulkanTexture2D::~VulkanTexture2D()
 	{
 		Destroy();
 	}
 
-	void* VulkanTexture2D::GetImGuiResourceID()
+	int VulkanTexture2D::GetImGuiResourceID()
 	{
-		if (m_DescriptorSet == nullptr)
-		{
-			m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Texture.Sampler, m_Texture.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			m_Device->AddImGuiTexture(this);
-		}
+		m_ImGuiID = (int)ImGuiTextureRegistry::RegisterTexture(this);
 
-		return m_DescriptorSet;
+		return m_ImGuiID;
 	}
 
 	void VulkanTexture2D::Destroy()
@@ -53,10 +59,9 @@ namespace Echo
 		if (m_IsDestroyed)
 			return;
 
-		if (m_DescriptorSet)
+		if (m_ImGuiID != -1)
 		{
-			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
-			m_DescriptorSet = nullptr;
+			ImGuiTextureRegistry::UnregisterTexture((ImTextureID)m_ImGuiID);
 		}
 
 		vkDestroySampler(m_Device->GetDevice(), m_Texture.Sampler, nullptr);

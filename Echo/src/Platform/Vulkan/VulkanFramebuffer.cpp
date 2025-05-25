@@ -4,9 +4,11 @@
 
 #include "VulkanCommandBuffer.h"
 
-#include "backends/imgui_impl_vulkan.h"
 #include "Utils/VulkanDescriptors.h"
 #include "Utils/VulkanImages.h"
+#include "ImGui/ImGuiTextureRegistry.h"
+
+#include "Core/Base.h"
 
 namespace Echo
 {
@@ -33,7 +35,7 @@ namespace Echo
 		return m_Height;
 	}
 
-	void* VulkanFramebuffer::GetImGuiTexture(uint32_t index)
+	int VulkanFramebuffer::GetImGuiTexture(uint32_t index)
 	{
 		EC_PROFILE_FUNCTION();
 		if (GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -44,12 +46,13 @@ namespace Echo
 			});
 		}
 
-		if (m_DescriptorSet)
+		if (m_ImGuiIndex != -1)
 		{
-			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+			ImGuiTextureRegistry::UnregisterTexture(m_ImGuiIndex);
 		}
 
-		m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Framebuffers[index].Sampler, m_Framebuffers[index].ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		Ref<Texture2D> m_Texture = ToTexture2D(index);
+		m_ImGuiIndex = ImGuiTextureRegistry::RegisterTexture(m_Texture.get());
 
 		std::vector<VulkanFramebuffer*> framebuffers = m_Device->GetImGuiFramebuffers();
 		if (std::find(framebuffers.begin(), framebuffers.end(), this) == framebuffers.end())
@@ -57,7 +60,7 @@ namespace Echo
 			m_Device->AddImGuiFramebuffer(this);
 		}
 
-		return m_DescriptorSet;
+		return m_ImGuiIndex;
 	}
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
@@ -155,10 +158,9 @@ namespace Echo
 			if (framebuffer.Destroyed)
 				continue;
 
-			if (m_DescriptorSet)
+			if (m_ImGuiIndex != -1)
 			{
-				ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
-				m_DescriptorSet = nullptr;
+				ImGuiTextureRegistry::UnregisterTexture(m_ImGuiIndex);
 			}
 
 			vkDestroySampler(m_Device->GetDevice(), framebuffer.Sampler, nullptr);
@@ -305,6 +307,111 @@ namespace Echo
 		{
 			VulkanImages::TransitionImage(cmd, m_Framebuffers[index].Image, VK_IMAGE_LAYOUT_UNDEFINED, m_Framebuffers[index].ImageLayout);
 		});
+	}
+
+	Ref<Texture2D> VulkanFramebuffer::ToTexture2D(uint32_t attachmentIndex)
+	{
+		EC_PROFILE_FUNCTION();
+
+		// Validate attachment index
+		if (attachmentIndex >= m_Framebuffers.size())
+		{
+			EC_CORE_ERROR("Invalid attachment index: {0}. Framebuffer has {1} attachments.",
+						  attachmentIndex, m_Framebuffers.size());
+			return nullptr;
+		}
+
+		const AllocatedImage& sourceImage = m_Framebuffers[attachmentIndex];
+
+		// Create new image with same format and dimensions
+		AllocatedImage newImage;
+		if (m_UseSamples)
+		{
+			// If source is MSAA, create non-MSAA target
+			newImage = m_Device->CreateImageNoMSAA(
+				sourceImage.ImageExtent,
+				sourceImage.ImageFormat,
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			);
+		}
+		else
+		{
+			newImage = m_Device->CreateImageNoMSAA(
+				sourceImage.ImageExtent,
+				sourceImage.ImageFormat,
+				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+			);
+		}
+
+		// Copy the image data
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			// Transition source framebuffer attachment to transfer source
+			if (GetCurrentLayout(attachmentIndex) != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+			{
+				TransitionImageLayout(cmd, attachmentIndex, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			}
+
+			// Transition new texture to transfer destination
+			VulkanImages::TransitionImage(cmd, newImage.Image,
+										  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+									  // Copy or resolve the image
+			if (m_UseSamples)
+			{
+				// Use resolve for MSAA images
+				VulkanImages::ResolveImageToImage(cmd,
+												  sourceImage.Image, newImage.Image,
+												  { sourceImage.ImageExtent.width, sourceImage.ImageExtent.height },
+												  { newImage.ImageExtent.width, newImage.ImageExtent.height });
+			}
+			else
+			{
+				// Use copy for non-MSAA images
+				VulkanImages::CopyImageToImage(cmd,
+											   sourceImage.Image, newImage.Image,
+											   { sourceImage.ImageExtent.width, sourceImage.ImageExtent.height },
+											   { newImage.ImageExtent.width, newImage.ImageExtent.height });
+			}
+
+			// Transition new texture to shader read optimal
+			VulkanImages::TransitionImage(cmd, newImage.Image,
+										  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+									  // Restore source layout (optional - depends on your usage)
+			TransitionImageLayout(cmd, attachmentIndex, VK_IMAGE_LAYOUT_GENERAL);
+		});
+
+		// Create sampler for the texture
+		VkSamplerCreateInfo samplerInfo = { .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxAnisotropy = 1.0f;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+
+		VkSampler sampler;
+		if (vkCreateSampler(m_Device->GetDevice(), &samplerInfo, nullptr, &sampler) != VK_SUCCESS)
+		{
+			EC_CORE_ERROR("Failed to create sampler for framebuffer to texture conversion");
+			m_Device->DestroyImage(newImage);
+			return nullptr;
+		}
+
+		newImage.Sampler = sampler;
+		newImage.ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		return CreateRef<VulkanTexture2D>(m_Device, newImage);
 	}
 
 }

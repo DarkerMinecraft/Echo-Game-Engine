@@ -114,7 +114,16 @@ namespace Echo
 	VulkanIndexBuffer::VulkanIndexBuffer(Device* device, uint32_t* indices, uint32_t count)
 		: m_Device((VulkanDevice*)device)
 	{
-		CreateBuffer(indices, count);
+		if (indices == nullptr || count == 0)
+		{
+			// Create a minimal valid buffer instead of leaving uninitialized
+			CreateBuffer(std::vector<uint32_t>(1, 0)); // Single dummy index
+			m_IndicesCount = 0; // But mark as empty
+		}
+		else
+		{
+			CreateBuffer(indices, count);
+		}
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
@@ -132,12 +141,84 @@ namespace Echo
 
 	void VulkanIndexBuffer::SetIndices(std::vector<uint32_t> indices)
 	{
+		EC_PROFILE_FUNCTION();
+		const size_t bufferSize = indices.size() * sizeof(uint32_t);
 
+		// Check if we need to resize the buffer
+		VkMemoryRequirements memReqs;
+		vkGetBufferMemoryRequirements(m_Device->GetDevice(), m_Buffer.Buffer, &memReqs);
+
+		if (bufferSize > memReqs.size)
+		{
+			// Recreate buffer with new size
+			AllocatedBuffer oldBuffer = m_Buffer;
+
+			m_Buffer = m_Device->CreateBuffer(bufferSize,
+											  VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+											  VMA_MEMORY_USAGE_GPU_ONLY);
+
+			m_Device->DestroyBuffer(oldBuffer);
+		}
+
+		// Create staging buffer and upload data
+		AllocatedBuffer staging = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+		void* mappedData = m_Device->GetMappedData(staging);
+
+		memcpy(mappedData, indices.data(), bufferSize);
+
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = 0;
+			copy.dstOffset = 0;
+			copy.size = bufferSize;
+
+			vkCmdCopyBuffer(cmd, staging.Buffer, m_Buffer.Buffer, 1, &copy);
+		});
+
+		m_Device->DestroyBuffer(staging);
+		m_IndicesCount = indices.size();
 	}
 
 	void VulkanIndexBuffer::SetIndices(uint32_t* indices, uint32_t count)
 	{
+		EC_PROFILE_FUNCTION();
+		const size_t bufferSize = count * sizeof(uint32_t);
 
+		// Check if we need to resize the buffer
+		VkMemoryRequirements memReqs;
+		vkGetBufferMemoryRequirements(m_Device->GetDevice(), m_Buffer.Buffer, &memReqs);
+
+		if (bufferSize > memReqs.size)
+		{
+			// Recreate buffer with new size
+			AllocatedBuffer oldBuffer = m_Buffer;
+
+			m_Buffer = m_Device->CreateBuffer(bufferSize,
+											  VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+											  VMA_MEMORY_USAGE_GPU_ONLY);
+
+			m_Device->DestroyBuffer(oldBuffer);
+		}
+
+		// Create staging buffer and upload data
+		AllocatedBuffer staging = m_Device->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+		void* mappedData = m_Device->GetMappedData(staging);
+
+		memcpy(mappedData, indices, bufferSize);
+
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+		{
+			VkBufferCopy copy{};
+			copy.srcOffset = 0;
+			copy.dstOffset = 0;
+			copy.size = bufferSize;
+
+			vkCmdCopyBuffer(cmd, staging.Buffer, m_Buffer.Buffer, 1, &copy);
+		});
+
+		m_Device->DestroyBuffer(staging);
+		m_IndicesCount = count;
 	}
 
 	void VulkanIndexBuffer::CreateBuffer(std::vector<uint32_t> indices)

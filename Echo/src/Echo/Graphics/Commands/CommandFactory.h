@@ -31,8 +31,6 @@ namespace Echo
 		static Ref<ICommand> BeginRenderingCommand(Ref<Framebuffer> framebuffer);
 		static Ref<ICommand> BeginRenderingCommand();
 		static Ref<ICommand> EndRenderingCommand();
-
-		static Ref<ICommand> RenderImGuiCommand();
 	private:
 		static inline DeviceType GetDeviceType() { return Application::Get().GetWindow().GetDevice()->GetDeviceType(); }
 	};

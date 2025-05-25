@@ -38,8 +38,6 @@ namespace Echo
 		void BeginRendering() { RecordCommand(CommandFactory::BeginRenderingCommand()); }
 		void EndRendering() { RecordCommand(CommandFactory::EndRenderingCommand()); }
 
-		void RenderImGui() { RecordCommand(CommandFactory::RenderImGuiCommand()); }
-
 		void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
 		void SetShouldPresent(bool shouldPresent) { m_CommandBuffer->SetShouldPresent(shouldPresent); }
 		void SetDrawToSwapchain(bool drawToSwapchain) { m_CommandBuffer->SetDrawToSwapchain(drawToSwapchain); }

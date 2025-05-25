@@ -20,6 +20,7 @@ namespace Echo
 		virtual PipelineType GetPipelineType() override { return m_PipelineType; }
 
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> texture) override;
+		virtual void BindResource(uint32_t binding, uint32_t set, Texture2D* texture) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> texture, uint32_t texIndex) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<UniformBuffer> buffer) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) override;

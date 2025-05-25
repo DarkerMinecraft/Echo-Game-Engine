@@ -162,6 +162,21 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Texture2D* texture)
+	{
+		EC_PROFILE_FUNCTION();
+		if (set >= m_DescriptorSets.size())
+		{
+			return;
+		}
+
+		VulkanTexture2D* tex = (VulkanTexture2D*)texture;
+
+		DescriptorWriter writer;
+		writer.WriteImage(binding, tex->GetTexture().ImageView, tex->GetSampler(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
+	}
+
 	void VulkanPipeline::Destroy()
 	{
 		EC_PROFILE_FUNCTION();

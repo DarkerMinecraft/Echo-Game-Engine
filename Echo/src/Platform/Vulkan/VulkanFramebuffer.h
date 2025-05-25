@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Framebuffer.h"
+#include "VulkanTexture.h"
 
 #include "VulkanDevice.h"
 
@@ -15,7 +16,7 @@ namespace Echo
 
 		virtual uint32_t GetWidth() override;
 		virtual uint32_t GetHeight() override;
-		virtual void* GetImGuiTexture(uint32_t index) override;
+		virtual int GetImGuiTexture(uint32_t index) override;
 
 		virtual void Resize(uint32_t width, uint32_t height) override;
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) override;
@@ -46,6 +47,8 @@ namespace Echo
 	private:
 		void CreateAllocatedFramebuffers(const FramebufferSpecification& specification);
 		void CreateImage(uint32_t index, uint32_t width, uint32_t height); 
+
+		Ref<Texture2D> ToTexture2D(uint32_t attachmentIndex);
 	private:
 		VulkanDevice* m_Device;
 	
@@ -53,6 +56,7 @@ namespace Echo
 		std::vector<FramebufferTextureFormat> m_Attachments;
 
 		uint32_t m_DepthIndex = -1;
+		uint32_t m_ImGuiIndex = -1;
 
 		std::vector<VkFormat> m_ColorFormats;
 
@@ -60,8 +64,6 @@ namespace Echo
 		uint32_t m_Width, m_Height;
 
 		bool m_UseSamples;
-
-		VkDescriptorSet m_DescriptorSet = nullptr;
 	};
 
 }

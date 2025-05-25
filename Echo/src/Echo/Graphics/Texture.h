@@ -26,7 +26,7 @@ namespace Echo
 	public:
 		virtual ~Texture2D() = default;
 
-		virtual void* GetImGuiResourceID() = 0;
+		virtual int GetImGuiResourceID() = 0;
 
 		static Ref<Texture2D> Create(const std::filesystem::path& path, const Texture2DSpecification& spec);
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height, void* data);
