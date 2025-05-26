@@ -185,6 +185,11 @@ namespace Echo
 				{
 					m_Pipeline->BindResource(1, 0, texture);
 				}
+				ImGuiFramebufferBinding* framebufferBinding = ImGuiTextureRegistry::GetFramebuffer(drawCmd->TextureId);
+				if (framebufferBinding) 
+				{
+					m_Pipeline->BindResource(1, 0, framebufferBinding->framebuffer, framebufferBinding->attachmentIndex);
+				}
 
 				// Draw
 				cmd.DrawIndexed(drawCmd->ElemCount, 1, drawCmd->IdxOffset, drawCmd->VtxOffset, 0);

@@ -24,6 +24,7 @@ namespace Echo
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Texture2D> texture, uint32_t texIndex) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<UniformBuffer> buffer) override;
 		virtual void BindResource(uint32_t binding, uint32_t set, Ref<Framebuffer> framebuffer, uint32_t attachmentIndex) override;
+		virtual void BindResource(uint32_t binding, uint32_t set, Framebuffer* framebuffer, uint32_t attachmentIndex) override;
 
 		virtual void ReconstructPipeline(Ref<Shader> shader) override;
 

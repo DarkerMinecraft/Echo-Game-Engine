@@ -177,6 +177,29 @@ namespace Echo
 		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
 	}
 
+	void VulkanPipeline::BindResource(uint32_t binding, uint32_t set, Framebuffer* framebuffer, uint32_t index)
+	{
+		EC_PROFILE_FUNCTION();
+		if (set >= m_DescriptorSets.size())
+		{
+			return;
+		}
+
+		VulkanFramebuffer* fb = (VulkanFramebuffer*)framebuffer;
+
+		if (fb->GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
+			{
+				fb->TransitionImageLayout(cmd, index, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			});
+		}
+
+		DescriptorWriter writer;
+		writer.WriteImage(binding, fb->GetImage(index).ImageView, fb->GetSampler(index), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+		writer.UpdateSet(m_Device->GetDevice(), m_DescriptorSets[set]);
+	}
+
 	void VulkanPipeline::Destroy()
 	{
 		EC_PROFILE_FUNCTION();

@@ -47,8 +47,6 @@ namespace Echo
 	private:
 		void CreateAllocatedFramebuffers(const FramebufferSpecification& specification);
 		void CreateImage(uint32_t index, uint32_t width, uint32_t height); 
-
-		Ref<Texture2D> ToTexture2D(uint32_t attachmentIndex);
 	private:
 		VulkanDevice* m_Device;
 	
