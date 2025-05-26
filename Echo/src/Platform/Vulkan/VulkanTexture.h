@@ -23,7 +23,7 @@ namespace Echo
 
 		virtual void Destroy() override;
 		
-		int GetImGuiResourceID() override;
+		void* GetImGuiResourceID() override;
 
 		VkSampler GetSampler() { return m_Texture.Sampler; }
 		AllocatedImage GetTexture() { return m_Texture; }
@@ -39,6 +39,8 @@ namespace Echo
 
 		UUID m_UUID;
 		int m_ImGuiID = -1;
+
+		VkDescriptorSet m_DescriptorSet = nullptr;
 
 		uint32_t m_Width, m_Height, m_Channels;
 		bool m_IsError = false;

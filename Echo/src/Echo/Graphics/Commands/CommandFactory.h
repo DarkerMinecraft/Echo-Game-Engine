@@ -28,9 +28,13 @@ namespace Echo
 		static Ref<ICommand> DrawIndexedCommand(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance);
 		static Ref<ICommand> DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride);
 
+		static Ref<ICommand> SetScissorCommand(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+
 		static Ref<ICommand> BeginRenderingCommand(Ref<Framebuffer> framebuffer);
 		static Ref<ICommand> BeginRenderingCommand();
 		static Ref<ICommand> EndRenderingCommand();
+
+		static Ref<ICommand> RenderImGuiCommand();
 	private:
 		static inline DeviceType GetDeviceType() { return Application::Get().GetWindow().GetDevice()->GetDeviceType(); }
 	};

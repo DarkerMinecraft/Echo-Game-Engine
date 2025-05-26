@@ -26,7 +26,7 @@ namespace Echo
 		virtual AssetMetadata GetMetadata() override { return m_Metadata; }
 		virtual const AssetMetadata GetMetadata() const { return m_Metadata; }
 
-		int GetImGuiResourceID() { return m_Texture->GetImGuiResourceID(); }
+		void* GetImGuiResourceID() { return m_Texture->GetImGuiResourceID(); }
 
 		Ref<Texture2D> GetTexture() { return m_Texture; };
 	private:

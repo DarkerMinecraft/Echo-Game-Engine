@@ -60,7 +60,6 @@ namespace Echo
 			return it->second;
 		}
 
-		EC_CORE_WARN("ImGui texture ID not found: {0}", (void*)textureID);
 		return nullptr;
 	}
 

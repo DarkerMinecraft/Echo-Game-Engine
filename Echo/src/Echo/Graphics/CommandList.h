@@ -34,9 +34,13 @@ namespace Echo
 		void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance) { RecordCommand(CommandFactory::DrawIndexedCommand(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance)); }
 		void DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride) { RecordCommand(CommandFactory::DrawIndirectIndexed(indirectBuffer, offset, drawCount, stride)); }
 
+		void SetScissor(uint32_t x, uint32_t y, uint32_t width, uint32_t height) { RecordCommand(CommandFactory::SetScissorCommand(x, y, width, height)); }
+
 		void BeginRendering(Ref<Framebuffer> framebuffer) { RecordCommand(CommandFactory::BeginRenderingCommand(framebuffer)); }
 		void BeginRendering() { RecordCommand(CommandFactory::BeginRenderingCommand()); }
 		void EndRendering() { RecordCommand(CommandFactory::EndRenderingCommand()); }
+
+		void RenderImGui() { RecordCommand(CommandFactory::RenderImGuiCommand()); }
 
 		void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
 		void SetShouldPresent(bool shouldPresent) { m_CommandBuffer->SetShouldPresent(shouldPresent); }

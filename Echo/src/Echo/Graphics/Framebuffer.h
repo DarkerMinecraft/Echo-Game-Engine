@@ -53,7 +53,7 @@ namespace Echo
 		virtual uint32_t GetHeight() = 0;
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
 
-		virtual int GetImGuiTexture(uint32_t index) = 0;
+		virtual void* GetImGuiTexture(uint32_t index) = 0;
 
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) = 0;
 		virtual bool IsUsingSamples() = 0;

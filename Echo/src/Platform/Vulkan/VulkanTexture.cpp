@@ -46,11 +46,15 @@ namespace Echo
 		Destroy();
 	}
 
-	int VulkanTexture2D::GetImGuiResourceID()
+	void* VulkanTexture2D::GetImGuiResourceID()
 	{
-		m_ImGuiID = (int)ImGuiTextureRegistry::RegisterTexture(this);
+		if (m_DescriptorSet == nullptr)
+		{
+			m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Texture.Sampler, m_Texture.ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			m_Device->AddImGuiTexture(this);
+		}
 
-		return m_ImGuiID;
+		return m_DescriptorSet;
 	}
 
 	void VulkanTexture2D::Destroy()
@@ -59,9 +63,10 @@ namespace Echo
 		if (m_IsDestroyed)
 			return;
 
-		if (m_ImGuiID != -1)
+		if (m_DescriptorSet)
 		{
-			ImGuiTextureRegistry::UnregisterTexture((ImTextureID)m_ImGuiID);
+			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+			m_DescriptorSet = nullptr;
 		}
 
 		vkDestroySampler(m_Device->GetDevice(), m_Texture.Sampler, nullptr);

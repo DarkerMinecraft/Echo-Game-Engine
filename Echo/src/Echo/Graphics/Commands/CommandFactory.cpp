@@ -7,6 +7,8 @@
 #include "Vulkan/Commands/VulkanRenderingCommand.h"
 #include "Vulkan/Commands/VulkanDrawCommand.h"
 #include "Vulkan/Commands/VulkanClearColorCommand.h"
+#include "Vulkan/Commands/VulkanSetScissorCommand.h"
+#include "Vulkan/Commands/VulkanRenderImGuiCommand.h"
 
 namespace Echo 
 {
@@ -94,6 +96,16 @@ namespace Echo
 		return nullptr;
 	}
 
+	Ref<ICommand> CommandFactory::SetScissorCommand(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+	{
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanSetScissorCommand>(x, y, width, height);
+		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
 	Ref<ICommand> CommandFactory::BeginRenderingCommand(Ref<Framebuffer> framebuffer)
 	{
 		switch (GetDeviceType())
@@ -123,4 +135,15 @@ namespace Echo
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
 	}
+
+	Ref<ICommand> CommandFactory::RenderImGuiCommand()
+	{
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanRenderImGuiCommand>();
+		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
 }

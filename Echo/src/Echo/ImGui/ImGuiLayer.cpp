@@ -4,12 +4,14 @@
 #include "Graphics/CommandList.h"
 #include "Core/Application.h"
 
-#include "ImGuiTextureRegistry.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanSwapchain.h"
+#include "Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/VulkanTexture.h"
 
 #include <backends/imgui_impl_win32.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 
 #include <ImGuizmo.h>
 #include <filesystem>
@@ -58,49 +60,67 @@ namespace Echo
 		HWND window = static_cast<HWND>(app.GetWindow().GetNativeWindow());
 
 		ImGui_ImplWin32_Init(window);
+
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
+
+		ImGui_ImplVulkan_InitInfo initInfo{};
+
+		initInfo.Instance = device->GetInstance();
+		initInfo.PhysicalDevice = device->GetPhysicalDevice();
+		initInfo.Device = device->GetDevice();
+		initInfo.Queue = device->GetGraphicsQueue();
+		initInfo.DescriptorPool = device->GetImGuiDescriptorPool();
+		initInfo.MinImageCount = 3;
+		initInfo.ImageCount = 3;
+		initInfo.UseDynamicRendering = true;
+
+		initInfo.PipelineRenderingCreateInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO };
+		initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+
+		VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
+		initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
+
+		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+		ImGui::GetPlatformIO().Platform_CreateVkSurface = [](ImGuiViewport* viewport, ImU64 vk_instance, const void* vk_allocator, ImU64* out_vk_surface) -> int
+		{
+			VkWin32SurfaceCreateInfoKHR createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+			createInfo.hwnd = (HWND)viewport->PlatformHandle;
+			createInfo.hinstance = GetModuleHandle(nullptr);
+
+			VkResult err = vkCreateWin32SurfaceKHR(
+				(VkInstance)vk_instance,
+				&createInfo,
+				(const VkAllocationCallbacks*)vk_allocator,
+				(VkSurfaceKHR*)out_vk_surface);
+
+			return (err == VK_SUCCESS) ? 1 : 0;
+		};
+
+		ImGui_ImplVulkan_Init(&initInfo);
+		ImGui_ImplVulkan_CreateFontsTexture();
+
 		m_ImGuiFramebuffer = Framebuffer::Create({ .WindowExtent = true, .Attachments = { BGRA8 } });
-
-		m_Shader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/imguiShader.slang");
-
-		PipelineSpecification specs{};
-		specs.EnableBlending = true;  // ImGui needs alpha blending
-		specs.CullMode = Cull::None;  // Don't cull ImGui geometry
-		specs.RenderTarget = m_ImGuiFramebuffer;
-
-		m_Pipeline = Pipeline::Create(m_Shader->GetShader(), specs);
-		
-		m_Shader->SetPipeline(m_Pipeline);
-
-		VertexUniformBuffer uniformBuffer{};
-		uniformBuffer.FramebufferScale = glm::vec2(1.0f, 1.0f);
-		uniformBuffer.ProjectionMatrix = glm::mat4(1.0f);
-
-		m_ProjectionBuffer = UniformBuffer::Create(&uniformBuffer, sizeof(VertexUniformBuffer));
-
-		m_VertexBuffer = VertexBuffer::Create(MAX_IMGUI_VERTICES * sizeof(ImGuiVertex), true);
-		m_IndexBuffer = IndexBuffer::Create(nullptr, MAX_IMGUI_INDICES);
-
-		CreateFontAtlas();
 	}
 
 	void ImGuiLayer::OnDetach()
-	{
-	}
+	{}
 
 	void ImGuiLayer::OnUpdate(Timestep ts)
 	{
-		
+
 	}
 
 	void ImGuiLayer::OnImGuiRender()
 	{
-		
+
 	}
 
 	void ImGuiLayer::OnEvent(Event& e)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		if (m_BlockEvents) 
+		if (m_BlockEvents)
 		{
 			e.Handled |= e.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;
 			e.Handled |= e.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
@@ -110,6 +130,7 @@ namespace Echo
 	void ImGuiLayer::Begin()
 	{
 		ImGui_ImplWin32_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
 	}
@@ -122,24 +143,7 @@ namespace Echo
 	void ImGuiLayer::DrawImGui()
 	{
 		Application& app = Application::Get();
-
-		ImGui::Render();
-		ImDrawData* drawData = ImGui::GetDrawData();
-		if (!drawData || drawData->CmdListsCount == 0) return;
-
-		float L = drawData->DisplayPos.x;
-		float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
-		float T = drawData->DisplayPos.y;
-		float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
-
-		VertexUniformBuffer uniformBuffer{};
-		uniformBuffer.ProjectionMatrix = glm::ortho(L, R, B, T, -1.0f, 1.0f);
-		uniformBuffer.FramebufferScale = glm::vec2(
-			drawData->FramebufferScale.x,
-			drawData->FramebufferScale.y
-		);
-
-		m_ProjectionBuffer->SetData(&uniformBuffer, sizeof(VertexUniformBuffer));
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
 		CommandList cmd;
 		cmd.SetShouldPresent(true);
@@ -148,53 +152,7 @@ namespace Echo
 
 		cmd.Begin();
 		cmd.BeginRendering();
-		cmd.BindPipeline(m_Pipeline);
-		m_Pipeline->BindResource(0, 0, m_ProjectionBuffer);
-		for (int i = 0; i < drawData->CmdListsCount; i++)
-		{
-			const ImDrawList* drawList = drawData->CmdLists[i];
-
-			// Convert vertices to your format
-			std::vector<ImGuiVertex> vertices(drawList->VtxBuffer.Size);
-			ConvertVertices(drawList->VtxBuffer.Data, vertices.data(), drawList->VtxBuffer.Size);
-
-			// Upload vertex data as raw bytes
-			m_VertexBuffer->SetData(vertices.data(), vertices.size() * sizeof(ImGuiVertex));
-
-			// Upload indices
-			std::vector<uint32_t> indices32(drawList->IdxBuffer.Size);
-			for (int idx = 0; idx < drawList->IdxBuffer.Size; idx++)
-			{
-				indices32[idx] = static_cast<uint32_t>(drawList->IdxBuffer.Data[idx]);
-			}
-			m_IndexBuffer->SetIndices(indices32);
-
-			// Bind buffers
-			cmd.BindVertexBuffer(m_VertexBuffer);
-			cmd.BindIndicesBuffer(m_IndexBuffer);
-
-			// Process draw commands
-			for (int cmd_i = 0; cmd_i < drawList->CmdBuffer.Size; cmd_i++)
-			{
-				const ImDrawCmd* drawCmd = &drawList->CmdBuffer[cmd_i];
-				if (drawCmd->UserCallback != nullptr) continue;
-
-				// Bind texture
-				Texture2D* texture = ImGuiTextureRegistry::GetTexture(drawCmd->TextureId);
-				if (texture)
-				{
-					m_Pipeline->BindResource(1, 0, texture);
-				}
-				ImGuiFramebufferBinding* framebufferBinding = ImGuiTextureRegistry::GetFramebuffer(drawCmd->TextureId);
-				if (framebufferBinding) 
-				{
-					m_Pipeline->BindResource(1, 0, framebufferBinding->framebuffer, framebufferBinding->attachmentIndex);
-				}
-
-				// Draw
-				cmd.DrawIndexed(drawCmd->ElemCount, 1, drawCmd->IdxOffset, drawCmd->VtxOffset, 0);
-			}
-		}
+		cmd.RenderImGui();
 		cmd.EndRendering();
 		cmd.Execute(true);
 
@@ -241,59 +199,22 @@ namespace Echo
 
 	}
 
-	void ImGuiLayer::ConvertVertices(const ImDrawVert* imgui_verts, ImGuiVertex* our_verts, int count)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			// Position (2D only)
-			our_verts[i].Position.x = imgui_verts[i].pos.x;
-			our_verts[i].Position.y = imgui_verts[i].pos.y;
-
-			// Convert color from ImU32 to glm::vec4
-			ImU32 c = imgui_verts[i].col;
-			our_verts[i].Color.r = ((c >> 0) & 0xFF) / 255.0f;   // R
-			our_verts[i].Color.g = ((c >> 8) & 0xFF) / 255.0f;   // G
-			our_verts[i].Color.b = ((c >> 16) & 0xFF) / 255.0f;  // B
-			our_verts[i].Color.a = ((c >> 24) & 0xFF) / 255.0f;  // A
-
-			// UV coordinates
-			our_verts[i].TexCoords.x = imgui_verts[i].uv.x;
-			our_verts[i].TexCoords.y = imgui_verts[i].uv.y;
-		}
-	}
-
-	void ImGuiLayer::CreateFontAtlas()
-	{
-		ImGuiIO& io = ImGui::GetIO();
-
-		// Get font atlas data from ImGui
-		unsigned char* pixels;
-		int width, height;
-		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-		// Create your custom Texture2D
-		m_FontAtlasTexture = Texture2D::Create(width, height, pixels);
-
-		// Register with your texture registry system
-		ImTextureID textureID = ImGuiTextureRegistry::RegisterTexture(m_FontAtlasTexture.get());
-
-		// Tell ImGui to use your texture
-		io.Fonts->SetTexID(textureID);
-
-		// Clear the font atlas to save memory (optional)
-		io.Fonts->ClearTexData();
-	}
-
 	void ImGuiLayer::Destroy()
 	{
-		if (m_FontAtlasTexture)
-		{
-			m_FontAtlasTexture->Destroy();
-			m_FontAtlasTexture.reset();
-		}
+		Application& app = Application::Get();
+		VulkanDevice* device = static_cast<VulkanDevice*>(app.GetWindow().GetDevice());
 
-		ImGuiTextureRegistry::Clear();
+		vkDeviceWaitIdle(device->GetDevice());
+		for (auto framebuffer : device->GetImGuiFramebuffers())
+		{
+			framebuffer->Destroy();
+		}
+		for (auto texture : device->GetImGuiTextures())
+		{
+			texture->Destroy();
+		}
 		ImGui_ImplWin32_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
 		ImGui::DestroyContext();
 	}
 

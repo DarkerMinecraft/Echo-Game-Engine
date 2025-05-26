@@ -16,7 +16,7 @@ namespace Echo
 
 		virtual uint32_t GetWidth() override;
 		virtual uint32_t GetHeight() override;
-		virtual int GetImGuiTexture(uint32_t index) override;
+		virtual void* GetImGuiTexture(uint32_t index) override;
 
 		virtual void Resize(uint32_t width, uint32_t height) override;
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) override;
@@ -55,6 +55,8 @@ namespace Echo
 
 		uint32_t m_DepthIndex = -1;
 		uint32_t m_ImGuiIndex = -1;
+
+		VkDescriptorSet m_DescriptorSet = nullptr;
 
 		std::vector<VkFormat> m_ColorFormats;
 

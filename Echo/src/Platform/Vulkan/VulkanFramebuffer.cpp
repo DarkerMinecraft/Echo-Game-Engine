@@ -10,6 +10,8 @@
 
 #include "Core/Base.h"
 
+#include "backends/imgui_impl_vulkan.h"
+
 namespace Echo
 {
 
@@ -35,7 +37,7 @@ namespace Echo
 		return m_Height;
 	}
 
-	int VulkanFramebuffer::GetImGuiTexture(uint32_t index)
+	void* VulkanFramebuffer::GetImGuiTexture(uint32_t index)
 	{
 		EC_PROFILE_FUNCTION();
 		if (GetCurrentLayout(index) != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -46,13 +48,20 @@ namespace Echo
 			});
 		}
 
-		if (m_ImGuiIndex != -1)
+		if (m_DescriptorSet)
 		{
-			ImGuiTextureRegistry::UnregisterTexture(m_ImGuiIndex);
+			ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
 		}
-		m_ImGuiIndex = ImGuiTextureRegistry::RegisterFramebuffer(this, index);
 
-		return m_ImGuiIndex;
+		m_DescriptorSet = ImGui_ImplVulkan_AddTexture(m_Framebuffers[index].Sampler, m_Framebuffers[index].ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		std::vector<VulkanFramebuffer*> framebuffers = m_Device->GetImGuiFramebuffers();
+		if (std::find(framebuffers.begin(), framebuffers.end(), this) == framebuffers.end())
+		{
+			m_Device->AddImGuiFramebuffer(this);
+		}
+
+		return m_DescriptorSet;
 	}
 
 	void VulkanFramebuffer::Resize(uint32_t width, uint32_t height)
@@ -150,9 +159,10 @@ namespace Echo
 			if (framebuffer.Destroyed)
 				continue;
 
-			if (m_ImGuiIndex != -1)
+			if (m_DescriptorSet)
 			{
-				ImGuiTextureRegistry::UnregisterTexture(m_ImGuiIndex);
+				ImGui_ImplVulkan_RemoveTexture(m_DescriptorSet);
+				m_DescriptorSet = nullptr;
 			}
 
 			vkDestroySampler(m_Device->GetDevice(), framebuffer.Sampler, nullptr);

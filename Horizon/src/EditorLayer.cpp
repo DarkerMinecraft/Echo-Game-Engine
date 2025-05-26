@@ -359,7 +359,7 @@ namespace Echo
 		{
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
-		int imGuiID = m_FinalFramebuffer->GetImGuiTexture(0);
+		void* imGuiID = m_FinalFramebuffer->GetImGuiTexture(0);
 		ImGui::Image((ImTextureID)imGuiID, ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())
