@@ -74,40 +74,37 @@
 #define BIT(x) (1 << x)
 
 #ifdef ECHO_DEBUG
-	#define EC_ENABLE_ASSERTS
+#define EC_ENABLE_ASSERTS
 #endif
 
 #ifdef EC_ENABLE_ASSERTS
-	#define EC_ASSERT(x, ...) {if(!(x)) { EC_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); }}
-	#define EC_CORE_ASSERT(x, ...) {if(!(x)) { EC_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); }}
+#define EC_ASSERT(x, ...) {if(!(x)) { EC_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); }}
+#define EC_CORE_ASSERT(x, ...) {if(!(x)) { EC_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); }}
 #else 
-	#define EC_ASSERT(x, ...)
-	#define EC_CORE_ASSERT(x, ...)
+#define EC_ASSERT(x, ...)
+#define EC_CORE_ASSERT(x, ...)
 #endif
 
 #define BIND_EVENT_FN(x) std::bind(&x, this, std::placeholders::_1)
 
-namespace Echo
+template<typename T>
+using Scope = std::unique_ptr<T>;
+template<typename T, typename ... Args>
+constexpr Scope<T> CreateScope(Args&& ... args)
 {
-	template<typename T>
-	using Scope = std::unique_ptr<T>;
-	template<typename T, typename ... Args>
-	constexpr Scope<T> CreateScope(Args&& ... args)
-	{
-		return std::make_unique<T>(std::forward<Args>(args)...);
-	}
+	return std::make_unique<T>(std::forward<Args>(args)...);
+}
 
-	template<typename T>
-	using Ref = std::shared_ptr<T>;
-	template<typename T, typename ... Args>
-	constexpr Ref<T> CreateRef(Args&& ... args)
-	{
-		return std::make_shared<T>(std::forward<Args>(args)...);
-	}
+template<typename T>
+using Ref = std::shared_ptr<T>;
+template<typename T, typename ... Args>
+constexpr Ref<T> CreateRef(Args&& ... args)
+{
+	return std::make_shared<T>(std::forward<Args>(args)...);
+}
 
-	template<typename T, typename U>
-	constexpr Ref<T> Cast(const Ref<U>& other)
-	{
-		return std::dynamic_pointer_cast<T>(other);
-	}
+template<typename T, typename U>
+constexpr Ref<T> Cast(const Ref<U>& other)
+{
+	return std::dynamic_pointer_cast<T>(other);
 }

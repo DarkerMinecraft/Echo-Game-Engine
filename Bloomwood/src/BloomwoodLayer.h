@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Core/Layer.h>
-#include <Core/Timestep.h>
-#include <Events/Event.h>
+#include <Echo.h>
 
 namespace Bloomwood 
 {
@@ -23,6 +21,13 @@ namespace Bloomwood
 		virtual void OnImGuiRender() override;
 
 		virtual void Destroy() override;
+	private:
+		Ref<Echo::Framebuffer> m_RenderFramebuffer;
+		Ref<Echo::Framebuffer> m_NoSamplesFramebuffer;
+		Ref<Echo::Framebuffer> m_FinalFramebuffer;
+
+		Ref<Echo::Pipeline> m_PresentPipeline;
+		Ref<Echo::ShaderAsset> m_PresentShader;
 	};
 
 }

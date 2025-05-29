@@ -108,40 +108,42 @@ namespace Echo
 		return pixel;
 	}
 
-	void VulkanFramebuffer::ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer)
+	void VulkanFramebuffer::ResolveToFramebuffer( Framebuffer* targetFramebuffer)
 	{
 		EC_PROFILE_FUNCTION();
 		if (!m_UseSamples) return;
 
-		VkCommandBuffer commandBuffer = ((VulkanCommandBuffer*)cmd)->GetCommandBuffer();
 		VulkanFramebuffer* framebuffer = (VulkanFramebuffer*)targetFramebuffer;
-		for (uint32_t i = 0; i < m_ColorFormats.size(); i++)
+		m_Device->ImmediateSubmit([&](VkCommandBuffer cmd)
 		{
-			TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-			framebuffer->TransitionImageLayout(commandBuffer, i, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			for (uint32_t i = 0; i < m_ColorFormats.size(); i++)
+			{
+				TransitionImageLayout(cmd, i, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				framebuffer->TransitionImageLayout(cmd, i, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-			VkImageResolve resolveRegion{};
-			resolveRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			resolveRegion.srcSubresource.mipLevel = 0;
-			resolveRegion.srcSubresource.baseArrayLayer = 0;
-			resolveRegion.srcSubresource.layerCount = 1;
+				VkImageResolve resolveRegion{};
+				resolveRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				resolveRegion.srcSubresource.mipLevel = 0;
+				resolveRegion.srcSubresource.baseArrayLayer = 0;
+				resolveRegion.srcSubresource.layerCount = 1;
 
-			resolveRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			resolveRegion.dstSubresource.mipLevel = 0;
-			resolveRegion.dstSubresource.baseArrayLayer = 0;
-			resolveRegion.dstSubresource.layerCount = 1;
+				resolveRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				resolveRegion.dstSubresource.mipLevel = 0;
+				resolveRegion.dstSubresource.baseArrayLayer = 0;
+				resolveRegion.dstSubresource.layerCount = 1;
 
-			resolveRegion.srcOffset = { 0, 0, 0 };
-			resolveRegion.dstOffset = { 0, 0, 0 };
-			resolveRegion.extent = { m_Width, m_Height, 1 };
+				resolveRegion.srcOffset = { 0, 0, 0 };
+				resolveRegion.dstOffset = { 0, 0, 0 };
+				resolveRegion.extent = { m_Width, m_Height, 1 };
 
-			vkCmdResolveImage(
-				commandBuffer,
-				m_Framebuffers[i].Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				framebuffer->GetImage(i).Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1, &resolveRegion
-			);
-		}
+				vkCmdResolveImage(
+					cmd,
+					m_Framebuffers[i].Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					framebuffer->GetImage(i).Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1, &resolveRegion
+				);
+			}
+		});
 	}
 
 	void VulkanFramebuffer::TransitionImageLayout(VkCommandBuffer cmd, uint32_t index, VkImageLayout newLayout)

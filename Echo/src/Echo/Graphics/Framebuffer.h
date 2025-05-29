@@ -58,7 +58,7 @@ namespace Echo
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) = 0;
 		virtual bool IsUsingSamples() = 0;
 
-		virtual void ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer) = 0;
+		virtual void ResolveToFramebuffer(Framebuffer* targetFramebuffer) = 0;
 
 		virtual void Destroy() = 0;
 

@@ -121,8 +121,8 @@ namespace Echo
 				m_ActiveScene->OnUpdateRuntime(cmd, ts);
 			}
 			cmd.EndRendering();
-			m_MsaaFramebuffer->ResolveToFramebuffer(cmd.GetCommandBuffer().get(), m_MainFramebuffer.get());
 			cmd.Execute();
+			m_MsaaFramebuffer->ResolveToFramebuffer(m_MainFramebuffer.get());
 		}
 
 		{

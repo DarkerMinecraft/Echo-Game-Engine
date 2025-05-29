@@ -21,7 +21,7 @@ namespace Echo
 		virtual void Resize(uint32_t width, uint32_t height) override;
 		virtual int ReadPixel(uint32_t index, uint32_t x, uint32_t y) override;
 
-		virtual void ResolveToFramebuffer(CommandBuffer* cmd, Framebuffer* targetFramebuffer) override;
+		virtual void ResolveToFramebuffer(Framebuffer* targetFramebuffer) override;
 
 		virtual void Destroy() override;
 

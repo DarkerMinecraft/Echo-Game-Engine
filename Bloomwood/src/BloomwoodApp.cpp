@@ -1,4 +1,5 @@
 #include <Core/Application.h>
+#include <Core/EntryPoint.h>
 
 #include "BloomwoodLayer.h"
 
@@ -19,7 +20,7 @@ namespace Bloomwood
 
 }
 
-Echo::Application* CreateApplication()
+Echo::Application* Echo::CreateApplication()
 {
 	return new Bloomwood::BloomwoodApp();
 }
