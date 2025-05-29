@@ -10,7 +10,7 @@ namespace Echo
 	{
 	public: 
 		Editor()
-			: Application("Horizon")
+			: Application("C:/Dev/Echo Projects/Testing", "Horizon")
 		{
 			PushLayer(new EditorLayer());
 		}

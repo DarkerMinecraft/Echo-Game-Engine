@@ -9,11 +9,11 @@ namespace Echo
 {
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(unsigned int width, unsigned int height, const char* title)
+	Application::Application(const char* resourcePath, unsigned int width, unsigned int height, const char* title)
 	{
 		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
 		EC_PROFILE_FUNCTION();
-		AssetRegistry::SetGlobalPath("C:/Dev/Echo Projects/Testing");
+		AssetRegistry::SetGlobalPath(resourcePath);
 		s_Instance = this;
 
 		WindowProps props{};
@@ -29,11 +29,11 @@ namespace Echo
 		PushOverlay(m_ImGuiLayer);
 	}
 
-	Application::Application(const char* title /*= "Echo Engine Game"*/)
+	Application::Application(const char* resourcePath, const char* title /*= "Echo Engine Game"*/)
 	{
 		EC_CORE_ASSERT(!s_Instance, "Application already exists!");
 		EC_PROFILE_FUNCTION();
-		AssetRegistry::SetGlobalPath("C:/Dev/Echo Projects/Testing");
+		AssetRegistry::SetGlobalPath(resourcePath);
 		m_AssetWatcher = new AssetWatcher();
 		s_Instance = this;
 
