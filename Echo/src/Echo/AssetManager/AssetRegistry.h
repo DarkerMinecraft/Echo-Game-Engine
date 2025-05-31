@@ -24,10 +24,20 @@ namespace Echo
 		static std::vector<Ref<Asset>> GetAllLoadedAssets();
 
 		static std::filesystem::path GetGlobalPath() { return s_GlobalPath; }
+
+		static void TryDeferredAssetLoad();
 	private:
 		static AssetType GetAssetTypeFromExtension(const std::string& extension);
 
 		static Ref<Asset> CreateAsset(const AssetMetadata& metadata);
+
+		// Deferred asset loading support
+		struct DeferredAssetLoadRequest {
+			std::string typeName;
+			std::filesystem::path path;
+		};
+		static std::vector<DeferredAssetLoadRequest> s_DeferredAssetLoads;
+		static bool s_DeferredAssetLoadPending;
 	private:
 		static std::unordered_map<UUID, AssetMetadata> s_AssetMetadataMap;
 		static std::unordered_map<std::filesystem::path, UUID> s_PathToUUID;

@@ -8,6 +8,7 @@
 #include "Graphics/Shader.h"
 
 #include "AssetManager/Assets/ShaderAsset.h"
+#include "Utils/DeferredInitManager.h"
 
 #include <glm/glm.hpp>
 
@@ -92,25 +93,72 @@ namespace Echo
 	{
 		EC_PROFILE_FUNCTION();
 
-		s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
-
 		PipelineSpecification pipelineSpec{};
 		pipelineSpec.CullMode = Cull::None;
 		pipelineSpec.EnableBlending = true;
 		pipelineSpec.RenderTarget = framebuffer;
 
 		s_Data.QuadShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/quadShader.slang");
-		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
 		s_Data.CircleShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
-		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
 
-		s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline);
-		s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline);
+		auto createQuadPipeline = [framebuffer, pipelineSpec]() {
+			EC_CORE_INFO("[Renderer2D] Attempting to create quad pipeline");
+			if (!s_Data.QuadShader) {
+				EC_CORE_WARN("[Renderer2D] Quad shader asset not loaded, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([framebuffer, pipelineSpec]() { EC_CORE_INFO("[Renderer2D] Running deferred quad pipeline creation (shader asset now loaded)"); s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec); s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline); });
+				return;
+			}
+			if (!s_Data.QuadShader->IsLoaded()) {
+				EC_CORE_WARN("[Renderer2D] Quad shader not loaded yet, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([framebuffer, pipelineSpec]() { EC_CORE_INFO("[Renderer2D] Running deferred quad pipeline creation (shader now loaded)"); s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec); s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline); });
+				return;
+			}
+			EC_CORE_INFO("[Renderer2D] Device and quad shader ready, creating quad pipeline immediately");
+			s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
+			s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline);
+		};
+
+		auto createCirclePipeline = [framebuffer, pipelineSpec]() {
+			EC_CORE_INFO("[Renderer2D] Attempting to create circle pipeline");
+			if (!s_Data.CircleShader) {
+				EC_CORE_WARN("[Renderer2D] Circle shader asset not loaded, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([framebuffer, pipelineSpec]() { EC_CORE_INFO("[Renderer2D] Running deferred circle pipeline creation (shader asset now loaded)"); s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec); s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline); });
+				return;
+			}
+			if (!s_Data.CircleShader->IsLoaded()) {
+				EC_CORE_WARN("[Renderer2D] Circle shader not loaded yet, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([framebuffer, pipelineSpec]() { EC_CORE_INFO("[Renderer2D] Running deferred circle pipeline creation (shader now loaded)"); s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec); s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline); });
+				return;
+			}
+			EC_CORE_INFO("[Renderer2D] Device and circle shader ready, creating circle pipeline immediately");
+			s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
+			s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline);
+		};
+
+		auto createDefaultTexture = []() {
+			EC_CORE_INFO("[Renderer2D] Attempting to create default white texture for slot 0");
+			s_Data.MaxTextureSlots = Application::Get().GetWindow().GetDevice()->GetMaxTextureSlots();
+			s_Data.TextureSlots.resize(s_Data.MaxTextureSlots);
+			s_Data.TextureSlots[0] = Texture2D::Create(1, 1, new uint32_t(0xffffffff));
+		};
+
+		Device* device = Application::Get().GetWindow().GetDevice();
+		if (!device || !device->IsInitialized()) {
+			EC_CORE_WARN("[Renderer2D] Device not ready, deferring quad and circle pipeline creation and default texture creation");
+			Echo::DeferredInitManager::Enqueue([createQuadPipeline, createCirclePipeline, createDefaultTexture]() {
+				EC_CORE_INFO("[Renderer2D] Running deferred quad/circle pipeline and default texture creation (device now ready)");
+				createQuadPipeline();
+				createCirclePipeline();
+				createDefaultTexture();
+			});
+		} else {
+			createQuadPipeline();
+			createCirclePipeline();
+			createDefaultTexture();
+		}
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 		s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex), true);
-
-		s_Data.TextureSlots.push_back(Texture2D::Create(1, 1, new uint32_t(0xffffffff)));
 
 		CameraUniformBuffer batchUniformBuffer{};
 		s_Data.CamUniformBuffer = UniformBuffer::Create(&batchUniformBuffer, sizeof(CameraUniformBuffer));

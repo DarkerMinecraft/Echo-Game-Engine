@@ -16,6 +16,10 @@
 
 #include <Math/Math.h>
 
+#include <Utils/DeferredInitManager.h>
+
+#include <Core/Log.h>
+
 namespace Echo
 {
 
@@ -58,18 +62,38 @@ namespace Echo
 
 		PipelineSpecification outlineSpec{};
 		outlineSpec.CullMode = Cull::None;
+		outlineSpec.RenderTarget = m_FinalFramebuffer;
 
-		outlineSpec.RenderTarget = m_FinalFramebuffer; 
-		m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec);
+		auto createPipeline = [this, outlineSpec]() {
+			EC_CORE_INFO("[EditorLayer] Attempting to create outline pipeline");
+			if (!m_OutlineShader) {
+				EC_CORE_WARN("[EditorLayer] Outline shader asset not loaded, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([this, outlineSpec]() { EC_CORE_INFO("[EditorLayer] Running deferred outline pipeline creation (shader asset now loaded)"); m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec); m_OutlineShader->SetPipeline(m_OutlinePipeline); });
+				return;
+			}
+			if (!m_OutlineShader->IsLoaded()) {
+				EC_CORE_WARN("[EditorLayer] Outline shader not loaded yet, deferring pipeline creation");
+				Echo::DeferredInitManager::Enqueue([this, outlineSpec]() { EC_CORE_INFO("[EditorLayer] Running deferred outline pipeline creation (shader now loaded)"); m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec); m_OutlineShader->SetPipeline(m_OutlinePipeline); });
+				return;
+			}
+			EC_CORE_INFO("[EditorLayer] Device and shader ready, creating outline pipeline immediately");
+			m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec);
+			m_OutlineShader->SetPipeline(m_OutlinePipeline);
+		};
+
+		m_Window = &Application::Get().GetWindow();
+		auto* device = m_Window->GetDevice();
+		if (!device || !device->IsInitialized()) {
+			EC_CORE_WARN("[EditorLayer] Device not ready, deferring outline pipeline creation");
+			Echo::DeferredInitManager::Enqueue([this, outlineSpec, createPipeline]() { EC_CORE_INFO("[EditorLayer] Running deferred outline pipeline creation (device now ready)"); createPipeline(); });
+		} else {
+			createPipeline();
+		}
 
 		m_OutlineParams.selectedEntityID = -2;
 		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); 
 		m_OutlineParams.outlineThickness = 2.0f;
 		m_OutlineBuffer = UniformBuffer::Create(&m_OutlineParams, sizeof(OutlineParams));
-
-		m_OutlineShader->SetPipeline(m_OutlinePipeline);
-
-		m_Window = &Application::Get().GetWindow();
 
 		m_EditorScene = CreateRef<Scene>();
 		m_ActiveScene = m_EditorScene;
@@ -89,6 +113,9 @@ namespace Echo
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		EC_PROFILE_FUNCTION();
+
+		if (!m_Window->GetDevice()->EnsureInitialized()) return;
+
 		Renderer2D::ResetStats();
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
@@ -111,14 +138,20 @@ namespace Echo
 				if (m_ViewportFocused)
 					m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+				if (m_Window->GetDevice()->IsInitialized())
+				{
+					m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+				}
 			}
 			else if (m_SceneState == Play)
 			{
 				m_GuizmoType = -1;
 				m_OutlineParams.selectedEntityID = -2;
 
-				m_ActiveScene->OnUpdateRuntime(cmd, ts);
+				if (m_Window->GetDevice()->IsInitialized())
+				{
+					m_ActiveScene->OnUpdateRuntime(cmd, ts);
+				}
 			}
 			cmd.EndRendering();
 			cmd.Execute();
@@ -146,13 +179,24 @@ namespace Echo
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
 			&& (m_MsaaFramebuffer->GetWidth() != m_ViewportSize.x || m_MsaaFramebuffer->GetHeight() != m_ViewportSize.y))
 		{
-			m_MsaaFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			m_MainFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-			m_FinalFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-
-			m_EditorCamera.SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-
-			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			if (!m_Window->GetDevice() || !m_Window->GetDevice()->IsInitialized()) {
+				EC_CORE_WARN("[EditorLayer] Device not ready, deferring framebuffer resize and camera/scene update");
+				Echo::DeferredInitManager::Enqueue([this, size = m_ViewportSize] {
+					EC_CORE_INFO("[EditorLayer] Running deferred framebuffer resize and camera/scene update");
+					m_MsaaFramebuffer->Resize((uint32_t)size.x, (uint32_t)size.y);
+					m_MainFramebuffer->Resize((uint32_t)size.x, (uint32_t)size.y);
+					m_FinalFramebuffer->Resize((uint32_t)size.x, (uint32_t)size.y);
+					m_EditorCamera.SetViewportSize((uint32_t)size.x, (uint32_t)size.y);
+					m_ActiveScene->OnViewportResize((uint32_t)size.x, (uint32_t)size.y);
+				});
+			} else {
+				EC_CORE_INFO("[EditorLayer] Device ready, resizing framebuffers and updating camera/scene immediately");
+				m_MsaaFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+				m_MainFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+				m_FinalFramebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+				m_EditorCamera.SetViewportSize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+				m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+			}
 		}
 
 		if (m_SceneState == Edit)
@@ -205,6 +249,8 @@ namespace Echo
 	void EditorLayer::OnImGuiRender()
 	{
 		EC_PROFILE_FUNCTION();
+		if (!m_Window->GetDevice()->IsInitialized()) return;
+
 		static bool opt_fullscreen = true;
 		static bool opt_padding = false;
 		static bool dockspace_open = true;

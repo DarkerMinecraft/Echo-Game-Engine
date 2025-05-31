@@ -4,6 +4,7 @@
 #include "ImGui/ImGuiLayer.h"
 
 #include "AssetManager/AssetRegistry.h"
+#include "Utils/DeferredInitManager.h"
 
 namespace Echo
 {
@@ -62,6 +63,14 @@ namespace Echo
 			).count();
 			Timestep ts = time;
 			m_LastFrameTime = std::chrono::steady_clock::now();
+
+			// Try deferred asset loads
+			AssetRegistry::TryDeferredAssetLoad();
+			// Try deferred resource tasks (generic)
+			Echo::DeferredInitManager::Process([&]() {
+				Device* device = GetWindow().GetDevice();
+				return device && device->IsInitialized();
+			});
 
 			if(!m_Minimized)
 			{

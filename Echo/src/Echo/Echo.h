@@ -15,6 +15,8 @@
 #include "Graphics/Buffer.h"
 #include "Graphics/Pipeline.h"
 #include "Graphics/Material.h"
+#include "Graphics/Device.h"
+#include "Graphics/GraphicsContext.h"
 
 #include "Events/KeyEvents.h"
 #include "Events/MouseEvents.h"
@@ -27,3 +29,9 @@
 #include "AssetManager/Assets/TextureAsset.h"
 
 #include "Debug/Instrumentor.h"
+
+// Vulkan-specific includes for advanced users
+#ifdef ECHO_INCLUDE_VULKAN_HEADERS
+    #include "Platform/Vulkan/VulkanDevice.h"
+    #include "Platform/Vulkan/Utils/VulkanResourceManager.h"
+#endif

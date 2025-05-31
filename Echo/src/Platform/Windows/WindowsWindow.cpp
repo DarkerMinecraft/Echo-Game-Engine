@@ -445,9 +445,24 @@ namespace Echo
 		EC_CORE_ASSERT(m_Window, "Could not create Win32 window!");
 		UpdateWindow(m_Window);
 
+		// Create device with lazy initialization - it won't actually initialize Vulkan yet
 		m_Device = Device::Create(DeviceType::Vulkan, this, m_Data.Width, m_Data.Height);
+		
+		// Set up a callback to know when the device initializes
+		m_Device->SetStateChangeCallback([](DeviceState oldState, DeviceState newState) {
+			if (newState == DeviceState::Ready)
+			{
+				EC_CORE_INFO("Graphics device successfully initialized");
+			}
+			else if (newState == DeviceState::Failed)
+			{
+				EC_CORE_ERROR("Graphics device initialization failed");
+			}
+		});
 
 		ShowWindow(m_Window, SW_SHOW);
+		
+		EC_CORE_INFO("Window created successfully - graphics device will initialize when first needed");
 	}
 
 	void WindowsWindow::Shutdown()

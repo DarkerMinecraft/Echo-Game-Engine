@@ -5,6 +5,10 @@
 #include "Assets/TextureAsset.h"
 
 #include <fstream>
+#include "Core/Application.h"
+#include "Core/Window.h"
+#include "Graphics/Device.h"
+#include "Core/Log.h"
 
 namespace Echo
 {
@@ -13,11 +17,23 @@ namespace Echo
 	std::unordered_map<std::filesystem::path, UUID> AssetRegistry::s_PathToUUID;
 	std::unordered_map<UUID, Ref<Echo::Asset>> AssetRegistry::s_LoadedAssets;
 	std::filesystem::path AssetRegistry::s_GlobalPath;
+	std::vector<AssetRegistry::DeferredAssetLoadRequest> AssetRegistry::s_DeferredAssetLoads;
+	bool AssetRegistry::s_DeferredAssetLoadPending = false;
 
 	template<>
 	Ref<ShaderAsset> AssetRegistry::LoadAsset<ShaderAsset>(const std::filesystem::path& path)
 	{
 		EC_PROFILE_FUNCTION();
+		EC_CORE_INFO("[AssetRegistry] LoadAsset<ShaderAsset> requested for path: {}", path.string());
+		// Check if Vulkan is ready
+		Application& app = Application::Get();
+		Device* device = app.GetWindow().GetDevice();
+		if (!device || !device->IsInitialized()) {
+			EC_CORE_WARN("[AssetRegistry] Device not ready, deferring ShaderAsset load for: {}", path.string());
+			s_DeferredAssetLoads.push_back({"ShaderAsset", path});
+			s_DeferredAssetLoadPending = true;
+			return nullptr;
+		}
 		std::filesystem::path fullPath = s_GlobalPath / path;
 
 		if (!std::filesystem::exists(fullPath))
@@ -54,6 +70,7 @@ namespace Echo
 			s_LoadedAssets[metadata.ID] = asset;
 			s_PathToUUID[path] = metadata.ID;
 			s_AssetMetadataMap[metadata.ID] = metadata;
+			EC_CORE_INFO("[AssetRegistry] ShaderAsset loaded: {}", path.string());
 			return Cast<ShaderAsset>(asset);
 		}
 	}
@@ -62,7 +79,16 @@ namespace Echo
 	Ref<TextureAsset> AssetRegistry::LoadAsset<TextureAsset>(const std::filesystem::path& path)
 	{
 		EC_PROFILE_FUNCTION();
-
+		EC_CORE_INFO("[AssetRegistry] LoadAsset<TextureAsset> requested for path: {}", path.string());
+		// Check if Vulkan is ready
+		Application& app = Application::Get();
+		Device* device = app.GetWindow().GetDevice();
+		if (!device || !device->IsInitialized()) {
+			EC_CORE_WARN("[AssetRegistry] Device not ready, deferring TextureAsset load for: {}", path.string());
+			s_DeferredAssetLoads.push_back({"TextureAsset", path});
+			s_DeferredAssetLoadPending = true;
+			return nullptr;
+		}
 		if (path == "")
 			return nullptr;
 
@@ -104,6 +130,7 @@ namespace Echo
 			s_LoadedAssets[metadata.ID] = asset;
 			s_PathToUUID[path] = metadata.ID;
 			s_AssetMetadataMap[metadata.ID] = metadata;
+			EC_CORE_INFO("[AssetRegistry] TextureAsset loaded: {}", path.string());
 			return Cast<TextureAsset>(asset);
 		}
 	}
@@ -181,6 +208,25 @@ namespace Echo
 
 		EC_CORE_ERROR("Unknown asset type for: {0}", metadata.Path.string());
 		return nullptr;
+	}
+
+	void AssetRegistry::TryDeferredAssetLoad()
+	{
+		if (!s_DeferredAssetLoadPending)
+			return;
+		Application& app = Application::Get();
+		Device* device = app.GetWindow().GetDevice();
+		if (!device || !device->IsInitialized())
+			return;
+		for (const auto& req : s_DeferredAssetLoads) {
+			if (req.typeName == "ShaderAsset")
+				LoadAsset<ShaderAsset>(req.path);
+			else if (req.typeName == "TextureAsset")
+				LoadAsset<TextureAsset>(req.path);
+			// Add more asset types as needed
+		}
+		s_DeferredAssetLoads.clear();
+		s_DeferredAssetLoadPending = false;
 	}
 
 }

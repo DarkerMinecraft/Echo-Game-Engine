@@ -119,5 +119,3 @@ add_dependencies(Echo VendorLibs)
 
 add_subdirectory(Horizon)
 add_dependencies(Horizon Echo)
-
-add_subdirectory(Bloomwood)

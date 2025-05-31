@@ -32,7 +32,7 @@ namespace Echo
 		uint32_t m_ImageIndex;
 		VulkanFramebuffer* m_Framebuffer;
 
-		FrameData& m_FrameData;
+		LazyFrameData& m_FrameData;
 
 		bool m_ShouldPresent = true;
 		bool m_DrawToSwapchain = false;		
