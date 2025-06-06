@@ -2,8 +2,6 @@
 
 #include <Debug/Instrumentor.h>
 #include <AssetManager/AssetRegistry.h>
-#include <Utils/DeferredInitManager.h>
-#include <Core/Application.h>
 
 #include <imgui.h>
 #include <Core/Log.h>
@@ -14,35 +12,15 @@ namespace Echo
 	ContentBrowserPanel::ContentBrowserPanel(const std::filesystem::path globalDirectory)
 		: m_CurrentDirectory(globalDirectory), m_GlobalDirectory(globalDirectory)
 	{
-		if (!Application::Get().GetWindow().GetDevice() || !Application::Get().GetWindow().GetDevice()->IsInitialized()) {
-			EC_CORE_WARN("[ContentBrowserPanel] Device not ready, deferring icon texture loading");
-			Echo::DeferredInitManager::Enqueue([this] {
-				EC_CORE_INFO("[ContentBrowserPanel] Running deferred icon texture loading");
-				m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
-				m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
-			});
-		} else {
-			EC_CORE_INFO("[ContentBrowserPanel] Device ready, loading icon textures immediately");
-			m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
-			m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
-		}
+		m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_CurrentDirectory("")
 	{
-		if (!Application::Get().GetWindow().GetDevice() || !Application::Get().GetWindow().GetDevice()->IsInitialized()) {
-			EC_CORE_WARN("[ContentBrowserPanel] Device not ready, deferring icon texture loading");
-			Echo::DeferredInitManager::Enqueue([this] {
-				EC_CORE_INFO("[ContentBrowserPanel] Running deferred icon texture loading");
-				m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
-				m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
-			});
-		} else {
-			EC_CORE_INFO("[ContentBrowserPanel] Device ready, loading icon textures immediately");
-			m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
-			m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
-		}
+		m_DirectoryIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/DirectoryIcon.png");
+		m_FileIcon = AssetRegistry::LoadAsset<TextureAsset>("Resources/textures/Icons/ContentBrowser/FileIcon.png");
 	}
 
 	void ContentBrowserPanel::OnImGuiRender()

@@ -28,11 +28,8 @@ namespace Echo
 	private:
 		void DrawImGui();
 		void SetDarkThemeColors();
-		void TryDeferredInit();
-		void InitializeImGuiVulkan();
 	private:
 		bool m_BlockEvents = true;
-		bool m_DeferredInit = false;
 
 		Ref<Framebuffer> m_ImGuiFramebuffer;
 	};

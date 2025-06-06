@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "CommandFactory.h"
-#include "Utils/DeferredInitManager.h"
-#include "Core/Log.h"
 
 #include "Vulkan/Commands/VulkanBindPipelineCommand.h"
 #include "Vulkan/Commands/VulkanDispatchCommand.h"
@@ -17,20 +15,9 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::ClearColorCommand(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues)
 	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-		if (GetDeviceType() == DeviceType::Vulkan) {
-			if (!device->IsInitialized()) {
-				EC_CORE_WARN("[CommandFactory] Device not ready, deferring VulkanClearColorCommand creation");
-				Ref<ICommand> cmd;
-				Echo::DeferredInitManager::Enqueue([=, &cmd] {
-					EC_CORE_INFO("[CommandFactory] Running deferred VulkanClearColorCommand creation");
-					cmd = CreateRef<VulkanClearColorCommand>(framebuffer, index, clearValues);
-				});
-				return cmd;
-			} else {
-				EC_CORE_INFO("[CommandFactory] Device ready, creating VulkanClearColorCommand immediately");
-				return CreateRef<VulkanClearColorCommand>(framebuffer, index, clearValues);
-			}
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanClearColorCommand>(framebuffer, index, clearValues);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -43,20 +30,9 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::BindPipelineCommand(Pipeline* pipeline)
 	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-		if (GetDeviceType() == DeviceType::Vulkan) {
-			if (!device->IsInitialized()) {
-				EC_CORE_WARN("[CommandFactory] Device not ready, deferring VulkanBindPipelineCommand creation");
-				Ref<ICommand> cmd;
-				Echo::DeferredInitManager::Enqueue([=, &cmd] {
-					EC_CORE_INFO("[CommandFactory] Running deferred VulkanBindPipelineCommand creation");
-					cmd = CreateRef<VulkanBindPipelineCommand>(pipeline);
-				});
-				return cmd;
-			} else {
-				EC_CORE_INFO("[CommandFactory] Device ready, creating VulkanBindPipelineCommand immediately");
-				return CreateRef<VulkanBindPipelineCommand>(pipeline);
-			}
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanBindPipelineCommand>(pipeline);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -64,20 +40,9 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::DispatchCommand(float x, float y, float z)
 	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-		if (GetDeviceType() == DeviceType::Vulkan) {
-			if (!device->IsInitialized()) {
-				EC_CORE_WARN("[CommandFactory] Device not ready, deferring VulkanDispatchCommand creation");
-				Ref<ICommand> cmd;
-				Echo::DeferredInitManager::Enqueue([=, &cmd] {
-					EC_CORE_INFO("[CommandFactory] Running deferred VulkanDispatchCommand creation");
-					cmd = CreateRef<VulkanDispatchCommand>(x, y, z);
-				});
-				return cmd;
-			} else {
-				EC_CORE_INFO("[CommandFactory] Device ready, creating VulkanDispatchCommand immediately");
-				return CreateRef<VulkanDispatchCommand>(x, y, z);
-			}
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanDispatchCommand>(x, y, z);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -85,20 +50,9 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::BindVertexBufferCommand(Ref<VertexBuffer> vertexBuffer)
 	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-		if (GetDeviceType() == DeviceType::Vulkan) {
-			if (!device->IsInitialized()) {
-				EC_CORE_WARN("[CommandFactory] Device not ready, deferring VulkanBindVertexBufferCommand creation");
-				Ref<ICommand> cmd;
-				Echo::DeferredInitManager::Enqueue([=, &cmd] {
-					EC_CORE_INFO("[CommandFactory] Running deferred VulkanBindVertexBufferCommand creation");
-					cmd = CreateRef<VulkanBindVertexBufferCommand>(vertexBuffer);
-				});
-				return cmd;
-			} else {
-				EC_CORE_INFO("[CommandFactory] Device ready, creating VulkanBindVertexBufferCommand immediately");
-				return CreateRef<VulkanBindVertexBufferCommand>(vertexBuffer);
-			}
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanBindVertexBufferCommand>(vertexBuffer);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
@@ -106,20 +60,9 @@ namespace Echo
 
 	Ref<ICommand> CommandFactory::BindIndicesBufferCommand(Ref<IndexBuffer> indexBuffer)
 	{
-		Device* device = Application::Get().GetWindow().GetDevice();
-		if (GetDeviceType() == DeviceType::Vulkan) {
-			if (!device->IsInitialized()) {
-				EC_CORE_WARN("[CommandFactory] Device not ready, deferring VulkanBindIndicesBufferCommand creation");
-				Ref<ICommand> cmd;
-				Echo::DeferredInitManager::Enqueue([=, &cmd] {
-					EC_CORE_INFO("[CommandFactory] Running deferred VulkanBindIndicesBufferCommand creation");
-					cmd = CreateRef<VulkanBindIndicesBufferCommand>(indexBuffer);
-				});
-				return cmd;
-			} else {
-				EC_CORE_INFO("[CommandFactory] Device ready, creating VulkanBindIndicesBufferCommand immediately");
-				return CreateRef<VulkanBindIndicesBufferCommand>(indexBuffer);
-			}
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanBindIndicesBufferCommand>(indexBuffer);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

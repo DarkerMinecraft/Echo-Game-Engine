@@ -20,7 +20,6 @@ namespace Echo
 		virtual ~CommandList() = default;
 		
 		void Begin();
-		void End();
 
 		void ClearColor(Ref<Framebuffer> framebuffer, uint32_t index, const glm::vec4& clearValues) { RecordCommand(CommandFactory::ClearColorCommand(framebuffer, index, clearValues)); }
 		void Dispatch(float x, float y, float z) { RecordCommand(CommandFactory::DispatchCommand(x, y, z)); }
@@ -43,9 +42,9 @@ namespace Echo
 
 		void RenderImGui() { RecordCommand(CommandFactory::RenderImGuiCommand()); }
 
-		void SetSourceFramebuffer(Ref<Framebuffer> framebuffer);
-		void SetShouldPresent(bool shouldPresent);
-		void SetDrawToSwapchain(bool drawToSwapchain);
+		void SetSourceFramebuffer(Ref<Framebuffer> framebuffer) { m_CommandBuffer->SetSourceFramebuffer(framebuffer); }
+		void SetShouldPresent(bool shouldPresent) { m_CommandBuffer->SetShouldPresent(shouldPresent); }
+		void SetDrawToSwapchain(bool drawToSwapchain) { m_CommandBuffer->SetDrawToSwapchain(drawToSwapchain); }
 
 		void Execute(bool isLastPass = false);
 
