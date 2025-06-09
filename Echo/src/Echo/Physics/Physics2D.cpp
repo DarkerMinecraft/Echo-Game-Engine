@@ -52,17 +52,15 @@ namespace Echo
 		}
 	}
 
-	const glm::vec2& Physics2D::GetPosition(UUID uuid)
+	glm::vec2 Physics2D::GetPosition(UUID uuid)
 	{
 		b2Vec2 position = b2Body_GetPosition(m_EntitiesPhysics[uuid].Body);
-
-		return { position.x, position.y };
+		return glm::vec2(position.x, position.y);
 	}
 
-	const float& Physics2D::GetRotation(UUID uuid)
+	float Physics2D::GetRotation(UUID uuid)
 	{
 		b2Rot rotation = b2Body_GetRotation(m_EntitiesPhysics[uuid].Body);
-
 		return b2Rot_GetAngle(rotation);
 	}
 

@@ -34,7 +34,7 @@ namespace Echo
 		ProjectionType GetProjectionType() const { return m_ProjectionType; }
 		void SetProjectionType(ProjectionType type) { m_ProjectionType = type; RecalculateProjection(); }
 
-		virtual const glm::mat4& GetViewMatrix() const { return glm::mat4(1.0f); };
+		virtual glm::mat4 GetViewMatrix() const { return glm::mat4(1.0f); }
 	private:
 		void RecalculateProjection();
 	private:

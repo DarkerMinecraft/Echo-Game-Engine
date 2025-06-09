@@ -9,6 +9,7 @@
 #include "ScriptableEntity.h"
 
 #include "Physics/Physics2D.h"
+#include "ComponentRegistry.h"
 
 namespace Echo
 {
@@ -21,12 +22,18 @@ namespace Echo
 			case Rigidbody2DComponent::BodyType::Dynamic: return b2_dynamicBody;
 			case Rigidbody2DComponent::BodyType::Static: return b2_staticBody;
 		}
+		return b2_staticBody; // Default case
 	}
 
 	Scene::Scene()
 		: m_Physics2D(CreateScope<Physics2D>())
 	{
-
+		static bool registryInitialized = false;
+		if (!registryInitialized)
+		{
+			ComponentRegistry::InitializeComponentRegistry();
+			registryInitialized = true;
+		}
 	}
 
 	Scene::~Scene()
@@ -52,32 +59,34 @@ namespace Echo
 
 	Ref<Scene> Scene::Copy(Ref<Scene> srcScene)
 	{
-		EC_PROFILE_FUNCTION();
 		Ref<Scene> newScene = CreateRef<Scene>();
 
+		// Copy scene properties
 		newScene->m_ViewportWidth = srcScene->m_ViewportWidth;
 		newScene->m_ViewportHeight = srcScene->m_ViewportHeight;
 
-		std::unordered_map<UUID, entt::entity> enttMap;
-		auto& srcRegistry = srcScene->m_Registry;
-		auto& dstRegistry = newScene->m_Registry;
-		auto view = srcRegistry.view<IDComponent>();
-		for (auto& e : view)
+		// Create entity mapping
+		std::unordered_map<UUID, Entity> enttMap;
+		auto view = srcScene->m_Registry.view<IDComponent>();
+		for (auto srcHandle : view)
 		{
-			UUID uuid = srcRegistry.get<IDComponent>(e).ID;
-			std::string name = srcRegistry.get<TagComponent>(e).Tag;
+			UUID uuid = srcScene->m_Registry.get<IDComponent>(srcHandle).ID;
+			std::string name = srcScene->m_Registry.get<TagComponent>(srcHandle).Tag;
 
-			enttMap[uuid] = newScene->CreateEntity(name, uuid);
+			// Create in destination registry
+			Entity dstEntity = newScene->CreateEntity(name, uuid);
+			enttMap[uuid] = dstEntity;
 		}
 
-		CopyComponent<TransformComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<SpriteRendererComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<CircleRendererComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<CameraComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<MeshComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<NativeScriptComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<Rigidbody2DComponent>(srcRegistry, dstRegistry, enttMap);
-		CopyComponent<BoxCollider2DComponent>(srcRegistry, dstRegistry, enttMap);
+		// Copy all components
+		for (auto& [uuid, dstEntity] : enttMap)
+		{
+			Entity srcEntity = srcScene->GetEntityByUUID(uuid);
+			if (srcEntity.GetHandle() != entt::null)
+			{
+				ComponentRegistry::CopyAllComponents(srcEntity, dstEntity);
+			}
+		}
 
 		return newScene;
 	}
@@ -102,6 +111,23 @@ namespace Echo
 		tag.Tag = name.empty() ? "Unnamed Entity" : name;
 
 		return entity;
+	}
+
+
+	Entity Scene::GetEntityByUUID(UUID uuid)
+	{
+		auto view = m_Registry.view<IDComponent>();
+		for (auto entityHandle : view)
+		{
+			Entity entity{ entityHandle, this };
+			if (entity.GetComponent<IDComponent>().ID == uuid)
+			{
+				return entity;
+			}
+		}
+
+		// Return invalid entity if not found
+		return Entity{ entt::null, this };
 	}
 
 	Entity Scene::GetPrimaryCameraEntity()
@@ -190,6 +216,8 @@ namespace Echo
 				Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 			}
 		}
+
+		Renderer2D::DrawLine(glm::vec3(0.0f), glm::vec3(5.0f), glm::vec4(1, 0, 1, 1));
 
 		Renderer2D::EndScene();
 	}
@@ -295,6 +323,7 @@ namespace Echo
 	{
 		//static_assert(false);
 	}
+
 
 	template<>
 	void Scene::OnComponentAdd<IDComponent>(Entity entity, IDComponent& component)

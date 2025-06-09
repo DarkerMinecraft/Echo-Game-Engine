@@ -20,6 +20,7 @@ namespace Echo
 		glm::vec4 Color;
 		int TexIndex;
 		float TilingFactor;
+
 		int InstanceID;
 	};
 
@@ -30,7 +31,14 @@ namespace Echo
 		glm::vec4 Color;
 		float OutlineThickness;
 		float Fade;
+
 		int InstanceID;
+	};
+
+	struct LineVertex 
+	{
+		glm::vec3 Position;
+		glm::vec4 Color;
 	};
 
 	struct CameraUniformBuffer
@@ -48,12 +56,16 @@ namespace Echo
 
 		Ref<VertexBuffer> QuadVertexBuffer;
 		Ref<VertexBuffer> CircleVertexBuffer;
+		Ref<VertexBuffer> LineVertexBuffer;
 		Ref<IndexBuffer> QuadIndexBuffer;
 
 		Ref<ShaderAsset> QuadShader;
 		Ref<Pipeline> QuadPipeline;
 		Ref<ShaderAsset> CircleShader;
 		Ref<Pipeline> CirclePipeline;
+
+		Ref<ShaderAsset> LineShader;
+		Ref<Pipeline> LinePipeline;
 
 		Ref<UniformBuffer> CamUniformBuffer;
 
@@ -64,6 +76,10 @@ namespace Echo
 		uint32_t CircleIndexCount = 0;
 		CircleVertex* CircleVertexBufferBase = nullptr;
 		CircleVertex* CircleVertexBufferPtr = nullptr;
+
+		uint32_t LineCount = 0;
+		LineVertex* LineVertexBufferBase = nullptr;
+		LineVertex* LineVertexBufferPtr = nullptr;
 
 		std::vector<Ref<Texture2D>> TextureSlots;
 		uint32_t TextureSlotIndex = 1;
@@ -103,20 +119,27 @@ namespace Echo
 		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
 		s_Data.CircleShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
 		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
+		pipelineSpec.GraphicsTopology = Topology::LineList;
+		s_Data.LineShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/lineShader.slang");
+		s_Data.LinePipeline = Pipeline::Create(s_Data.LineShader->GetShader(), pipelineSpec);
 
 		s_Data.QuadShader->SetPipeline(s_Data.QuadPipeline);
 		s_Data.CircleShader->SetPipeline(s_Data.CirclePipeline);
+		s_Data.LineShader->SetPipeline(s_Data.LinePipeline);
 
 		s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex), true);
 		s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex), true);
+		s_Data.LineVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(LineVertex), true);
 
-		s_Data.TextureSlots.push_back(Texture2D::Create(1, 1, new uint32_t(0xffffffff)));
+		s_Data.TextureSlots.resize(s_Data.MaxTextureSlots);
+		s_Data.TextureSlots[0] = Texture2D::Create(1, 1, new uint32_t(0xffffffff));
 
 		CameraUniformBuffer batchUniformBuffer{};
 		s_Data.CamUniformBuffer = UniformBuffer::Create(&batchUniformBuffer, sizeof(CameraUniformBuffer));
 
 		s_Data.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
 		s_Data.CircleVertexBufferBase = new CircleVertex[s_Data.MaxVertices];
+		s_Data.LineVertexBufferBase = new LineVertex[s_Data.MaxVertices];
 
 		uint32_t* quadIndices = new uint32_t[s_Data.MaxIndices];
 
@@ -158,6 +181,9 @@ namespace Echo
 		s_Data.CircleIndexCount = 0;
 		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
 
+		s_Data.LineCount = 0;
+		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
+
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
 		s_Data.QuadPipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
@@ -172,6 +198,11 @@ namespace Echo
 		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
 		
+		cmd.BindPipeline(s_Data.LinePipeline);
+		
+		s_Data.LinePipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
+
+		s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
 	}
 
 	void Renderer2D::BeginScene(CommandList& cmd, const EditorCamera& camera)
@@ -192,6 +223,9 @@ namespace Echo
 		s_Data.CircleIndexCount = 0;
 		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
 
+		s_Data.LineCount = 0;
+		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
+
 		cmd.BindPipeline(s_Data.QuadPipeline);
 
 		s_Data.QuadPipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
@@ -205,6 +239,12 @@ namespace Echo
 
 		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
 		s_Data.Cmd->BindIndicesBuffer(s_Data.QuadIndexBuffer);
+
+		cmd.BindPipeline(s_Data.LinePipeline);
+
+		s_Data.LinePipeline->BindResource(0, 0, s_Data.CamUniformBuffer);
+
+		s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
 	}
 
 	void Renderer2D::EndScene()
@@ -221,8 +261,14 @@ namespace Echo
 		{
 			s_Data.CircleVertexBuffer->SetData(s_Data.CircleVertexBufferBase, circleDataSize);
 		}
+
+		uint32_t lineDataSize = (uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase;
+		if (lineDataSize != 0) 
+		{
+			s_Data.CircleVertexBuffer->SetData(s_Data.LineVertexBufferBase, lineDataSize);
+		}
 		
-		if(quadDataSize != 0 || circleDataSize != 0) Flush();
+		if(quadDataSize != 0 || circleDataSize != 0 || lineDataSize != 0) Flush();
 	}
 
 	void Renderer2D::DrawQuad(const VertexQuadData& data)
@@ -366,13 +412,30 @@ namespace Echo
 		s_Data.Stats.CircleCount++;
 	}
 
+
+	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color /*= { 1.0f, 1.0f, 1.0f, 1.0f, }*/, float thickness /*= 1*/)
+	{
+		s_Data.LineVertexBufferPtr->Position = p0;
+		s_Data.LineVertexBufferPtr->Color = color;
+		s_Data.LineVertexBufferPtr++;
+
+		s_Data.LineVertexBufferPtr->Position = p1;
+		s_Data.LineVertexBufferPtr->Color = color;
+		s_Data.LineVertexBufferPtr++;
+
+		s_Data.LineCount += 2;
+	}
+
 	void Renderer2D::Flush()
 	{
 		EC_PROFILE_FUNCTION();
 		s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
 		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 		{
-			s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
+			if (s_Data.TextureSlots[i] != nullptr)
+			{
+				s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
+			}
 		}
 		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
 		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
@@ -381,6 +444,11 @@ namespace Echo
 		s_Data.Cmd->BindPipeline(s_Data.CirclePipeline);
 		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
 		s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
+		s_Data.Stats.DrawCalls++;
+
+		s_Data.Cmd->BindPipeline(s_Data.LinePipeline);
+		s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
+		s_Data.Cmd->Draw(s_Data.LineCount, 1, 0, 0);
 		s_Data.Stats.DrawCalls++;
 	}
 
@@ -396,6 +464,9 @@ namespace Echo
 
 		s_Data.CircleVertexBufferPtr = s_Data.CircleVertexBufferBase;
 		s_Data.CircleIndexCount = 0;
+
+		s_Data.LineVertexBufferPtr = s_Data.LineVertexBufferBase;
+		s_Data.LineCount = 0;
 	}
 
 	Statistics Renderer2D::GetStats()
@@ -413,16 +484,20 @@ namespace Echo
 		EC_PROFILE_FUNCTION();
 		s_Data.QuadVertexBuffer.reset();
 		s_Data.CircleVertexBuffer.reset();
+		s_Data.LineVertexBuffer.reset();
 		s_Data.QuadIndexBuffer.reset();
 		s_Data.CircleShader.reset();
 		s_Data.QuadShader.reset();
+		s_Data.LineShader.reset();
 		s_Data.QuadPipeline.reset();
 		s_Data.CirclePipeline.reset();
+		s_Data.LinePipeline.reset();
 		s_Data.CamUniformBuffer.reset();
 		s_Data.TextureSlots[0]->Destroy();
 
 		delete[] s_Data.QuadVertexBufferBase;
 		delete[] s_Data.CircleVertexBufferBase;
+		delete[] s_Data.LineVertexBufferBase;
 	}
 
 }

@@ -169,24 +169,26 @@ namespace Echo
 			{
 				int texX = (int)((mouseX / viewportSize.x) * m_MainFramebuffer->GetWidth());
 				int texY = (int)((mouseY / viewportSize.y) * m_MainFramebuffer->GetHeight());
-
-				int entityID = m_MainFramebuffer->ReadPixel(1, texX, texY);
-				if (entityID != -1)
+				if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver())
 				{
-					m_Window->SetCursor(Cursor::HAND);
-					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+					int entityID = m_MainFramebuffer->ReadPixel(1, texX, texY);
+					if (entityID != -1)
 					{
-						m_SceneHierarchyPanel.SetSelectedEntity(entityID);
-						m_OutlineParams.selectedEntityID = entityID;
+						m_Window->SetCursor(Cursor::HAND);
+						if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+						{
+							m_SceneHierarchyPanel.SetSelectedEntity(entityID);
+							m_OutlineParams.selectedEntityID = entityID;
+						}
 					}
-				}
-				else
-				{
-					m_Window->SetCursor(Cursor::ARROW);
-					if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+					else
 					{
-						m_SceneHierarchyPanel.SetSelectedEntity(-1);
-						m_OutlineParams.selectedEntityID = -2;
+						m_Window->SetCursor(Cursor::ARROW);
+						if (Input::IsMouseButtonPressed(EC_MOUSE_BUTTON_LEFT))
+						{
+							m_SceneHierarchyPanel.SetSelectedEntity(-1);
+							m_OutlineParams.selectedEntityID = -2;
+						}
 					}
 				}
 			}
@@ -389,7 +391,7 @@ namespace Echo
 			{
 				ImGuizmo::SetOrthographic(false);
 				ImGuizmo::SetDrawlist();
-				ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_ViewportSize.x, m_ViewportSize.y);
+				ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y, m_ViewportSize.x, m_ViewportSize.y);
 
 				const glm::mat4& projection = m_EditorCamera.GetProjection();
 				glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();

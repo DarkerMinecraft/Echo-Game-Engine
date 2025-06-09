@@ -64,6 +64,8 @@ namespace Echo
 		static void DrawCircle(const VertexCircleData& data);
 		static void DrawCircle(const VertexCircleData& data, const glm::mat4& transform);
 
+		static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color = { 1.0f, 1.0f, 1.0f, 1.0f, }, float thickness = 1);
+
 		static void Flush();
 		
 		static Statistics GetStats();

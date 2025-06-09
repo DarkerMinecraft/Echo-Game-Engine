@@ -84,6 +84,8 @@ namespace Echo
 		{
 			case DeviceType::Vulkan: return CreateRef<VulkanDrawIndexedCommand>(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
 	}
 
 	Ref<ICommand> CommandFactory::DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride)

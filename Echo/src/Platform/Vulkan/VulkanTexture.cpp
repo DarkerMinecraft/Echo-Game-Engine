@@ -18,6 +18,7 @@ namespace Echo
 			case TextureFilter::Linear: return VK_FILTER_LINEAR;
 			case TextureFilter::Nearest: return VK_FILTER_NEAREST;
 		}
+		return VK_FILTER_LINEAR; // Default case
 	}
 
 	VulkanTexture2D::VulkanTexture2D(Device* device, const std::filesystem::path& path, const Texture2DSpecification& spec)
@@ -79,7 +80,7 @@ namespace Echo
 	{
 		EC_PROFILE_FUNCTION();
 		int width, height, channels;
-		stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, 0);
+		stbi_uc* data = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
 		if (!data)
 		{
 			EC_CORE_ERROR("Failed to load texture: {0}", path.string());

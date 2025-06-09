@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "VulkanPipeline.h"
 #include "VulkanFramebuffer.h"
-#include "VulkanMaterial.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
 #include "VulkanRenderCaps.h"
+#include "VulkanShader.h"
 
 #include <unordered_set>
 

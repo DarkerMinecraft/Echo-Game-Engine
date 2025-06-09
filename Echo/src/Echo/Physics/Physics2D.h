@@ -27,8 +27,8 @@ namespace Echo
 		b2BodyId AddBody(UUID uuid, b2BodyDef* bodyDef);
 		void AddShape(UUID uuid, b2BodyId bodyId, b2ShapeDef* shapeDef, b2Polygon* polygon);
 
-		const glm::vec2& GetPosition(UUID uuid);
-		const float& GetRotation(UUID uuid);
+		glm::vec2 GetPosition(UUID uuid);
+		float GetRotation(UUID uuid);
 
 		void EndPhysicsWorld();
 	private:

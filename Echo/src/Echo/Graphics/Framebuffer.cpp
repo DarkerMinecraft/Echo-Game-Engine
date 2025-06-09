@@ -15,6 +15,8 @@ namespace Echo
 		{
 			case DeviceType::Vulkan:  return CreateRef<VulkanFramebuffer>(device, specs);
 		}
+		
+		return nullptr; // Default return for safety
 	}
 
 }
