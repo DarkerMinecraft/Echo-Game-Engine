@@ -12,6 +12,7 @@ namespace Echo
 	{
 		b2BodyId Body;
 		b2Polygon* PolygonShape;
+		b2Circle* CircleShape;
 	};
 
 	class Physics2D 
@@ -26,6 +27,7 @@ namespace Echo
 
 		b2BodyId AddBody(UUID uuid, b2BodyDef* bodyDef);
 		void AddShape(UUID uuid, b2BodyId bodyId, b2ShapeDef* shapeDef, b2Polygon* polygon);
+		void AddShape(UUID uuid, b2BodyId bodyId, b2ShapeDef* shapeDef, b2Circle* polygon);
 
 		glm::vec2 GetPosition(UUID uuid);
 		float GetRotation(UUID uuid);

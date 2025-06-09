@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ComponentRegistry.h"
 
+#include "Entity.h"
+
 #include "AssetManager/AssetRegistry.h"
 #include "AssetManager/Assets/TextureAsset.h"
 
@@ -271,6 +273,10 @@ namespace Echo
 		{
 		};
 
+		meta.InitializeComponent = [](Entity& entity, void* comp)
+		{
+		};
+
 		s_ComponentRegistry[GetTypeIndex<T>()] = meta;
 	}
 
@@ -413,6 +419,7 @@ namespace Echo
 		// Register physics components
 		RegisterComponent<Rigidbody2DComponent>("Rigidbody 2D", "Physics");
 		RegisterComponent<BoxCollider2DComponent>("Box Collider 2D", "Physics");
+		RegisterComponent<CircleCollider2DComponent>("Circle Collider 2D", "Physics");
 
 		// Register scripting components
 		RegisterComponent<NativeScriptComponent>("Native Script", "Scripting");
@@ -420,6 +427,7 @@ namespace Echo
 		// Set up specialized serialize/deserialize/UI functions
 		SetupComponentSerializers();
 		SetupComponentUI();
+		SetupComponentInitializers();
 	}
 
 	// Specialized serialization setup
@@ -649,6 +657,39 @@ namespace Echo
 				}
 			};
 		}
+
+		if (auto meta = ComponentRegistry::GetMetadata<CircleCollider2DComponent>())
+		{
+			meta->Serialize = [](const Entity& entity, YAML::Emitter& out)
+			{
+				if (entity.HasComponent<CircleCollider2DComponent>())
+				{
+					out << YAML::Key << "CircleCollider2DComponent";
+					out << YAML::BeginMap;
+					auto& cc2d = entity.GetComponent<CircleCollider2DComponent>();
+					out << YAML::Key << "Offset" << YAML::Value << cc2d.Offset;
+					out << YAML::Key << "Radius" << YAML::Value << cc2d.Radius;
+					out << YAML::Key << "Density" << YAML::Value << cc2d.Density;
+					out << YAML::Key << "Friction" << YAML::Value << cc2d.Friction;
+					out << YAML::Key << "Restitution" << YAML::Value << cc2d.Restitution;
+					out << YAML::EndMap;
+				}
+			};
+
+			meta->Deserialize = [](Entity& entity, const YAML::Node& entityNode)
+			{
+				auto circleCollider2DComponent = entityNode["CircleCollider2DComponent"];
+				if (circleCollider2DComponent)
+				{
+					auto& cc2d = entity.AddComponent<CircleCollider2DComponent>();
+					cc2d.Offset = circleCollider2DComponent["Offset"].as<glm::vec2>();
+					cc2d.Radius = circleCollider2DComponent["Radius"].as<float>();
+					cc2d.Density = circleCollider2DComponent["Density"].as<float>();
+					cc2d.Friction = circleCollider2DComponent["Friction"].as<float>();
+					cc2d.Restitution = circleCollider2DComponent["Restitution"].as<float>();
+				}
+			};
+		}
 	}
 
 	// Specialized UI setup
@@ -813,7 +854,37 @@ namespace Echo
 					});
 				};
 			}
+
+			if (auto meta = ComponentRegistry::GetMetadata<CircleCollider2DComponent>())
+			{
+				meta->DrawUI = [](Entity& entity, const std::filesystem::path& currentDirectory)
+				{
+					DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
+					{
+						ImGui::DragFloat2("Offset", glm::value_ptr(component.Offset));
+						ImGui::DragFloat("Radius", &component.Radius);
+
+						ImGui::DragFloat("Density", &component.Density);
+						ImGui::DragFloat("Friction", &component.Friction);
+						ImGui::DragFloat("Restitution", &component.Restitution);
+					});
+				};
+			}
 		}
 		
 	}
+
+	void ComponentRegistry::SetupComponentInitializers()
+	{
+		if (auto meta = GetMetadata<CameraComponent>())
+		{
+			meta->InitializeComponent = [](Entity& entity, void* comp)
+			{
+				auto* component = static_cast<CameraComponent*>(comp);
+				auto* scene = entity.GetScene();
+				component->Camera.SetViewportSize(scene->GetViewportWidth(), scene->GetViewportHeight());
+			};
+		}
+	}
+
 }

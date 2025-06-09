@@ -278,7 +278,7 @@ namespace Echo
 		m_Instance = vkb_inst.instance;
 		m_DebugMessenger = vkb_inst.debug_messenger;
 
-			m_Surface = m_Window->SetWindowSurface(m_Instance);
+		m_Surface = m_Window->SetWindowSurface(m_Instance);
 	
 		VkPhysicalDeviceVulkan13Features features{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 		features.dynamicRendering = true;
@@ -294,6 +294,7 @@ namespace Echo
 		deviceFeatures.sampleRateShading = true;
 		deviceFeatures.independentBlend = true;
 		deviceFeatures.robustBufferAccess = true;
+		deviceFeatures.wideLines = true;
 
 		vkb::PhysicalDeviceSelector selector{ vkb_inst };
 		vkb::PhysicalDevice physicalDevice = selector

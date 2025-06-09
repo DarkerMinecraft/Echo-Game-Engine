@@ -52,6 +52,25 @@ namespace Echo
 		}
 	}
 
+
+	void Physics2D::AddShape(UUID uuid, b2BodyId bodyId, b2ShapeDef* shapeDef, b2Circle* circle)
+	{
+		b2CreateCircleShape(bodyId, shapeDef, circle);
+
+		if (m_EntitiesPhysics.contains(uuid))
+		{
+			EntityPhysics ep = m_EntitiesPhysics.at(uuid);
+			ep.CircleShape = circle;
+			m_EntitiesPhysics[uuid] = ep;
+		}
+		else
+		{
+			EntityPhysics ep{};
+			ep.CircleShape = circle;
+			m_EntitiesPhysics[uuid] = ep;
+		}
+	}
+
 	glm::vec2 Physics2D::GetPosition(UUID uuid)
 	{
 		b2Vec2 position = b2Body_GetPosition(m_EntitiesPhysics[uuid].Body);

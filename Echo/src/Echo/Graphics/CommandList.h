@@ -35,6 +35,7 @@ namespace Echo
 		void DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride) { RecordCommand(CommandFactory::DrawIndirectIndexed(indirectBuffer, offset, drawCount, stride)); }
 
 		void SetScissor(uint32_t x, uint32_t y, uint32_t width, uint32_t height) { RecordCommand(CommandFactory::SetScissorCommand(x, y, width, height)); }
+		void SetLineWidth(float lineWidth) { RecordCommand(CommandFactory::SetLineWidthCommand(lineWidth)); }
 
 		void BeginRendering(Ref<Framebuffer> framebuffer) { RecordCommand(CommandFactory::BeginRenderingCommand(framebuffer)); }
 		void BeginRendering() { RecordCommand(CommandFactory::BeginRenderingCommand()); }

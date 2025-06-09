@@ -186,6 +186,21 @@ namespace Echo
 
 				m_Physics2D->AddShape(entity.GetUUID(), body, &shapeDef, &boxShape);
 			}
+
+			if (entity.HasComponent<CircleCollider2DComponent>()) 
+			{
+				auto& cc2d = entity.GetComponent<CircleCollider2DComponent>();
+
+				b2Circle circleShape;
+				circleShape.center = { cc2d.Offset.x, cc2d.Offset.y };
+				circleShape.radius = cc2d.Radius;
+				b2ShapeDef shapeDef = b2DefaultShapeDef();
+				shapeDef.density = cc2d.Density;
+				shapeDef.material.friction = cc2d.Friction;
+				shapeDef.material.restitution = cc2d.Restitution;
+
+				m_Physics2D->AddShape(entity.GetUUID(), body, &shapeDef, &circleShape);
+			}
 		}
 	}
 
@@ -216,8 +231,6 @@ namespace Echo
 				Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 			}
 		}
-
-		Renderer2D::DrawLine(glm::vec3(0.0f), glm::vec3(5.0f), glm::vec4(1, 0, 1, 1));
 
 		Renderer2D::EndScene();
 	}
@@ -316,75 +329,6 @@ namespace Echo
 				cameraComponent.Camera.SetViewportSize(width, height);
 			}
 		}
-	}
-
-	template<typename T>
-	void Scene::OnComponentAdd(Entity entity, T& component)
-	{
-		//static_assert(false);
-	}
-
-
-	template<>
-	void Scene::OnComponentAdd<IDComponent>(Entity entity, IDComponent& component)
-	{
-
-	}
-
-
-	template<>
-	void Scene::OnComponentAdd<TransformComponent>(Entity entity, TransformComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<CameraComponent>(Entity entity, CameraComponent& component)
-	{
-		component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-	}
-
-	template<>
-	void Scene::OnComponentAdd<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<CircleRendererComponent>(Entity entity, CircleRendererComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<NativeScriptComponent>(Entity entity, NativeScriptComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<TagComponent>(Entity entity, TagComponent& component)
-	{
-
-	}
-
-
-	template<>
-	void Scene::OnComponentAdd<MeshComponent>(Entity entity, MeshComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<Rigidbody2DComponent>(Entity entity, Rigidbody2DComponent& component)
-	{
-
-	}
-
-	template<>
-	void Scene::OnComponentAdd<BoxCollider2DComponent>(Entity entity, BoxCollider2DComponent& component)
-	{
-
 	}
 
 }

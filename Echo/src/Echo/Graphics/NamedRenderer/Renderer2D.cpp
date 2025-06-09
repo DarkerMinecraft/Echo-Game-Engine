@@ -120,6 +120,7 @@ namespace Echo
 		s_Data.CircleShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");
 		s_Data.CirclePipeline = Pipeline::Create(s_Data.CircleShader->GetShader(), pipelineSpec);
 		pipelineSpec.GraphicsTopology = Topology::LineList;
+		pipelineSpec.LineWidth = 2.0f;
 		s_Data.LineShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/lineShader.slang");
 		s_Data.LinePipeline = Pipeline::Create(s_Data.LineShader->GetShader(), pipelineSpec);
 
@@ -265,7 +266,7 @@ namespace Echo
 		uint32_t lineDataSize = (uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase;
 		if (lineDataSize != 0) 
 		{
-			s_Data.CircleVertexBuffer->SetData(s_Data.LineVertexBufferBase, lineDataSize);
+			s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, lineDataSize);
 		}
 		
 		if(quadDataSize != 0 || circleDataSize != 0 || lineDataSize != 0) Flush();
@@ -413,7 +414,7 @@ namespace Echo
 	}
 
 
-	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color /*= { 1.0f, 1.0f, 1.0f, 1.0f, }*/, float thickness /*= 1*/)
+	void Renderer2D::DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color /*= { 1.0f, 1.0f, 1.0f, 1.0f, }*/)
 	{
 		s_Data.LineVertexBufferPtr->Position = p0;
 		s_Data.LineVertexBufferPtr->Color = color;
@@ -424,6 +425,36 @@ namespace Echo
 		s_Data.LineVertexBufferPtr++;
 
 		s_Data.LineCount += 2;
+	}
+
+
+	void Renderer2D::DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color)
+	{
+		glm::vec3 p0 = glm::vec3(position.x - size.x * 0.5f, position.y - size.y * 0.5f, position.z);
+		glm::vec3 p1 = glm::vec3(position.x + size.x * 0.5f, position.y - size.y * 0.5f, position.z);
+		glm::vec3 p2 = glm::vec3(position.x + size.x * 0.5f, position.y + size.y * 0.5f, position.z);
+		glm::vec3 p3 = glm::vec3(position.x - size.x * 0.5f, position.y + size.y * 0.5f, position.z);
+
+		DrawLine(p0, p1, color);
+		DrawLine(p1, p2, color);
+		DrawLine(p2, p3, color);
+		DrawLine(p3, p0, color);
+	}
+
+
+	void Renderer2D::DrawRect(const glm::mat4& transform, const glm::vec4& color /*= { 1.0f, 1.0f, 1.0f, 1.0f, }*/)
+	{
+		glm::vec3 lineVertices[4];
+
+		for (size_t i = 0; i < 4; i++) 
+		{
+			lineVertices[i] = transform * s_Data.QuadVertexPositions[i];
+		}
+
+		DrawLine(lineVertices[0], lineVertices[1], color);
+		DrawLine(lineVertices[1], lineVertices[2], color);
+		DrawLine(lineVertices[2], lineVertices[3], color);
+		DrawLine(lineVertices[3], lineVertices[0], color);
 	}
 
 	void Renderer2D::Flush()
@@ -446,6 +477,7 @@ namespace Echo
 		s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
 		s_Data.Stats.DrawCalls++;
 
+		s_Data.Cmd->SetLineWidth(2.0f);
 		s_Data.Cmd->BindPipeline(s_Data.LinePipeline);
 		s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
 		s_Data.Cmd->Draw(s_Data.LineCount, 1, 0, 0);

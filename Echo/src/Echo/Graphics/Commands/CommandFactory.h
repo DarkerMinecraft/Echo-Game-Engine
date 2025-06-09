@@ -29,6 +29,7 @@ namespace Echo
 		static Ref<ICommand> DrawIndirectIndexed(Ref<IndirectBuffer> indirectBuffer, uint32_t offset, uint32_t drawCount, uint32_t stride);
 
 		static Ref<ICommand> SetScissorCommand(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+		static Ref<ICommand> SetLineWidthCommand(float lineWidth);
 
 		static Ref<ICommand> BeginRenderingCommand(Ref<Framebuffer> framebuffer);
 		static Ref<ICommand> BeginRenderingCommand();

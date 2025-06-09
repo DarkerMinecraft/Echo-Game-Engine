@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Core/UUID.h"
 #include "Components.h"
+#include "ComponentRegistry.h"
 
 namespace Echo 
 {
@@ -18,7 +19,11 @@ namespace Echo
 		T& AddComponent(Args&&... args) 
 		{
 			T& component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...); 
-			m_Scene->OnComponentAdd<T>(*this, component);
+			ComponentMetadata* meta = ComponentRegistry::GetMetadata<T>();
+			if (meta && meta->InitializeComponent)
+			{
+				meta->InitializeComponent(*this, &component);
+			}
 			return component;
 		}
 
@@ -41,6 +46,8 @@ namespace Echo
 		entt::entity GetHandle() const { return m_EntityHandle; }
 
 		UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
+
+		Scene* GetScene() { return m_Scene; }
 	private:
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;

@@ -33,6 +33,15 @@ namespace Echo
 		void OnUpdateRuntime(CommandList& cmd, Timestep ts);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
+
+		uint32_t GetViewportWidth() { return m_ViewportWidth; }
+		uint32_t GetViewportHeight() { return m_ViewportHeight; }
+
+		template<typename... Components> 
+		auto GetAllEntitiesWith() 
+		{
+			return m_Registry.view<Components...>();
+		}
 	private:
 		template<typename T>
 		void OnComponentAdd(Entity entity, T& component);

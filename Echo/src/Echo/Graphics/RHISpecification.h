@@ -172,6 +172,8 @@ namespace Echo
 		CompareOp DepthCompareOp = CompareOp::Less;
 		Topology GraphicsTopology = Topology::TriangleList;
 
+		float LineWidth = 1.0f;
+
 		Ref<Framebuffer> RenderTarget;
 	};
 

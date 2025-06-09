@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Scene/Entity.h"
-#include "Scene/Components.h"
+#include "Components.h"
 
 #include <yaml-cpp/yaml.h>
 #include <functional>
@@ -23,6 +22,7 @@ namespace Echo
 	using DeserializeFunc = std::function<void(Entity&, const YAML::Node&)>;
 	using DrawUIFunc = std::function<void(Entity&, const std::filesystem::path&)>;
 	using CopyComponentFunc = std::function<void(const Entity&, Entity&)>;
+	using InitializeComponentFunc = std::function<void(Entity&, void*)>;
 
 	// Metadata container for each component type
 	struct ComponentMetadata
@@ -37,6 +37,7 @@ namespace Echo
 		DeserializeFunc Deserialize;
 		DrawUIFunc DrawUI;
 		CopyComponentFunc CopyComponent;
+		InitializeComponentFunc InitializeComponent;
 
 		bool ShowInAddMenu = true;
 		bool Serializable = true;
@@ -89,6 +90,7 @@ namespace Echo
 
 		static void SetupComponentSerializers();
 		static void SetupComponentUI();
+		static void SetupComponentInitializers();
 	};
 
 	// Convenience macro for registering components

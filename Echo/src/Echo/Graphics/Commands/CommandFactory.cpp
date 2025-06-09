@@ -9,6 +9,7 @@
 #include "Vulkan/Commands/VulkanClearColorCommand.h"
 #include "Vulkan/Commands/VulkanSetScissorCommand.h"
 #include "Vulkan/Commands/VulkanRenderImGuiCommand.h"
+#include "Vulkan/Commands/VulkanSetLineWidthCommand.h"
 
 namespace Echo 
 {
@@ -103,6 +104,17 @@ namespace Echo
 		switch (GetDeviceType())
 		{
 			case DeviceType::Vulkan: return CreateRef<VulkanSetScissorCommand>(x, y, width, height);
+		}
+		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
+	}
+
+
+	Ref<ICommand> CommandFactory::SetLineWidthCommand(float lineWidth)
+	{
+		switch (GetDeviceType())
+		{
+			case DeviceType::Vulkan: return CreateRef<VulkanSetLineWidthCommand>(lineWidth);
 		}
 		EC_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;

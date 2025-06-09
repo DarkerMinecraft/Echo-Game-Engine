@@ -39,6 +39,8 @@ namespace Echo
 		void OnScenePlay();
 		void OnSceneEdit();
 
+		void OnOverlayRender();
+
 		//UI 
 		void ToolbarUI();
 		void ViewportUI();
