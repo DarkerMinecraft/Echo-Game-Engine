@@ -153,10 +153,10 @@ namespace Echo
 				if (m_ViewportFocused && m_ViewportHovered)
 					m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
-				Renderer2D::BeginScene(cmd, m_EditorCamera);
-				OnOverlayRender();
-				Renderer2D::EndScene();
+				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts, [this]()
+				{
+					OnOverlayRender();
+				});
 			}
 			else if (m_SceneState == Play)
 			{
@@ -167,8 +167,9 @@ namespace Echo
 			}
 			cmd.EndRendering();
 			cmd.Execute();
-			m_MsaaFramebuffer->ResolveToFramebuffer(m_MainFramebuffer.get());
 		}
+
+		m_MsaaFramebuffer->ResolveToFramebuffer(m_MainFramebuffer.get());
 		/*
 		{
 			EC_PROFILE_SCOPE("No Samples Render");
@@ -681,7 +682,7 @@ namespace Echo
 			auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
 			glm::mat4 transform = glm::translate(tc.GetTransform(), glm::vec3(0, 0, 0.1f));
 
-			Renderer2D::DrawCircle({ .InstanceID = -1, .Color = glm::vec4(0, 1, 0, 1), .OutlineThickness = 0.05f }, transform);
+			Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = glm::vec4(0, 1, 0, 1), .OutlineThickness = 0.05f, .Fade = 0}, transform);
 		}
 	}
 

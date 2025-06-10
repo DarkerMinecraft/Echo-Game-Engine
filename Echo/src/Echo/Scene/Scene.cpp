@@ -209,7 +209,7 @@ namespace Echo
 		m_Physics2D->EndPhysicsWorld();
 	}
 
-	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts)
+	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts, std::function<void()> overlayCallback /*= nullptr*/)
 	{
 		EC_PROFILE_FUNCTION();
 		Renderer2D::BeginScene(cmd, camera);
@@ -231,6 +231,9 @@ namespace Echo
 				Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 			}
 		}
+
+		if (overlayCallback)
+			overlayCallback();
 
 		Renderer2D::EndScene();
 	}

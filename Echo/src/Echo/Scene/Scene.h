@@ -29,7 +29,7 @@ namespace Echo
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
-		void OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts);
+		void OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts, std::function<void()> overlayCallback = nullptr);
 		void OnUpdateRuntime(CommandList& cmd, Timestep ts);
 
 		void OnViewportResize(uint32_t width, uint32_t height);

@@ -371,7 +371,7 @@ namespace Echo
 	void Renderer2D::DrawCircle(const VertexCircleData& data)
 	{
 		EC_PROFILE_FUNCTION();
-		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
+		if (s_Data.CircleIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), data.Position)
@@ -395,7 +395,7 @@ namespace Echo
 	void Renderer2D::DrawCircle(const VertexCircleData& data, const glm::mat4& transform)
 	{
 		EC_PROFILE_FUNCTION();
-		if (s_Data.QuadIndexCount >= s_Data.MaxIndices)
+		if (s_Data.CircleIndexCount >= s_Data.MaxIndices)
 			FlushAndReset();
 
 		for (int i = 0; i < 4; i++)
@@ -460,28 +460,38 @@ namespace Echo
 	void Renderer2D::Flush()
 	{
 		EC_PROFILE_FUNCTION();
-		s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
-		for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
+
+		if (s_Data.QuadIndexCount != 0)
 		{
-			if (s_Data.TextureSlots[i] != nullptr)
+			s_Data.Cmd->BindPipeline(s_Data.QuadPipeline);
+			for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
 			{
-				s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
+				if (s_Data.TextureSlots[i] != nullptr)
+				{
+					s_Data.QuadPipeline->BindResource(1, 0, s_Data.TextureSlots[i], i);
+				}
 			}
+			s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
+			s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
+			s_Data.Stats.DrawCalls++;
 		}
-		s_Data.Cmd->BindVertexBuffer(s_Data.QuadVertexBuffer);
-		s_Data.Cmd->DrawIndexed(s_Data.QuadIndexCount, 1, 0, 0, 0);
-		s_Data.Stats.DrawCalls++;
 
-		s_Data.Cmd->BindPipeline(s_Data.CirclePipeline);
-		s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
-		s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
-		s_Data.Stats.DrawCalls++;
+		if (s_Data.CircleIndexCount != 0)
+		{
+			s_Data.Cmd->BindPipeline(s_Data.CirclePipeline);
+			s_Data.Cmd->BindVertexBuffer(s_Data.CircleVertexBuffer);
+			s_Data.Cmd->DrawIndexed(s_Data.CircleIndexCount, 1, 0, 0, 0);
+			s_Data.Stats.DrawCalls++;
+		}
 
-		s_Data.Cmd->SetLineWidth(2.0f);
-		s_Data.Cmd->BindPipeline(s_Data.LinePipeline);
-		s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
-		s_Data.Cmd->Draw(s_Data.LineCount, 1, 0, 0);
-		s_Data.Stats.DrawCalls++;
+		if (s_Data.LineCount != 0)
+		{
+			s_Data.Cmd->SetLineWidth(2.0f);
+			s_Data.Cmd->BindPipeline(s_Data.LinePipeline);
+			s_Data.Cmd->BindVertexBuffer(s_Data.LineVertexBuffer);
+			s_Data.Cmd->Draw(s_Data.LineCount, 1, 0, 0);
+			s_Data.Stats.DrawCalls++;
+		}
 	}
 
 	void Renderer2D::FlushAndReset()
