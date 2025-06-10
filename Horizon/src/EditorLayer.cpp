@@ -59,11 +59,11 @@ namespace Echo
 		PipelineSpecification outlineSpec{};
 		outlineSpec.CullMode = Cull::None;
 
-		outlineSpec.RenderTarget = m_FinalFramebuffer; 
+		outlineSpec.RenderTarget = m_FinalFramebuffer;
 		m_OutlinePipeline = Pipeline::Create(m_OutlineShader->GetShader(), outlineSpec);
 
 		m_OutlineParams.selectedEntityID = -2;
-		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f); 
+		m_OutlineParams.outlineColor = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
 		m_OutlineParams.outlineThickness = 2.0f;
 		m_OutlineBuffer = UniformBuffer::Create(&m_OutlineParams, sizeof(OutlineParams));
 
@@ -89,6 +89,48 @@ namespace Echo
 	void EditorLayer::OnUpdate(Timestep ts)
 	{
 		EC_PROFILE_FUNCTION();
+
+		// Update real-time performance metrics
+		m_FrameTime = ts.GetMilliseconds();
+		constexpr float kEps = 1e-6f;
+		float seconds = ts.GetSeconds();
+		m_FPS = seconds > kEps ? 1.0f / seconds : 0.0f;
+
+		// Initialize display values on first frame
+		if (m_SampleCount == 0)
+		{
+			m_DisplayFPS = m_FPS;
+			m_DisplayFrameTime = m_FrameTime;
+		}
+
+		// Accumulate for averaging
+		m_FPSAccumulator += m_FPS;
+		m_FrameTimeAccumulator += m_FrameTime;
+		m_SampleCount++;
+
+		// Store frame time history for graph
+		m_FrameTimeHistory.push_back(m_FrameTime);
+		if (m_FrameTimeHistory.size() > MAX_FRAME_HISTORY)
+			m_FrameTimeHistory.erase(m_FrameTimeHistory.begin());
+
+		// Update display values periodically
+		m_DisplayUpdateTimer += ts.GetSeconds();
+		if (m_DisplayUpdateTimer >= m_DisplayUpdateInterval)
+		{
+			// Calculate averages
+			if (m_SampleCount > 0)
+			{
+				m_DisplayFPS = m_FPSAccumulator / m_SampleCount;
+				m_DisplayFrameTime = m_FrameTimeAccumulator / m_SampleCount;
+			}
+
+			// Reset accumulators
+			m_FPSAccumulator = 0.0f;
+			m_FrameTimeAccumulator = 0.0f;
+			m_SampleCount = 0;
+			m_DisplayUpdateTimer = 0.0f;
+		}
+
 		Renderer2D::ResetStats();
 
 		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
@@ -108,7 +150,7 @@ namespace Echo
 			cmd.BeginRendering(m_MsaaFramebuffer);
 			if (m_SceneState == Edit)
 			{
-				if (m_ViewportFocused)
+				if (m_ViewportFocused && m_ViewportHovered)
 					m_EditorCamera.OnUpdate(ts);
 
 				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
@@ -198,7 +240,10 @@ namespace Echo
 	void EditorLayer::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-		m_EditorCamera.OnEvent(e);
+		if (m_ViewportHovered)
+		{
+			m_EditorCamera.OnEvent(e);
+		}
 
 		dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(EditorLayer::OnKeyPressed));
 	}
@@ -293,19 +338,12 @@ namespace Echo
 		}
 		ImGui::End();
 
-		ImGui::Begin("RendererQuad::Stats");
-		auto stats = Renderer2D::GetStats();
-		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-		ImGui::Text("Quad Count: %d", stats.QuadCount);
-		ImGui::Text("Vertex Count: %d", stats.GetTotalQuadVertexCount());
-		ImGui::Text("Index Count: %d", stats.GetTotalQuadIndexCount());
-		ImGui::End();
-
 		m_SceneHierarchyPanel.OnImGuiRender();
 		m_ContentBrowserPanel.OnImGuiRender();
 
 		ViewportUI();
 		ToolbarUI();
+		DebugToolsUI();
 	}
 
 	void EditorLayer::ToolbarUI()
@@ -421,6 +459,72 @@ namespace Echo
 			}
 		}
 		ImGui::PopStyleVar();
+		ImGui::End();
+	}
+
+	void EditorLayer::DebugToolsUI()
+	{
+		ImGui::Begin("Debug & Performance");
+
+	    // Performance section with averaged values
+		ImGui::SeparatorText("Performance");
+
+		// Color-coded FPS display
+		ImVec4 fpsColor = m_DisplayFPS > 60.0f ? ImVec4(0, 1, 0, 1) :  // Green
+			m_DisplayFPS > 30.0f ? ImVec4(1, 1, 0, 1) :  // Yellow  
+			ImVec4(1, 0, 0, 1);   // Red
+
+		ImGui::TextColored(fpsColor, "FPS: %.1f", m_DisplayFPS);
+		ImGui::Text("Frame Time: %.2f ms", m_DisplayFrameTime);
+
+		// Update interval control
+		ImGui::SliderFloat("Update Interval", &m_DisplayUpdateInterval, 0.5f, 5.0f, "%.1f sec");
+
+		// Real-time frame time graph (this can still update every frame)
+		if (!m_FrameTimeHistory.empty())
+		{
+			ImGui::PlotLines("Frame Time History (ms)",
+							 m_FrameTimeHistory.data(),
+							 (int)m_FrameTimeHistory.size(),
+							 0, nullptr, 0.0f, 50.0f, ImVec2(0, 80));
+		}
+
+		// Renderer Stats (these update every frame, which is fine)
+		ImGui::SeparatorText("Renderer Statistics");
+		auto stats = Renderer2D::GetStats();
+		ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+		ImGui::Text("Quad Count: %d", stats.QuadCount);
+		ImGui::Text("Circle Count: %d", stats.CircleCount);
+		ImGui::Text("Total Vertices: %d", stats.GetTotalQuadVertexCount() + stats.GetTotalCircleVertexCount());
+		ImGui::Text("Total Indices: %d", stats.GetTotalQuadIndexCount() + stats.GetTotalCircleIndexCount());
+
+		// Scene Information
+		ImGui::SeparatorText("Scene Information");
+		if (m_ActiveScene)
+		{
+			auto allEntities = m_ActiveScene->GetAllEntitiesWith<TagComponent>();
+			ImGui::Text("Entity Count: %d", (int)allEntities.size());
+			ImGui::Text("Viewport: %dx%d", (int)m_ViewportSize.x, (int)m_ViewportSize.y);
+		}
+
+		// Editor State
+		ImGui::SeparatorText("Editor State");
+		ImGui::Text("Scene State: %s", m_SceneState == Edit ? "Edit" : "Play");
+		ImGui::Text("Viewport Focused: %s", m_ViewportFocused ? "Yes" : "No");
+		ImGui::Text("Viewport Hovered: %s", m_ViewportHovered ? "Yes" : "No");
+
+		// Selected Entity Info
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+		if (selectedEntity)
+		{
+			ImGui::SeparatorText("Selected Entity");
+			ImGui::Text("Entity ID: %d", (uint32_t)selectedEntity);
+			if (selectedEntity.HasComponent<TagComponent>())
+			{
+				ImGui::Text("Name: %s", selectedEntity.GetComponent<TagComponent>().Tag.c_str());
+			}
+		}
+
 		ImGui::End();
 	}
 
@@ -567,8 +671,8 @@ namespace Echo
 
 	void EditorLayer::OnOverlayRender()
 	{
-		auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>(); 
-		for (auto entity : view) 
+		auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>();
+		for (auto entity : view)
 		{
 			auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
 			glm::mat4 transform = glm::translate(tc.GetTransform(), glm::vec3(0, 0, 0.1f));
