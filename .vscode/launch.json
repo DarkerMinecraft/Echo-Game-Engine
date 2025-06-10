@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Horizon",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/bin/Debug/Horizon/Horizon.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/Debug/bin/Debug/Horizon",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-debug"
+        },
+        {
+            "name": "Release Horizon", 
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Release/bin/Release/Horizon/Horizon.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/Release/bin/Release/Horizon",
+            "environment": [],
+            "console": "externalTerminal",
+            "preLaunchTask": "build-release"
+        }
+    ]
+}
