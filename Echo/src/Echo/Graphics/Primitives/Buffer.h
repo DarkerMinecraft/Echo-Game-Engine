@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/CommandBuffer.h"
+#include "CommandBuffer.h"
 
 #include <vector>
 

@@ -3,7 +3,7 @@
 #include "Base.h"
 #include "Events/Event.h"
 
-#include "Graphics/Device.h"
+#include "Graphics/Primitives/Device.h"
 
 #ifdef ECHO_PLATFORM_WIN
 	#define VK_USE_PLATFORM_WIN32_KHR

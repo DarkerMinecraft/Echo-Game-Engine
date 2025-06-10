@@ -4,8 +4,8 @@
 
 #include "VulkanCommandBuffer.h"
 
-#include "Utils/VulkanDescriptors.h"
-#include "Utils/VulkanImages.h"
+#include "Vulkan/Utils/VulkanDescriptors.h"
+#include "Vulkan/Utils/VulkanImages.h"
 #include "ImGui/ImGuiTextureRegistry.h"
 
 #include "Core/Base.h"

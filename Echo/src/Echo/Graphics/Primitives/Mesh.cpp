@@ -2,7 +2,7 @@
 #include "Mesh.h"
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanMesh.h"
+#include "Vulkan/Primitives/VulkanMesh.h"
 
 namespace Echo 
 {

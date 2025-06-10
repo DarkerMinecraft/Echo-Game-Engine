@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Layer.h"
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Framebuffer.h"
 
 namespace Echo
 {

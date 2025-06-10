@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Renderer2D.h"
 
-#include "Graphics/Buffer.h"
-#include "Graphics/Pipeline.h"
-#include "Graphics/Texture.h"
-#include "Graphics/Material.h"
-#include "Graphics/Shader.h"
+#include "Graphics/Primitives/Buffer.h"
+#include "Graphics/Primitives/Pipeline.h"
+#include "Graphics/Primitives/Texture.h"
+#include "Graphics/Primitives/Material.h"
+#include "Graphics/Primitives/Shader.h"
 
 #include "AssetManager/Assets/ShaderAsset.h"
 

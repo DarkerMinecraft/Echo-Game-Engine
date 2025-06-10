@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Graphics/CommandBuffer.h"
+#include "Graphics/Primitives/CommandBuffer.h"
 #include "Graphics/Commands/ICommand.h"
 
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Framebuffer.h"
 
 #include <glm/glm.hpp>
 

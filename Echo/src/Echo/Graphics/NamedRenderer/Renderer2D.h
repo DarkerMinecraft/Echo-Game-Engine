@@ -4,7 +4,7 @@
 
 #include "Graphics/Camera.h"
 #include "Graphics/EditorCamera.h"
-#include "Graphics/Texture.h"
+#include "Graphics/Primitives/Texture.h"
 
 #include "AssetManager/AssetRegistry.h"
 

@@ -2,7 +2,7 @@
 
 #include "AssetManager/Asset.h"
 
-#include "Graphics/Texture.h"
+#include "Graphics/Primitives/Texture.h"
 
 namespace Echo 
 {

@@ -2,7 +2,7 @@
 #include "Buffer.h"
 
 #include "Core/Application.h"
-#include "Vulkan/VulkanBuffer.h"
+#include "Vulkan/Primitives/VulkanBuffer.h"
 
 namespace Echo 
 {

@@ -112,10 +112,6 @@ namespace Echo
 					m_EditorCamera.OnUpdate(ts);
 
 				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
-
-				Renderer2D::BeginScene(cmd, m_EditorCamera);
-				OnOverlayRender();
-				Renderer2D::EndScene();
 			}
 			else if (m_SceneState == Play)
 			{
@@ -135,7 +131,6 @@ namespace Echo
 
 			CommandList cmd;
 			cmd.SetSourceFramebuffer(m_FinalFramebuffer);
-
 			cmd.Begin();
 			cmd.BeginRendering(m_FinalFramebuffer);
 			cmd.BindPipeline(m_OutlinePipeline);
@@ -576,7 +571,7 @@ namespace Echo
 		for (auto entity : view) 
 		{
 			auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
-			glm::mat4 transform = glm::translate(tc.GetTransform(), glm::vec3(0, 0, 0.01f));
+			glm::mat4 transform = glm::translate(tc.GetTransform(), glm::vec3(0, 0, 0.1f));
 
 			Renderer2D::DrawCircle({ .InstanceID = -1, .Color = glm::vec4(0, 1, 0, 1), .OutlineThickness = 0.05f }, transform);
 		}

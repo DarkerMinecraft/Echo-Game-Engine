@@ -4,9 +4,9 @@
 
 #include "Commands/ICommand.h"
 #include "Commands/CommandFactory.h"
-#include "CommandBuffer.h"
+#include "Primitives/CommandBuffer.h"
 
-#include "Framebuffer.h"
+#include "Primitives/Framebuffer.h"
 
 #include <vector>
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/Primitives/VulkanCommandBuffer.h"
 
-#include "Graphics/CommandBuffer.h"
+#include "Graphics/Primitives/CommandBuffer.h"
 #include "Graphics/Commands/ICommand.h"
 
 #include <backends/imgui_impl_vulkan.h>

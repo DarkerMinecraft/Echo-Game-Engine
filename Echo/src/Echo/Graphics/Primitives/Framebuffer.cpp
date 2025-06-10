@@ -2,7 +2,7 @@
 #include "Framebuffer.h"
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanFramebuffer.h"
+#include "Vulkan/Primitives/VulkanFramebuffer.h"
 
 namespace Echo 
 {

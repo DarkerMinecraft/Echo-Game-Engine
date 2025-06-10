@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Mesh.h"
+#include "Graphics/Primitives/Mesh.h"
 
 #include "VulkanDevice.h"
 

@@ -2,7 +2,7 @@
 #include "Shader.h"
 
 #include "Core/Application.h"
-#include "Vulkan/VulkanShader.h"
+#include "Vulkan/Primitives/VulkanShader.h"
 
 namespace Echo 
 {

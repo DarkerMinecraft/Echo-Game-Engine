@@ -4,7 +4,7 @@
 #include "VulkanCommandBuffer.h"
 #include "VulkanTexture.h"
 #include "VulkanBuffer.h"
-#include "VulkanRenderCaps.h"
+#include "Vulkan/VulkanRenderCaps.h"
 #include "VulkanShader.h"
 
 #include <unordered_set>

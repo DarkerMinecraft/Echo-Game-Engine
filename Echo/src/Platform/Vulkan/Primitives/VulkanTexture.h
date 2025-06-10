@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Graphics/Texture.h"
+#include "Graphics/Primitives/Texture.h"
 
 #include "Core/UUID.h"
 
 #include "VulkanDevice.h"
-#include "Utils/VulkanTypes.h"
+#include "Vulkan/Utils/VulkanTypes.h"
 
 namespace Echo 
 {

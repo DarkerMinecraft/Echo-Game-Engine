@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/CommandBuffer.h"
+#include "Graphics/Primitives/CommandBuffer.h"
 
 namespace Echo 
 {

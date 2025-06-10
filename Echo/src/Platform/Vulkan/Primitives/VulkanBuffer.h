@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Graphics/Buffer.h"
+#include "Graphics/Primitives/Buffer.h"
 
 #include "VulkanDevice.h"
-#include "Utils/VulkanTypes.h"
+#include "Vulkan/Utils/VulkanTypes.h"
 
 #include <vector>
 

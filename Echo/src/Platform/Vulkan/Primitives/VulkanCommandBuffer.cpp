@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "VulkanCommandBuffer.h"
 
-#include "VulkanSwapchain.h"
-#include "Utils/VulkanInitializers.h"
-#include "Utils/VulkanImages.h"
+#include "Vulkan/VulkanSwapchain.h"
+#include "Vulkan/Utils/VulkanInitializers.h"
+#include "Vulkan/Utils/VulkanImages.h"
 #include "VulkanFramebuffer.h"
 
 #include "Core/Application.h"

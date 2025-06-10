@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Framebuffer.h"
 #include "VulkanTexture.h"
 
 #include "VulkanDevice.h"

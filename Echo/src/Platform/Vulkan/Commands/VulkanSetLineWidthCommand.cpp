@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "VulkanSetLineWidthCommand.h"
 
-#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/Primitives/VulkanCommandBuffer.h"
 
 namespace Echo 
 {

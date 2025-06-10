@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Core/Window.h"
-#include "Graphics/Device.h"
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Device.h"
+#include "Graphics/Primitives/Framebuffer.h"
 
 #include "vk_mem_alloc.h"
-#include "Utils/VulkanTypes.h"
-#include "Shader/ShaderCompiler.h"
+#include "Vulkan/Utils/VulkanTypes.h"
+#include "Vulkan/Shader/ShaderCompiler.h"
 #include "Windows/WindowsWindow.h"
 
 namespace Echo

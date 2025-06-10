@@ -2,10 +2,10 @@
 
 #include "AssetManager/Assets/ShaderAsset.h"
 
-#include "Graphics/Buffer.h"
-#include "Graphics/Texture.h"
-#include "Graphics/Pipeline.h"
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Buffer.h"
+#include "Graphics/Primitives/Texture.h"
+#include "Graphics/Primitives/Pipeline.h"
+#include "Graphics/Primitives/Framebuffer.h"
 
 #include "Graphics/CommandList.h"
 

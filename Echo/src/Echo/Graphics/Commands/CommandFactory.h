@@ -3,10 +3,10 @@
 #include "ICommand.h"
 
 #include "Core/Application.h"
-#include "Graphics/Device.h"
-#include "Graphics/Framebuffer.h"
-#include "Graphics/Pipeline.h"
-#include "Graphics/Buffer.h"
+#include "Graphics/Primitives/Device.h"
+#include "Graphics/Primitives/Framebuffer.h"
+#include "Graphics/Primitives/Pipeline.h"
+#include "Graphics/Primitives/Buffer.h"
 
 #include <glm/glm.hpp>
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Base.h"
-#include "RHISpecification.h"
+#include "Graphics/RHISpecification.h"
 
 #include <filesystem>
 

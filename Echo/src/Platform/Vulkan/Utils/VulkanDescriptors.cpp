@@ -3,7 +3,7 @@
 
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/Primitives/VulkanDevice.h"
 
 namespace Echo
 {

@@ -2,7 +2,7 @@
 
 #include "Core/Log.h"
 
-#include "Framebuffer.h"
+#include "Primitives/Framebuffer.h"
 
 namespace Echo 
 {

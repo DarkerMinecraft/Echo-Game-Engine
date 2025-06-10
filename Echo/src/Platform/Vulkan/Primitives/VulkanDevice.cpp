@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "VulkanDevice.h"
-#include "VulkanRenderCaps.h"
+#include "Vulkan/VulkanRenderCaps.h"
 
-#include "Utils/VulkanInitializers.h"
-#include "Utils/VulkanImages.h"
+#include "Vulkan/Utils/VulkanInitializers.h"
+#include "Vulkan/Utils/VulkanImages.h"
 
 #include "VkBootstrap.h"
-#include "VulkanSwapchain.h"
+#include "Vulkan/VulkanSwapchain.h"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "AssetManager/Asset.h"
-#include "Graphics/Shader.h"
-#include "Graphics/Pipeline.h"
+#include "Graphics/Primitives/Shader.h"
+#include "Graphics/Primitives/Pipeline.h"
 
 #include "Serializer/Cache/ShaderCache.h"
 

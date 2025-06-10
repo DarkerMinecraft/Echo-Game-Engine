@@ -2,7 +2,7 @@
 #include "Pipeline.h"
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanPipeline.h" 
+#include "Vulkan/Primitives/VulkanPipeline.h" 
 
 namespace Echo 
 {

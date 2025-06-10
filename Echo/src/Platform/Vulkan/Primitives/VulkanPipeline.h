@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Graphics/Material.h"
-#include "Graphics/Pipeline.h"
+#include "Graphics/Primitives/Material.h"
+#include "Graphics/Primitives/Pipeline.h"
 
 #include "VulkanDevice.h"
-#include "Utils/VulkanDescriptors.h"
+#include "Vulkan/Utils/VulkanDescriptors.h"
 
 namespace Echo 
 {

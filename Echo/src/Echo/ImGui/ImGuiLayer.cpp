@@ -4,10 +4,10 @@
 #include "Graphics/CommandList.h"
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanDevice.h"
+#include "Vulkan/Primitives/VulkanDevice.h"
+#include "Vulkan/Primitives/VulkanFramebuffer.h"
+#include "Vulkan/Primitives/VulkanTexture.h"
 #include "Vulkan/VulkanSwapchain.h"
-#include "Vulkan/VulkanFramebuffer.h"
-#include "Vulkan/VulkanTexture.h"
 
 #include <backends/imgui_impl_win32.h>
 #include <backends/imgui_impl_vulkan.h>

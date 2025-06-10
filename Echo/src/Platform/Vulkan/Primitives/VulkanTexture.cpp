@@ -6,7 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <backends/imgui_impl_vulkan.h>
-#include "../../Echo/ImGui/ImGuiTextureRegistry.h"
+#include "ImGui/ImGuiTextureRegistry.h"
 
 namespace Echo
 {

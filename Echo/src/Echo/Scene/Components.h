@@ -3,10 +3,10 @@
 #include <glm/glm.hpp>
 
 #include "SceneCamera.h"
-#include "Graphics/Texture.h"
 
-#include "Graphics/Material.h"
-#include "Graphics/Mesh.h"
+#include "Graphics/Primitives/Texture.h"
+#include "Graphics/Primitives/Material.h"
+#include "Graphics/Primitives/Mesh.h"
 
 #include "Core/Timestep.h"
 #include "Core/UUID.h"

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Graphics/Texture.h"
-#include "Graphics/Framebuffer.h"
+#include "Graphics/Primitives/Texture.h"
+#include "Graphics/Primitives/Framebuffer.h"
 
 #include <imgui.h>
 #include <unordered_map>

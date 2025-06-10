@@ -57,6 +57,8 @@ namespace Echo
 		Ref<Scene> m_ActiveScene;
 		Ref<Scene> m_EditorScene;
 
+		bool m_OverlayEnabled = true;
+
 		bool m_PrimaryCamera = false;
 
 		Window* m_Window;
@@ -81,8 +83,7 @@ namespace Echo
 			alignas(4) int selectedEntityID;
 			alignas(16) glm::vec4 outlineColor;
 			alignas(4) float outlineThickness;
-		};
-		OutlineParams m_OutlineParams;
+		} m_OutlineParams;
 
 		SceneState m_SceneState = SceneState::Edit;
 

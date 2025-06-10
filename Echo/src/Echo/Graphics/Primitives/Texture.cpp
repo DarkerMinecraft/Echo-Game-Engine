@@ -2,7 +2,7 @@
 #include "Texture.h"
 #include "Core/Application.h"
 
-#include "Vulkan/VulkanTexture.h"
+#include "Vulkan/Primitives/VulkanTexture.h"
 
 namespace Echo 
 {
