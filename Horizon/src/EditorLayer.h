@@ -44,6 +44,8 @@ namespace Echo
 		//UI 
 		void ToolbarUI();
 		void ViewportUI();
+
+		void DebugToolsUI();
 	private:
 		Ref<Framebuffer> m_MsaaFramebuffer;
 		Ref<Framebuffer> m_MainFramebuffer;
@@ -93,6 +95,21 @@ namespace Echo
 		std::filesystem::path m_CurrentScenePath;
 
 		int m_GuizmoType = -1;
+
+		float m_FrameTime = 0.0f;
+    	float m_FPS = 0.0f;
+    	std::vector<float> m_FrameTimeHistory;
+    	static constexpr size_t MAX_FRAME_HISTORY = 100;
+
+		float m_DisplayUpdateTimer = 0.0f;
+		float m_DisplayUpdateInterval = 1.0f; // Update every 1 second
+		float m_DisplayFPS = 0.0f;
+		float m_DisplayFrameTime = 0.0f;
+
+		// Averaging accumulators
+		float m_FPSAccumulator = 0.0f;
+		float m_FrameTimeAccumulator = 0.0f;
+		int m_SampleCount = 0;
 	};
 }
 
