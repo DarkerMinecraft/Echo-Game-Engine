@@ -97,6 +97,64 @@ namespace Echo
 			stream.write(entryPoint.EntryPointName.c_str(), nameLen);
 		}
 
+		const auto& uniformLayouts = m_Reflection.GetUniformLayouts();
+		uint32_t uniformLayoutCount = static_cast<uint32_t>(uniformLayouts.size());
+		stream.write(reinterpret_cast<const char*>(&uniformLayoutCount), sizeof(uint32_t));
+
+		for (const auto& layout : uniformLayouts)
+		{
+			// Write buffer name
+			uint32_t nameLen = static_cast<uint32_t>(layout.BufferName.length());
+			stream.write(reinterpret_cast<const char*>(&nameLen), sizeof(uint32_t));
+			stream.write(layout.BufferName.c_str(), nameLen);
+
+			// Write member count
+			uint32_t memberCount = static_cast<uint32_t>(layout.Members.size());
+			stream.write(reinterpret_cast<const char*>(&memberCount), sizeof(uint32_t));
+
+			// Write each member
+			for (const auto& member : layout.Members)
+			{
+				// Member name
+				uint32_t memberNameLen = static_cast<uint32_t>(member.Name.length());
+				stream.write(reinterpret_cast<const char*>(&memberNameLen), sizeof(uint32_t));
+				stream.write(member.Name.c_str(), memberNameLen);
+
+				// Member data
+				uint32_t type = static_cast<uint32_t>(member.Type);
+				stream.write(reinterpret_cast<const char*>(&type), sizeof(uint32_t));
+				stream.write(reinterpret_cast<const char*>(&member.Offset), sizeof(uint32_t));
+				stream.write(reinterpret_cast<const char*>(&member.Size), sizeof(uint32_t));
+				stream.write(reinterpret_cast<const char*>(&member.ArrayCount), sizeof(uint32_t));
+			}
+		}
+
+		// Write texture layout
+		const auto& textureBindings = m_Reflection.GetTextureBindings();
+		uint32_t textureCount = static_cast<uint32_t>(textureBindings.size());
+		stream.write(reinterpret_cast<const char*>(&textureCount), sizeof(uint32_t));
+
+		for (const auto& texture : textureBindings)
+		{
+			// Texture name
+			uint32_t nameLen = static_cast<uint32_t>(texture.Name.length());
+			stream.write(reinterpret_cast<const char*>(&nameLen), sizeof(uint32_t));
+			stream.write(texture.Name.c_str(), nameLen);
+
+			// Texture data
+			uint32_t type = static_cast<uint32_t>(texture.Type);
+			stream.write(reinterpret_cast<const char*>(&type), sizeof(uint32_t));
+			stream.write(reinterpret_cast<const char*>(&texture.Binding), sizeof(uint32_t));
+			stream.write(reinterpret_cast<const char*>(&texture.Set), sizeof(uint32_t));
+			stream.write(reinterpret_cast<const char*>(&texture.Count), sizeof(uint32_t));
+
+			uint32_t stage = static_cast<uint32_t>(texture.Stage);
+			stream.write(reinterpret_cast<const char*>(&stage), sizeof(uint32_t));
+
+			uint8_t isArray = texture.IsArray ? 1 : 0;
+			stream.write(reinterpret_cast<const char*>(&isArray), sizeof(uint8_t));
+		}
+
 		return stream.good();
 	}
 
@@ -261,6 +319,84 @@ namespace Echo
 		for (const auto& binding : bindings)
 		{
 			m_Reflection.AddResourceBinding(binding);
+		}
+
+		uint32_t uniformLayoutCount;
+		stream.read(reinterpret_cast<char*>(&uniformLayoutCount), sizeof(uint32_t));
+
+		for (uint32_t i = 0; i < uniformLayoutCount; i++)
+		{
+			UniformBufferLayout layout;
+
+			// Read buffer name
+			uint32_t nameLen;
+			stream.read(reinterpret_cast<char*>(&nameLen), sizeof(uint32_t));
+			std::vector<char> nameBuffer(nameLen + 1, 0);
+			stream.read(nameBuffer.data(), nameLen);
+			layout.BufferName = std::string(nameBuffer.data(), nameLen);
+
+			// Read member count
+			uint32_t memberCount;
+			stream.read(reinterpret_cast<char*>(&memberCount), sizeof(uint32_t));
+
+			// Read each member
+			for (uint32_t j = 0; j < memberCount; j++)
+			{
+				UniformBufferMember member;
+
+				// Read member name
+				uint32_t memberNameLen;
+				stream.read(reinterpret_cast<char*>(&memberNameLen), sizeof(uint32_t));
+				std::vector<char> memberNameBuffer(memberNameLen + 1, 0);
+				stream.read(memberNameBuffer.data(), memberNameLen);
+				member.Name = std::string(memberNameBuffer.data(), memberNameLen);
+
+				// Read member data
+				uint32_t type;
+				stream.read(reinterpret_cast<char*>(&type), sizeof(uint32_t));
+				member.Type = static_cast<ShaderDataType>(type);
+				stream.read(reinterpret_cast<char*>(&member.Offset), sizeof(uint32_t));
+				stream.read(reinterpret_cast<char*>(&member.Size), sizeof(uint32_t));
+				stream.read(reinterpret_cast<char*>(&member.ArrayCount), sizeof(uint32_t));
+
+				layout.Members.push_back(member);
+			}
+
+			m_Reflection.AddUniformLayout(layout);
+		}
+
+		// Read texture layout
+		uint32_t textureCount;
+		stream.read(reinterpret_cast<char*>(&textureCount), sizeof(uint32_t));
+
+		for (uint32_t i = 0; i < textureCount; i++)
+		{
+			TextureBinding texture;
+
+			// Read texture name
+			uint32_t nameLen;
+			stream.read(reinterpret_cast<char*>(&nameLen), sizeof(uint32_t));
+			std::vector<char> nameBuffer(nameLen + 1, 0);
+			stream.read(nameBuffer.data(), nameLen);
+			texture.Name = std::string(nameBuffer.data(), nameLen);
+
+			// Read texture data
+			uint32_t type;
+			stream.read(reinterpret_cast<char*>(&type), sizeof(uint32_t));
+			texture.Type = static_cast<DescriptorType>(type);
+			stream.read(reinterpret_cast<char*>(&texture.Binding), sizeof(uint32_t));
+			stream.read(reinterpret_cast<char*>(&texture.Set), sizeof(uint32_t));
+			stream.read(reinterpret_cast<char*>(&texture.Count), sizeof(uint32_t));
+
+			uint32_t stage;
+			stream.read(reinterpret_cast<char*>(&stage), sizeof(uint32_t));
+			texture.Stage = static_cast<ShaderStage>(stage);
+
+			uint8_t isArrayByte;
+			stream.read(reinterpret_cast<char*>(&isArrayByte), sizeof(uint8_t));
+			texture.IsArray = isArrayByte != 0;
+
+			m_Reflection.AddTextureBinding(texture);
 		}
 
 		return stream.good();

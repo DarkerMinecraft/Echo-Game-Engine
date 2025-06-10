@@ -30,6 +30,7 @@ namespace Echo
 	private:		
 		void ExtractVertexAttributes(slang::EntryPointReflection* entryPoint, ShaderReflection* reflection);
 		void ExtractBuffers(ShaderStage stage, slang::ProgramLayout* layout, IMetadata* entryPointMetadata, ShaderReflection* reflection);
+		void ExtractUniformBufferMembers(const char* bufferName, slang::TypeLayoutReflection* bufferTypeLayout, ShaderReflection* reflection);
 
 		ShaderStage SlangStageToShaderStage(SlangStage stage);
 		ShaderDataType SlangTypeToShaderDataType(slang::TypeReflection* type);

@@ -112,6 +112,9 @@ namespace Echo
 					m_EditorCamera.OnUpdate(ts);
 
 				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
+				Renderer2D::BeginScene(cmd, m_EditorCamera);
+				OnOverlayRender();
+				Renderer2D::EndScene();
 			}
 			else if (m_SceneState == Play)
 			{
@@ -124,7 +127,7 @@ namespace Echo
 			cmd.Execute();
 			m_MsaaFramebuffer->ResolveToFramebuffer(m_MainFramebuffer.get());
 		}
-
+		/*
 		{
 			EC_PROFILE_SCOPE("No Samples Render");
 			m_OutlineBuffer->SetData(&m_OutlineParams, sizeof(OutlineParams));
@@ -141,6 +144,7 @@ namespace Echo
 			cmd.EndRendering();
 			cmd.Execute();
 		}
+		*/
 
 		if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f
 			&& (m_MsaaFramebuffer->GetWidth() != m_ViewportSize.x || m_MsaaFramebuffer->GetHeight() != m_ViewportSize.y))
@@ -360,7 +364,7 @@ namespace Echo
 		{
 			m_ViewportSize = { viewportSize.x, viewportSize.y };
 		}
-		void* imGuiID = m_FinalFramebuffer->GetImGuiTexture(0);
+		void* imGuiID = m_MainFramebuffer->GetImGuiTexture(0);
 		ImGui::Image((ImTextureID)imGuiID, ImVec2(m_ViewportSize.x, m_ViewportSize.y), ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget())

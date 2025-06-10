@@ -418,6 +418,23 @@ namespace Echo
 				rbo.Count = 1;
 				rbo.Type = DescriptorType::SampledImage;
 				reflection->AddResourceBinding(rbo);
+
+				TextureBinding texBinding;
+				texBinding.Name = name;
+				texBinding.Type = DescriptorType::SampledImage;
+				texBinding.Binding = binding;
+				texBinding.Set = set;
+				texBinding.Count = rbo.Count;
+				texBinding.Stage = stage;
+				texBinding.IsArray = type->isArray();
+				reflection->AddTextureBinding(texBinding);
+
+				EC_CORE_INFO("      Texture: {0} (set: {1}, binding: {2}, count: {3})",
+							 name, set, binding, texBinding.Count);
+				if (texBinding.IsArray)
+				{
+					EC_CORE_INFO("        Array[{0}]", texBinding.Count);
+				}
 			}
 			else if (type->getKind() == slang::TypeReflection::Kind::ConstantBuffer)
 			{
@@ -428,6 +445,8 @@ namespace Echo
 				rbo.Count = 1;
 				rbo.Type = DescriptorType::UniformBuffer;
 				reflection->AddResourceBinding(rbo);
+
+				ExtractUniformBufferMembers(name, field->getTypeLayout(), reflection);
 			}
 			else
 			{
@@ -435,6 +454,7 @@ namespace Echo
 				rbo.Set = set;
 				rbo.Binding = binding;
 				rbo.Stage = stage;
+				rbo.Count = 1;
 
 				auto shape = type->getResourceShape();
 				auto access = type->getResourceAccess();
@@ -446,9 +466,42 @@ namespace Echo
 				else if (shape == SlangResourceShape::SLANG_STRUCTURED_BUFFER)
 					rbo.Type = DescriptorType::StorageBuffer;
 
-				rbo.Count = type->isArray()
-					? type->getTotalArrayElementCount() == 0 ? VulkanRenderCaps::GetMaxTextureSlots() : type->getTotalArrayElementCount()
-					: 1;
+				if (type->isArray()) 
+				{
+					if (type->getTotalArrayElementCount() == 0) 
+					{
+						if (rbo.Type == DescriptorType::SampledImage) 
+						{
+							rbo.Count = VulkanRenderCaps::GetMaxTextureSlots();
+						}
+					}
+					else
+					{
+						rbo.Count = type->getTotalArrayElementCount();
+					}
+				}
+				
+				if (shape == SlangResourceShape::SLANG_TEXTURE_2D) 
+				{
+					TextureBinding texBinding;
+					texBinding.Name = name;
+					texBinding.Type = (access == SLANG_RESOURCE_ACCESS_READ)
+						? DescriptorType::SampledImage
+						: DescriptorType::StorageImage;
+					texBinding.Binding = binding;
+					texBinding.Set = set;
+					texBinding.Count = rbo.Count;
+					texBinding.Stage = stage;
+					texBinding.IsArray = type->isArray();
+					reflection->AddTextureBinding(texBinding);
+
+					EC_CORE_INFO("      Texture: {0} (set: {1}, binding: {2}, count: {3})",
+								 name, set, binding, texBinding.Count);
+					if (texBinding.IsArray)
+					{
+						EC_CORE_INFO("        Array[{0}]", texBinding.Count);
+					}
+				}
 
 				reflection->AddResourceBinding(rbo);
 			}
@@ -458,59 +511,110 @@ namespace Echo
 			EC_CORE_INFO("      Set: {0}, Binding: {1}", set, binding);
 			EC_CORE_INFO("      Count: {0}", rbo.Count);
 			EC_CORE_INFO("      Stage: {0}", ShaderStageToString(stage));
+	}
+}
+
+
+void ShaderLibrary::ExtractUniformBufferMembers(const char* bufferName, slang::TypeLayoutReflection* bufferTypeLayout, ShaderReflection* reflection)
+{
+	EC_PROFILE_FUNCTION();
+
+	// Get the element type (the actual struct inside the ConstantBuffer<>)
+	auto elementTypeLayout = bufferTypeLayout->getElementTypeLayout();
+	if (!elementTypeLayout)
+		return;
+
+	UniformBufferLayout uniformLayout;
+	uniformLayout.BufferName = bufferName;
+
+	EC_CORE_INFO("    Uniform Buffer '{0}' Members:", bufferName);
+
+	// Extract all fields from the struct
+	uint32_t fieldCount = elementTypeLayout->getFieldCount();
+	for (uint32_t i = 0; i < fieldCount; i++)
+	{
+		auto fieldLayout = elementTypeLayout->getFieldByIndex(i);
+		auto fieldType = fieldLayout->getType();
+
+		UniformBufferMember member;
+		member.Name = fieldLayout->getVariable()->getName();
+		member.Type = SlangTypeToShaderDataType(fieldType);
+		member.Offset = (uint32_t)fieldLayout->getOffset();
+		member.Size = (uint32_t)fieldLayout->getBindingSpace();
+
+		if (fieldType->isArray())
+		{
+			member.ArrayCount = fieldType->getTotalArrayElementCount();
+		}
+
+		uniformLayout.Members.push_back(member);
+
+		EC_CORE_INFO("      - {0}: {1} (offset: {2}, size: {3})",
+					 member.Name,
+					 ShaderDataTypeToString(member.Type),
+					 member.Offset,
+					 member.Size);
+
+		if (member.ArrayCount > 1)
+		{
+			EC_CORE_INFO("        Array[{0}]", member.ArrayCount);
 		}
 	}
 
-	ShaderStage ShaderLibrary::SlangStageToShaderStage(SlangStage stage)
-	{
-		switch (stage)
-		{
-			case SLANG_STAGE_VERTEX:
-				return ShaderStage::Vertex;
-			case SLANG_STAGE_FRAGMENT:
-				return ShaderStage::Fragment;
-			case SLANG_STAGE_COMPUTE:
-				return ShaderStage::Compute;
-			case SLANG_STAGE_GEOMETRY:
-				return ShaderStage::Geometry;
-			default:
-				EC_CORE_WARN("Couldn't find the correct shader stage!")
-					return ShaderStage::All;
-		}
-	}
+	// Add to reflection
+	reflection->AddUniformLayout(uniformLayout);
+}
 
-	ShaderDataType ShaderLibrary::SlangTypeToShaderDataType(slang::TypeReflection* type)
+ShaderStage ShaderLibrary::SlangStageToShaderStage(SlangStage stage)
+{
+	switch (stage)
 	{
-		switch (type->getScalarType())
-		{
-			case slang::TypeReflection::ScalarType::Float32:
-				switch (type->getRowCount())
-				{
-					case 1:
-						switch (type->getColumnCount())
-						{
-							case 1: return ShaderDataType::Float;
-							case 2: return ShaderDataType::Float2;
-							case 3: return ShaderDataType::Float3;
-							case 4: return ShaderDataType::Float4;
-						}
-						break;
-					case 3: return ShaderDataType::Mat3;
-					case 4: return ShaderDataType::Mat4;
-				}
-				break;
-			case slang::TypeReflection::ScalarType::Int32:
-				switch (type->getColumnCount())
-				{
-					case 1: return ShaderDataType::Int;
-					case 2: return ShaderDataType::Int2;
-					case 3: return ShaderDataType::Int3;
-					case 4: return ShaderDataType::Int4;
-				}
-				break;
-			case slang::TypeReflection::ScalarType::Bool:
-				return ShaderDataType::Bool;
-		}
-		return ShaderDataType::None;
+		case SLANG_STAGE_VERTEX:
+			return ShaderStage::Vertex;
+		case SLANG_STAGE_FRAGMENT:
+			return ShaderStage::Fragment;
+		case SLANG_STAGE_COMPUTE:
+			return ShaderStage::Compute;
+		case SLANG_STAGE_GEOMETRY:
+			return ShaderStage::Geometry;
+		default:
+			EC_CORE_WARN("Couldn't find the correct shader stage!")
+				return ShaderStage::All;
 	}
+}
+
+ShaderDataType ShaderLibrary::SlangTypeToShaderDataType(slang::TypeReflection* type)
+{
+	switch (type->getScalarType())
+	{
+		case slang::TypeReflection::ScalarType::Float32:
+			switch (type->getRowCount())
+			{
+				case 1:
+					switch (type->getColumnCount())
+					{
+						case 1: return ShaderDataType::Float;
+						case 2: return ShaderDataType::Float2;
+						case 3: return ShaderDataType::Float3;
+						case 4: return ShaderDataType::Float4;
+					}
+					break;
+				case 3: return ShaderDataType::Mat3;
+				case 4: return ShaderDataType::Mat4;
+			}
+			break;
+		case slang::TypeReflection::ScalarType::Int32:
+			switch (type->getColumnCount())
+			{
+				case 1: return ShaderDataType::Int;
+				case 2: return ShaderDataType::Int2;
+				case 3: return ShaderDataType::Int3;
+				case 4: return ShaderDataType::Int4;
+			}
+			break;
+		case slang::TypeReflection::ScalarType::Bool:
+			return ShaderDataType::Bool;
+	}
+	return ShaderDataType::None;
+}
 }

@@ -13,6 +13,8 @@ namespace Echo
 		virtual ~Material() = default;
 
 		Ref<Pipeline> GetPipeline() { return m_Pipeline; }
+
+		void Destroy() { m_Pipeline.reset(); }
 	private:
 		Ref<Pipeline> m_Pipeline;
 	};

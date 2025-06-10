@@ -4,14 +4,12 @@
 
 #include "SceneCamera.h"
 
-#include "Graphics/Primitives/Texture.h"
-#include "Graphics/Primitives/Material.h"
-#include "Graphics/Primitives/Mesh.h"
-
 #include "Core/Timestep.h"
 #include "Core/UUID.h"
 
 #include "AssetManager/Assets/TextureAsset.h"
+#include "AssetManager/Assets/MeshAsset.h"
+#include "AssetManager/Assets/MaterialAsset.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -93,23 +91,17 @@ namespace Echo
 		CameraComponent(const CameraComponent&) = default;
 	};
 
-	struct MeshComponent 
+	struct MeshFilterComponent 
 	{
-		Ref<Material> Mat;
-		Ref<Mesh> Mes;
+		Ref<MeshAsset> Mesh;
 
-		MeshComponent() = default;
-		MeshComponent(const MeshComponent&) = default;
+		MeshFilterComponent() = default;
+		MeshFilterComponent(const MeshFilterComponent&) = default;
+	};
 
-		MeshComponent(Ref<Mesh> mesh, Ref<Material> material)
-			: Mes(mesh), Mat(material)
-		{}
-
-		operator Ref<Mesh>& () { return Mes; }
-		operator const Ref<Mesh>& () const { return Mes; }
-
-		operator Ref<Material>& () { return Mat; }
-		operator const Ref<Material>& () const { return Mat; }
+	struct MeshRendererComponent 
+	{
+		Ref<MaterialAsset> Material;
 	};
 
 	class ScriptableEntity;

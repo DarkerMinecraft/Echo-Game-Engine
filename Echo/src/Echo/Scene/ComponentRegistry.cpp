@@ -5,6 +5,7 @@
 
 #include "AssetManager/AssetRegistry.h"
 #include "AssetManager/Assets/TextureAsset.h"
+#include "AssetManager/Assets/MeshAsset.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -410,11 +411,13 @@ namespace Echo
 		RegisterComponent<TagComponent>("Tag", "Core", false, true, false);
 		RegisterComponent<TransformComponent>("Transform", "Core", false, true, true);
 
-		// Register rendering components
-		RegisterComponent<SpriteRendererComponent>("Sprite Renderer", "Rendering");
-		RegisterComponent<CircleRendererComponent>("Circle Renderer", "Rendering");
-		RegisterComponent<CameraComponent>("Camera", "Rendering");
-		RegisterComponent<MeshComponent>("Mesh", "Rendering");
+		// Register rendering 2D components
+		RegisterComponent<SpriteRendererComponent>("Sprite Renderer", "Rendering 2D");
+		RegisterComponent<CircleRendererComponent>("Circle Renderer", "Rendering 2D");
+		RegisterComponent<CameraComponent>("Camera", "Rendering 2D");
+
+		// Register rendering 3D components
+		RegisterComponent<MeshFilterComponent>("Mesh Filter", "Rendering 3D");
 
 		// Register physics components
 		RegisterComponent<Rigidbody2DComponent>("Rigidbody 2D", "Physics");
@@ -547,6 +550,33 @@ namespace Echo
 					circleRenderer.Color = circleRendererComponent["Color"].as<glm::vec4>();
 					circleRenderer.OutlineThickness = circleRendererComponent["Thickness"].as<float>();
 					circleRenderer.Fade = circleRendererComponent["Fade"].as<float>();
+				}
+			};
+		}
+
+		if (auto meta = ComponentRegistry::GetMetadata<MeshFilterComponent>())
+		{
+			meta->Serialize = [](const Entity& entity, YAML::Emitter& out)
+			{
+				if (entity.HasComponent<MeshFilterComponent>())
+				{
+					out << YAML::Key << "MeshFilterComponent";
+					out << YAML::BeginMap;
+					auto& filter = entity.GetComponent<MeshFilterComponent>();
+					std::string meshPath = filter.Mesh ? filter.Mesh->GetMetadata().Path.string() : "";
+					out << YAML::Key << "Filter" << YAML::Value << meshPath;
+					out << YAML::EndMap;
+				}
+			};
+
+			meta->Deserialize = [](Entity& entity, const YAML::Node& entityNode)
+			{
+				auto meshFilterComponent = entityNode["MeshFilterComponent"];
+				if (meshFilterComponent)
+				{
+					auto& meshFilter = entity.AddComponent<MeshFilterComponent>();
+					std::string meshPath = meshFilterComponent["Filter"].as<std::string>();
+					meshFilter.Mesh = meshPath != "" ? AssetRegistry::LoadAsset<MeshAsset>(meshPath) : nullptr;
 				}
 			};
 		}
@@ -733,6 +763,30 @@ namespace Echo
 					}
 
 					ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
+				});
+			};
+		}
+
+		if (auto meta = ComponentRegistry::GetMetadata<MeshFilterComponent>())
+		{
+			meta->DrawUI = [](Entity& entity, const std::filesystem::path& currentDirectory)
+			{
+				DrawComponent<MeshFilterComponent>("Mesh Filter", entity, [&currentDirectory](auto& component)
+				{
+					ImGui::Button("Mesh", ImVec2(100.0f, 0));
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+						{
+							const wchar_t* path = (const wchar_t*)payload->Data;
+							std::filesystem::path meshPath = currentDirectory / path;
+							component.Mesh = AssetRegistry::LoadAsset<MeshAsset>(meshPath.string());
+						}
+						ImGui::EndDragDropTarget();
+					}
+
+					ImGui::SameLine();
+					ImGui::Text(component.Mesh->GetMetadata().Path.stem().string().c_str());
 				});
 			};
 		}

@@ -19,7 +19,8 @@ namespace Echo
 		Shader,
 		Texture,
 		Material,
-		Scene
+		Scene,
+		Mesh
 	};
 
 	using AssetVariant = std::variant<

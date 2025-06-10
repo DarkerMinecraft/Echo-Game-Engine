@@ -3,6 +3,8 @@
 
 #include "Assets/ShaderAsset.h"
 #include "Assets/TextureAsset.h"
+#include "Assets/MeshAsset.h"
+#include "Assets/MaterialAsset.h"
 
 #include <fstream>
 
@@ -55,6 +57,93 @@ namespace Echo
 			s_PathToUUID[path] = metadata.ID;
 			s_AssetMetadataMap[metadata.ID] = metadata;
 			return Cast<ShaderAsset>(asset);
+		}
+	}
+
+	template<>
+	Ref<MaterialAsset> AssetRegistry::LoadAsset<MaterialAsset>(const std::filesystem::path& path)
+	{
+		EC_PROFILE_FUNCTION();
+		std::filesystem::path fullPath = s_GlobalPath / path;
+
+		if (!std::filesystem::exists(fullPath))
+		{
+			EC_CORE_ERROR("Failed to load asset: file doesn't exist: {0}", fullPath.string());
+			return nullptr;
+		}
+
+		if (s_PathToUUID.contains(fullPath))
+		{
+			UUID id = s_PathToUUID[fullPath];
+			return Cast<MaterialAsset>(s_LoadedAssets[id]);
+		}
+
+		std::filesystem::path metaPath = fullPath.string() + ".meta";
+
+		AssetMetadata metadata;
+		if (std::filesystem::exists(metaPath))
+		{
+			metadata.DeserializeFromFile(metaPath);
+		}
+		else
+		{
+			metadata.Path = fullPath;
+			metadata.Type = GetAssetTypeFromExtension(path.extension().string());
+			metadata.LastModified = std::filesystem::last_write_time(fullPath);
+			metadata.SerializeToFile(metaPath);
+		}
+
+		Ref<Asset> asset = CreateAsset(metadata);
+		if (asset)
+		{
+			asset->Load();
+			s_LoadedAssets[metadata.ID] = asset;
+			s_PathToUUID[path] = metadata.ID;
+			s_AssetMetadataMap[metadata.ID] = metadata;
+			return Cast<MaterialAsset>(asset);
+		}
+	}
+
+	template<>
+	Ref<MeshAsset> AssetRegistry::LoadAsset<MeshAsset>(const std::filesystem::path& path)
+	{
+		EC_PROFILE_FUNCTION();
+		std::filesystem::path fullPath = s_GlobalPath / path;
+
+		if (!std::filesystem::exists(fullPath))
+		{
+			EC_CORE_ERROR("Failed to load asset: file doesn't exist: {0}", fullPath.string());
+			return nullptr;
+		}
+
+		if (s_PathToUUID.contains(fullPath))
+		{
+			UUID id = s_PathToUUID[fullPath];
+			return Cast<MeshAsset>(s_LoadedAssets[id]);
+		}
+
+		std::filesystem::path metaPath = fullPath.string() + ".meta";
+		AssetMetadata metadata;
+		if (std::filesystem::exists(metaPath))
+		{
+			metadata.DeserializeFromFile(metaPath);
+		}
+		else
+		{
+			metadata.Path = fullPath;
+			metadata.Type = GetAssetTypeFromExtension(path.extension().string());
+			metadata.LastModified = std::filesystem::last_write_time(fullPath);
+			metadata.SerializeToFile(metaPath);
+		}
+
+		Ref<Asset> asset = CreateAsset(metadata);
+		if (asset)
+		{
+			asset->Load();
+			s_LoadedAssets[metadata.ID] = asset;
+			s_PathToUUID[path] = metadata.ID;
+			s_AssetMetadataMap[metadata.ID] = metadata;
+			return Cast<MeshAsset>(asset);
 		}
 	}
 
@@ -162,6 +251,8 @@ namespace Echo
 			return AssetType::Material;
 		else if (extension == ".png")
 			return AssetType::Texture;
+		else if (extension == ".obj")
+			return AssetType::Mesh;
 		else if (extension == ".echo")
 			return AssetType::Scene;
 
@@ -177,6 +268,8 @@ namespace Echo
 				return CreateRef<ShaderAsset>(metadata);
 			case AssetType::Texture:
 				return CreateRef<TextureAsset>(metadata);
+			case AssetType::Mesh:
+				return CreateRef<MeshAsset>(metadata);
 		}
 
 		EC_CORE_ERROR("Unknown asset type for: {0}", metadata.Path.string());

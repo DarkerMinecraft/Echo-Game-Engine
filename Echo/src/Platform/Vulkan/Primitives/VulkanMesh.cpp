@@ -29,7 +29,7 @@ namespace Echo
 
 	void VulkanMesh::UpdateVertexBuffer(const std::vector<Vertex>& vertices)
 	{
-
+		//m_VertexBuffer->SetData(vertices, sizeof(Vertex) * vertices.size());
 	}
 
 	void VulkanMesh::UpdateIndexBuffer(const std::vector<uint32_t>& indices)
@@ -39,12 +39,13 @@ namespace Echo
 
 	void VulkanMesh::Destroy()
 	{
-
+		
 	}
 
 	void VulkanMesh::LoadModel(const std::string& path)
 	{
 		EC_PROFILE_FUNCTION();
+
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
