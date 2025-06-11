@@ -153,10 +153,7 @@ namespace Echo
 				if (m_ViewportFocused && m_ViewportHovered)
 					m_EditorCamera.OnUpdate(ts);
 
-				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts, [this]()
-				{
-					OnOverlayRender();
-				});
+				m_ActiveScene->OnUpdateEditor(cmd, m_EditorCamera, ts);
 			}
 			else if (m_SceneState == Play)
 			{
@@ -165,6 +162,17 @@ namespace Echo
 
 				m_ActiveScene->OnUpdateRuntime(cmd, ts);
 			}
+			cmd.EndRendering();
+			cmd.Execute();
+		}
+
+		{
+			CommandList cmd;
+			cmd.SetSourceFramebuffer(m_MsaaFramebuffer);
+
+			cmd.Begin();
+			cmd.BeginRendering(m_MsaaFramebuffer);
+			OnOverlayRender(cmd);
 			cmd.EndRendering();
 			cmd.Execute();
 		}
@@ -348,6 +356,7 @@ namespace Echo
 
 		ViewportUI();
 		ToolbarUI();
+		SettingsUI();
 		DebugToolsUI();
 	}
 
@@ -467,11 +476,18 @@ namespace Echo
 		ImGui::End();
 	}
 
+	void EditorLayer::SettingsUI()
+	{
+		ImGui::Begin("Settings");
+		ImGui::Checkbox("Show Physics Colliders", &m_ShowPhysicsColliders);
+		ImGui::End();
+	}
+
 	void EditorLayer::DebugToolsUI()
 	{
 		ImGui::Begin("Debug & Performance");
 
-	    // Performance section with averaged values
+		// Performance section with averaged values
 		ImGui::SeparatorText("Performance");
 
 		// Color-coded FPS display
@@ -578,6 +594,15 @@ namespace Echo
 				}
 				break;
 			}
+			case EC_KEY_D:
+				if (controlPressed) 
+				{
+					if (m_SceneHierarchyPanel.GetSelectedEntity().GetHandle() != entt::null) 
+					{
+						m_ActiveScene->DuplicateEntity(m_SceneHierarchyPanel.GetSelectedEntity());
+					}
+				}
+				break;
 			case EC_KEY_Q:
 				m_GuizmoType = -1;
 				break;
@@ -674,16 +699,59 @@ namespace Echo
 	}
 
 
-	void EditorLayer::OnOverlayRender()
+	void EditorLayer::OnOverlayRender(CommandList& cmd)
 	{
-		auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>();
-		for (auto entity : view)
+		if (m_SceneState == Edit)
 		{
-			auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
-			glm::mat4 transform = glm::translate(tc.GetTransform(), glm::vec3(0, 0, 0.1f));
-
-			Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = glm::vec4(0, 1, 0, 1), .OutlineThickness = 0.05f, .Fade = 0}, transform);
+			Renderer2D::BeginScene(cmd, m_EditorCamera);
+		} 
+		else if (m_SceneState == Play) 
+		{
+			Entity primaryCamera = m_ActiveScene->GetPrimaryCameraEntity();
+			if (primaryCamera.GetHandle() != entt::null)
+			{
+				Camera camera = primaryCamera.GetComponent<CameraComponent>().Camera;
+				Renderer2D::BeginScene(cmd, camera, primaryCamera.GetTransform());
+			}
 		}
+
+		if (m_ShowPhysicsColliders)
+		{
+			{
+				auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, CircleCollider2DComponent>();
+				for (auto entity : view)
+				{
+					auto [tc, cc2d] = view.get<TransformComponent, CircleCollider2DComponent>(entity);
+
+					glm::vec3 translation = tc.Translation + glm::vec3(cc2d.Offset, 0.0001f);
+					glm::vec3 scale = tc.Scale * glm::vec3(cc2d.Radius);
+
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
+						* glm::scale(glm::mat4(1.0f), scale);
+
+					Renderer2D::DrawCircle({ .InstanceID = -1, .Color = glm::vec4(0, 1, 0, 1), .OutlineThickness = 0.1f, .Fade = 0 }, transform);
+				}
+			}
+
+			{
+				auto view = m_ActiveScene->GetAllEntitiesWith<TransformComponent, BoxCollider2DComponent>();
+				for (auto entity : view)
+				{
+					auto [tc, bc2d] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
+
+					glm::vec3 translation = tc.Translation + glm::vec3(bc2d.Offset, 0.0001f);
+					glm::vec3 scale = tc.Scale * glm::vec3(bc2d.Size * 2.0f, 1.0f);
+
+					glm::mat4 transform = glm::translate(glm::mat4(1.0f), translation)
+						* glm::rotate(glm::mat4(1.0f), tc.Rotation.z, glm::vec3(0.0f, 0.0f, 1.0f))
+						* glm::scale(glm::mat4(1.0f), scale);
+
+					Renderer2D::DrawRect(transform, { 0, 1, 0, 1 });
+				}
+			}
+		}
+
+		Renderer2D::EndScene();
 	}
 
 }

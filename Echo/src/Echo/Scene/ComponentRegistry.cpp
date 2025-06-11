@@ -309,6 +309,20 @@ namespace Echo
 		return std::vector<std::string>(uniqueCategories.begin(), uniqueCategories.end());
 	}
 
+	ComponentMetadata* ComponentRegistry::GetMetadataByName(const std::string& name)
+	{
+		for (auto& [typeIndex, meta] : s_ComponentRegistry)
+		{
+			if (meta.Name == name)
+			{
+				return &meta;
+			}
+		}
+
+		EC_CORE_WARN("Component metadata not found for: {0}", name);
+		return nullptr;
+	}
+
 	void ComponentRegistry::SerializeEntity(const Entity& entity, YAML::Emitter& out)
 	{
 		for (const auto& [typeIndex, meta] : s_ComponentRegistry)
@@ -333,11 +347,45 @@ namespace Echo
 
 	void ComponentRegistry::DrawEntityUI(Entity& entity, const std::filesystem::path& currentDirectory)
 	{
-		for (const auto& [typeIndex, meta] : s_ComponentRegistry)
+		// Get component order first
+		auto componentOrder = entity.GetComponentOrder();
+
+		// Draw components in specified order
+		for (const std::string& componentName : componentOrder)
 		{
-			if (meta.HasUI && meta.HasComponent(entity))
+			auto* meta = GetMetadataByName(componentName);
+			if (meta && meta->HasUI && meta->HasComponent(entity))
 			{
-				meta.DrawUI(entity, currentDirectory);
+				// Drag source
+				ImGui::InvisibleButton(("drag_" + componentName).c_str(), ImVec2(-1, 4));
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload("COMPONENT_REORDER", componentName.c_str(), componentName.size() + 1);
+					ImGui::Text("Moving: %s", componentName.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				// Drop target before component
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("COMPONENT_REORDER"))
+					{
+						std::string draggedComponent((const char*)payload->Data);
+
+						// Find target index and reorder
+						auto order = entity.GetComponentOrder();
+						auto targetIt = std::find(order.begin(), order.end(), componentName);
+						if (targetIt != order.end())
+						{
+							size_t targetIndex = std::distance(order.begin(), targetIt);
+							entity.ReorderComponent(draggedComponent, targetIndex);
+						}
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				// Draw actual component UI
+				meta->DrawUI(entity, currentDirectory);
 			}
 		}
 	}
@@ -409,6 +457,7 @@ namespace Echo
 		// Register core components
 		RegisterComponent<IDComponent>("ID", "Core", false, false, false);
 		RegisterComponent<TagComponent>("Tag", "Core", false, true, false);
+		RegisterComponent<ComponentOrderComponent>("Component Order", "Core", false, true, false);
 		RegisterComponent<TransformComponent>("Transform", "Core", false, true, true);
 
 		// Register rendering 2D components
@@ -458,6 +507,45 @@ namespace Echo
 				{
 					auto& tc = entity.GetComponent<TagComponent>();
 					tc.Tag = tagComponent["Tag"].as<std::string>();
+				}
+			};
+		}
+
+		if (auto meta = ComponentRegistry::GetMetadata<ComponentOrderComponent>())
+		{
+			meta->Serialize = [](const Entity& entity, YAML::Emitter& out)
+			{
+				if (entity.HasComponent<ComponentOrderComponent>())
+				{
+					out << YAML::Key << "ComponentOrderComponent";
+					out << YAML::BeginMap;
+					auto& orderComp = entity.GetComponent<ComponentOrderComponent>();
+
+					out << YAML::Key << "ComponentOrder" << YAML::Value << YAML::BeginSeq;
+					for (const std::string& componentName : orderComp.ComponentOrder)
+					{
+						out << componentName;
+					}
+					out << YAML::EndSeq;
+					out << YAML::EndMap;
+				}
+			};
+
+			meta->Deserialize = [](Entity& entity, const YAML::Node& entityNode)
+			{
+				auto componentOrderComponent = entityNode["ComponentOrderComponent"];
+				if (componentOrderComponent)
+				{
+					auto& orderComp = entity.AddComponent<ComponentOrderComponent>();
+
+					auto componentOrder = componentOrderComponent["ComponentOrder"];
+					if (componentOrder)
+					{
+						for (auto componentName : componentOrder)
+						{
+							orderComp.ComponentOrder.push_back(componentName.as<std::string>());
+						}
+					}
 				}
 			};
 		}

@@ -38,6 +38,14 @@ namespace Echo
 		{}
 	};
 
+	struct ComponentOrderComponent
+	{
+		std::vector<std::string> ComponentOrder;
+
+		ComponentOrderComponent() = default;
+		ComponentOrderComponent(const ComponentOrderComponent&) = default;
+	};
+
 	struct TransformComponent 
 	{
 		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };

@@ -114,7 +114,7 @@ namespace Echo
 		pipelineSpec.CullMode = Cull::None;
 		pipelineSpec.EnableBlending = true;
 		pipelineSpec.RenderTarget = framebuffer;
-
+		
 		s_Data.QuadShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/quadShader.slang");
 		s_Data.QuadPipeline = Pipeline::Create(s_Data.QuadShader->GetShader(), pipelineSpec);
 		s_Data.CircleShader = AssetRegistry::LoadAsset<ShaderAsset>("Resources/shaders/circleShader.slang");

@@ -101,19 +101,26 @@ namespace Echo
 
 		YAML::Emitter out;
 		out << YAML::BeginMap;
-		out << YAML::Key << "Entities";
-		out << YAML::Value << YAML::BeginSeq;
-		m_Scene->m_Registry.view<entt::entity>().each([&](auto entityID)
+
+		out << YAML::Key << "EntityDisplayOrder" << YAML::Value << YAML::BeginSeq;
+		for (const UUID& entityUUID : m_Scene->GetEntityDisplayOrder())
 		{
-			Entity entity = { entityID, m_Scene.get() };
-			if (!entity)
-				return;
-
-			SerializeEntity(out, entity);
-		});
+			out << (uint64_t)entityUUID;
+		}
 		out << YAML::EndSeq;
-		out << YAML::EndMap;
 
+		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
+		for (const UUID& entityUUID : m_Scene->GetEntityDisplayOrder())
+		{
+			Entity entity = m_Scene->GetEntityByUUID(entityUUID);
+			if (entity)
+			{
+				SerializeEntity(out, entity);
+			}
+		}
+		out << YAML::EndSeq;
+
+		out << YAML::EndMap;
 		std::ofstream fout(filepath);
 		fout << out.c_str();
 	}
@@ -138,6 +145,17 @@ namespace Echo
 
 		YAML::Node data = YAML::Load(strStream.str());
 
+		auto entityOrder = data["EntityDisplayOrder"];
+		if (entityOrder)
+		{
+			std::vector<UUID> displayOrder;
+			for (auto entityUUID : entityOrder)
+			{
+				displayOrder.push_back(UUID(entityUUID.as<uint64_t>()));
+			}
+			m_Scene->SetEntityDisplayOrder(displayOrder);
+		}
+
 		auto entities = data["Entities"];
 		if (entities)
 		{
@@ -155,10 +173,8 @@ namespace Echo
 				Entity deserializedEntity = m_Scene->CreateEntity(name, id);
 				ComponentRegistry::DeserializeEntity(deserializedEntity, entity);
 			}
-
-			return true;
 		}
-		
+
 		return false;
 	}
 

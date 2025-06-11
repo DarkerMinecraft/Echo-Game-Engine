@@ -39,12 +39,13 @@ namespace Echo
 		void OnScenePlay();
 		void OnSceneEdit();
 
-		void OnOverlayRender();
+		void OnOverlayRender(CommandList& cmd);
 
 		//UI 
 		void ToolbarUI();
 		void ViewportUI();
 
+		void SettingsUI();
 		void DebugToolsUI();
 	private:
 		Ref<Framebuffer> m_MsaaFramebuffer;
@@ -59,9 +60,8 @@ namespace Echo
 		Ref<Scene> m_ActiveScene;
 		Ref<Scene> m_EditorScene;
 
-		bool m_OverlayEnabled = true;
-
 		bool m_PrimaryCamera = false;
+		bool m_ShowPhysicsColliders = false; 
 
 		Window* m_Window;
 

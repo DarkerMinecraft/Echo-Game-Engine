@@ -24,6 +24,17 @@ namespace Echo
 			{
 				meta->InitializeComponent(*this, &component);
 			}
+
+			if (HasComponent<ComponentOrderComponent>()) 
+			{
+				GetComponent<ComponentOrderComponent>().ComponentOrder.push_back(meta->Name);
+			}
+			else 
+			{
+				GetComponentOrder();
+				GetComponent<ComponentOrderComponent>().ComponentOrder.push_back(meta->Name);
+			}
+
 			return component;
 		}
 
@@ -44,13 +55,24 @@ namespace Echo
 		bool operator!=(const Entity& other) const { return !(*this == other); }
 
 		entt::entity GetHandle() const { return m_EntityHandle; }
+		const UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
 
-		UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
+		glm::mat4 GetTransform() { return GetComponent<TransformComponent>().GetTransform(); }
+		const glm::mat4 GetTransform() const { return GetComponent<TransformComponent>().GetTransform(); }
 
 		Scene* GetScene() { return m_Scene; }
+
+		void SetComponentOrder(const std::vector<std::string>& order);
+		std::vector<std::string> GetComponentOrder();
+		void ReorderComponent(const std::string& componentName, size_t newIndex);
+
+		int GetDuplicatedNumber() { return m_DuplicateNumber; }
+		void AddDuplicatedNumber() { m_DuplicateNumber++; }
 	private:
 		entt::entity m_EntityHandle{ entt::null };
 		Scene* m_Scene = nullptr;
+
+		int m_DuplicateNumber = 1;
 	};
 
 }

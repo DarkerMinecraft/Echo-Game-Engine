@@ -25,17 +25,24 @@ namespace Echo
 		Entity GetPrimaryCameraEntity();
 
 		void DestroyEntity(Entity entity);
+		void DuplicateEntity(Entity entity);
 
 		void OnRuntimeStart();
 		void OnRuntimeStop();
 
-		void OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts, std::function<void()> overlayCallback = nullptr);
+		void OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts);
 		void OnUpdateRuntime(CommandList& cmd, Timestep ts);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
 		uint32_t GetViewportWidth() { return m_ViewportWidth; }
 		uint32_t GetViewportHeight() { return m_ViewportHeight; }
+
+		void ReorderEntity(UUID entityUUID, size_t newIndex);
+		void AddEntityToOrder(UUID entityUUID);
+		void RemoveEntityFromOrder(UUID entityUUID);
+		const std::vector<UUID>& GetEntityDisplayOrder() const { return m_EntityDisplayOrder; }
+		void SetEntityDisplayOrder(std::vector<UUID> entities) { m_EntityDisplayOrder = entities; }
 
 		template<typename... Components> 
 		auto GetAllEntitiesWith() 
@@ -50,6 +57,8 @@ namespace Echo
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 		Scope<Physics2D> m_Physics2D;
+
+		std::vector<UUID> m_EntityDisplayOrder;
 
 		friend class Entity;
 		friend class SceneSerializer;

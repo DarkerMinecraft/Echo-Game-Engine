@@ -99,6 +99,7 @@ namespace Echo
 		auto& tag = entity.AddComponent<TagComponent>();
 		tag.Tag = name.empty() ? "Unnamed Entity" : name;
 
+		m_EntityDisplayOrder.push_back(entity.GetUUID()); 
 		return entity;
 	}
 
@@ -145,9 +146,51 @@ namespace Echo
 		return {  };
 	}
 
+	void Scene::DuplicateEntity(Entity entity)
+	{
+		std::string name = entity.GetComponent<TagComponent>().Tag;
+		name += " (" + std::to_string(entity.GetDuplicatedNumber()) + ")";
+
+		Entity newEntity = CreateEntity(name);
+		ComponentRegistry::CopyAllComponents(entity, newEntity);
+		newEntity.GetComponent<TagComponent>().Tag = name;
+		newEntity.GetComponent<IDComponent>().ID = UUID();
+
+		entity.AddDuplicatedNumber();
+	}
+
 	void Scene::DestroyEntity(Entity entity)
 	{
+		auto it = std::find(m_EntityDisplayOrder.begin(), m_EntityDisplayOrder.end(), entity.GetUUID());
+		if (it != m_EntityDisplayOrder.end())
+		{
+			m_EntityDisplayOrder.erase(it);
+		}
 		m_Registry.destroy(entity);
+	}
+
+	void Scene::ReorderEntity(UUID entityUUID, size_t newIndex)
+	{
+		auto it = std::find(m_EntityDisplayOrder.begin(), m_EntityDisplayOrder.end(), entityUUID);
+		if (it != m_EntityDisplayOrder.end())
+		{
+			m_EntityDisplayOrder.erase(it);
+			m_EntityDisplayOrder.insert(m_EntityDisplayOrder.begin() + newIndex, entityUUID);
+		}
+	}
+
+	void Scene::AddEntityToOrder(UUID entityUUID)
+	{
+		m_EntityDisplayOrder.push_back(entityUUID);
+	}
+
+	void Scene::RemoveEntityFromOrder(UUID entityUUID)
+	{
+		auto it = std::find(m_EntityDisplayOrder.begin(), m_EntityDisplayOrder.end(), entityUUID);
+		if (it != m_EntityDisplayOrder.end())
+		{
+			m_EntityDisplayOrder.erase(it);
+		}
 	}
 
 	void Scene::OnRuntimeStart()
@@ -193,7 +236,7 @@ namespace Echo
 
 				b2Circle circleShape;
 				circleShape.center = { cc2d.Offset.x, cc2d.Offset.y };
-				circleShape.radius = cc2d.Radius;
+				circleShape.radius = transform.Scale.x * (cc2d.Radius / 2);
 				b2ShapeDef shapeDef = b2DefaultShapeDef();
 				shapeDef.density = cc2d.Density;
 				shapeDef.material.friction = cc2d.Friction;
@@ -209,7 +252,7 @@ namespace Echo
 		m_Physics2D->EndPhysicsWorld();
 	}
 
-	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts, std::function<void()> overlayCallback /*= nullptr*/)
+	void Scene::OnUpdateEditor(CommandList& cmd, const EditorCamera& camera, Timestep ts)
 	{
 		EC_PROFILE_FUNCTION();
 		Renderer2D::BeginScene(cmd, camera);
@@ -231,9 +274,6 @@ namespace Echo
 				Renderer2D::DrawCircle({ .InstanceID = (int)(uint32_t)entity, .Color = circle.Color, .OutlineThickness = circle.OutlineThickness, .Fade = circle.Fade }, transform.GetTransform());
 			}
 		}
-
-		if (overlayCallback)
-			overlayCallback();
 
 		Renderer2D::EndScene();
 	}

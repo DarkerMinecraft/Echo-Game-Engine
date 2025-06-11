@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Scene/Scene.h"
+#include "Scene/ComponentRegistry.h"
 
 #include <filesystem>
 

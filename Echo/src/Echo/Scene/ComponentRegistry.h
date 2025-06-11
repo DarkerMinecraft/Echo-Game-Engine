@@ -64,6 +64,8 @@ namespace Echo
 		// Get all unique categories
 		static std::vector<std::string> GetCategories();
 
+		static ComponentMetadata* GetMetadataByName(const std::string& name);
+
 		// Component operations
 		static void SerializeEntity(const Entity& entity, YAML::Emitter& out);
 		static void DeserializeEntity(Entity& entity, const YAML::Node& entityNode);
