@@ -47,7 +47,11 @@ class CMakeConfiguration:
         system = platform.system()
         if system == "Windows":
             cmake_url = f"https://github.com/Kitware/CMake/releases/download/v{cls.installCMakeVersion}/cmake-{cls.installCMakeVersion}-windows-x86_64.zip"
-            install_path = os.path.expandvars("%ProgramFiles%/CMake")
+            install_path = os.path.expandvars(r"%ProgramFiles%\CMake")
+        
+            # Create directory if it doesn't exist
+            os.makedirs(install_path, exist_ok=True)
+            cmake_path = os.path.join(install_path, f"cmake-{cls.installCMakeVersion}.zip")
         elif system == "Linux":
             cmake_url = f"https://github.com/Kitware/CMake/releases/download/v{cls.installCMakeVersion}/cmake-{cls.installCMakeVersion}-linux-x86_64.tar.gz"
             install_path = "/usr/local"
